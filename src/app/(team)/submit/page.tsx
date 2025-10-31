@@ -84,13 +84,13 @@ export default async function SubmitPage() {
       <div className="container mx-auto p-6">
         
         {/* Fase Atual */}
-        {eventConfig?.current_phase_id ? (
+        {eventConfig?.event_started && eventConfig?.current_phase_id ? (
           <Card className="p-6 mb-6">
             <h2 className="text-2xl font-bold mb-2">
               {eventConfig.phases?.name}
             </h2>
             <p className="text-gray-600">
-              Duração: {eventConfig.phases?.duration_minutes} minutos | 
+              Duração: {eventConfig.phases?.duration_minutes} minutos |
               Pontuação máxima da fase: {eventConfig.phases?.max_points} pontos
             </p>
           </Card>
@@ -103,7 +103,7 @@ export default async function SubmitPage() {
         )}
 
         {/* Quests */}
-        {quests.length > 0 ? (
+        {eventConfig?.event_started && quests.length > 0 ? (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Quests Disponíveis</h2>
             
@@ -143,13 +143,13 @@ export default async function SubmitPage() {
               )
             })}
           </div>
-        ) : (
+        ) : eventConfig?.event_started ? (
           <Card className="p-6">
             <p className="text-gray-600">
               Nenhuma quest disponível no momento.
             </p>
           </Card>
-        )}
+        ) : null}
 
       </div>
     </div>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(cmd /c git status)",
+      "Bash(cmd /c git diff \"src/app/(team)/submit/page.tsx\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

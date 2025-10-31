@@ -41,21 +41,33 @@ export default async function SubmitPage() {
   // Buscar configuração do evento
   const { data: eventConfig } = await supabase
     .from('event_config')
-    .select('*, phases(*)')
+    .select('*')
     .single()
 
-  // Buscar quests da fase atual
-  const currentPhaseId = eventConfig?.current_phase_id
-  
+  // Buscar informações da fase atual baseado em current_phase
+  let currentPhase = null
   let quests: any[] = []
-  if (currentPhaseId) {
-    const { data: questsData } = await supabase
-      .from('quests')
+
+  if (eventConfig?.current_phase && eventConfig.current_phase >= 1) {
+    // Buscar dados da fase atual (o id da fase é o mesmo que current_phase)
+    const { data: phaseData } = await supabase
+      .from('phases')
       .select('*')
-      .eq('phase_id', currentPhaseId)
-      .order('order_index')
-    
-    if (questsData) quests = questsData
+      .eq('id', eventConfig.current_phase)
+      .single()
+
+    currentPhase = phaseData
+
+    // Buscar quests da fase atual
+    if (phaseData) {
+      const { data: questsData } = await supabase
+        .from('quests')
+        .select('*')
+        .eq('phase_id', phaseData.id)
+        .order('order_index')
+
+      if (questsData) quests = questsData
+    }
   }
 
   // Buscar submissions já feitas pela equipe
@@ -84,14 +96,14 @@ export default async function SubmitPage() {
       <div className="container mx-auto p-6">
         
         {/* Fase Atual */}
-        {eventConfig?.event_started && eventConfig?.current_phase_id ? (
+        {eventConfig?.event_started && currentPhase ? (
           <Card className="p-6 mb-6">
             <h2 className="text-2xl font-bold mb-2">
-              {eventConfig.phases?.name}
+              {currentPhase.name}
             </h2>
             <p className="text-gray-600">
-              Duração: {eventConfig.phases?.duration_minutes} minutos |
-              Pontuação máxima da fase: {eventConfig.phases?.max_points} pontos
+              Duração: {currentPhase.duration_minutes} minutos |
+              Pontuação máxima da fase: {currentPhase.max_points} pontos
             </p>
           </Card>
         ) : (

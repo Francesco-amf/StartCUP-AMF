@@ -1,4 +1,4 @@
--- VERIFICAR ESTADO COMPLETO DO EVENTO (ANTES DA MIGRAÇÃO)
+-- VERIFICAR ESTADO COMPLETO DO EVENTO
 
 -- 1. Estado do evento
 SELECT
@@ -11,15 +11,15 @@ FROM event_config
 WHERE id = '00000000-0000-0000-0000-000000000001';
 
 -- 2. Informações da fase atual (baseado em current_phase)
+-- O id da fase é o mesmo número que current_phase (1, 2, 3, 4, 5)
 SELECT
   'Fase Atual' as info,
   id,
-  phase_number,
   name,
   duration_minutes,
   max_points
 FROM phases
-WHERE phase_number = (
+WHERE id = (
   SELECT current_phase
   FROM event_config
   WHERE id = '00000000-0000-0000-0000-000000000001'
@@ -36,13 +36,9 @@ SELECT
   q.order_index
 FROM quests q
 WHERE q.phase_id = (
-  SELECT id
-  FROM phases
-  WHERE phase_number = (
-    SELECT current_phase
-    FROM event_config
-    WHERE id = '00000000-0000-0000-0000-000000000001'
-  )
+  SELECT current_phase
+  FROM event_config
+  WHERE id = '00000000-0000-0000-0000-000000000001'
 )
 ORDER BY q.order_index;
 

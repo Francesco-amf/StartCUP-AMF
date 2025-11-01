@@ -47,18 +47,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 p-4">
-      <Card className="w-full max-w-md p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center gradient-startcup p-4">
+      {/* Logo do Evento */}
+      <div className="mb-12 animate-fade-in">
+        <img
+          src="/startcup-logo.jpg"
+          alt="StartCup AMF"
+          className="h-48 w-auto object-contain drop-shadow-2xl"
+        />
+      </div>
+
+      <Card className="w-full max-w-md p-8 bg-gradient-to-br from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/30 backdrop-blur-sm shadow-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            🎮 StartCup AMF
-          </h1>
-          <p className="text-gray-600">Faça login para começar</p>
+          <h2 className="text-3xl font-bold gradient-text-startcup mb-2">
+            🚀 StartCup AMF
+          </h2>
+          <p className="text-[#00E5FF]/70">Acelerador de Startups - Bem-vindo</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="text-sm font-medium mb-2 block">Email</label>
+            <label className="text-sm font-semibold text-[#00E5FF] mb-2 block">
+              Email
+            </label>
             <Input
               type="email"
               placeholder="seu@email.com"
@@ -66,11 +77,14 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
+              className="input-startcup bg-white/5 border-[#00E5FF]/30 text-white placeholder:text-white/40"
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Senha</label>
+            <label className="text-sm font-semibold text-[#00E5FF] mb-2 block">
+              Senha
+            </label>
             <Input
               type="password"
               placeholder="••••••••"
@@ -78,26 +92,47 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
+              className="input-startcup bg-white/5 border-[#00E5FF]/30 text-white placeholder:text-white/40"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="bg-[#FF3D00]/20 border border-[#FF3D00]/50 text-[#FF6B47] px-4 py-3 rounded-lg text-sm font-medium">
+              ⚠️ {error}
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full btn-startcup-accent text-base py-6 font-semibold rounded-lg"
+          >
+            {loading ? '⏳ Entrando...' : '→ Entrar'}
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Usuários de teste:</p>
-          <p className="mt-1">equipe1@test.com / teste123</p>
-          <p>avaliador1@test.com / teste123</p>
+        <div className="mt-8 pt-6 border-t border-[#00E5FF]/20">
+          <p className="text-center text-xs font-medium text-[#00E5FF]/60 mb-3">
+            👤 USUÁRIOS DE TESTE
+          </p>
+          <div className="space-y-2 text-xs">
+            <div className="bg-white/5 p-3 rounded border border-[#00E5FF]/20">
+              <p className="text-[#00E5FF] font-mono">equipe1@test.com</p>
+              <p className="text-white/50 font-mono">teste123</p>
+            </div>
+            <div className="bg-white/5 p-3 rounded border border-[#00E5FF]/20">
+              <p className="text-[#00E5FF] font-mono">avaliador1@test.com</p>
+              <p className="text-white/50 font-mono">teste123</p>
+            </div>
+          </div>
         </div>
       </Card>
+
+      {/* Decoração de fundo */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-10 w-96 h-96 bg-[#00E5FF]/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-[#0047AB]/5 rounded-full blur-3xl"></div>
+      </div>
     </div>
   )
 }

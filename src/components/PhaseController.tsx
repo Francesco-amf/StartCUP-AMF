@@ -52,7 +52,18 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao atualizar fase')
+        console.error('API Error Response:', {
+          status: response.status,
+          error: data.error,
+          details: data.details,
+          code: data.code,
+          hint: data.hint
+        })
+        throw new Error(
+          data.details
+            ? `${data.error}: ${data.details}`
+            : data.error || 'Erro ao atualizar fase'
+        )
       }
 
       setPhase(phaseId)

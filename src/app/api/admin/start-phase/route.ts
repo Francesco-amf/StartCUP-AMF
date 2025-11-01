@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     }
 
     const { phase } = await request.json()
+    console.log('📌 POST /api/admin/start-phase - Phase:', phase, 'User:', user.email)
 
     // Validar fase (0 = preparação, 1-5 = fases do evento)
     if (phase < 0 || phase > 5) {
@@ -20,6 +21,12 @@ export async function POST(request: Request) {
 
     // Usar service_role client para bypassar RLS
     const { createClient } = await import('@supabase/supabase-js')
+
+    // Log das variáveis de ambiente
+    console.log('🔍 SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('🔍 SERVICE_ROLE exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+    console.log('🔍 EVENT_CONFIG_ID:', process.env.NEXT_PUBLIC_EVENT_CONFIG_ID)
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -31,12 +38,36 @@ export async function POST(request: Request) {
       }
     )
 
-    // Buscar config atual
-    const { data: config } = await supabaseAdmin
+    // Buscar config atual - usar fallback UUID direto
+    const eventConfigId = '00000000-0000-0000-0000-000000000001'
+    console.log('🔍 EventConfigId (hardcoded):', eventConfigId)
+    console.log('🔍 Tentando buscar event_config com ID:', eventConfigId)
+
+    const { data: config, error: configError } = await supabaseAdmin
       .from('event_config')
       .select('*')
-      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .eq('id', eventConfigId)
       .single()
+
+    console.log('🔍 Query result:', { config, configError: configError ? { message: configError.message, code: configError.code, details: configError.details } : null })
+
+    if (configError) {
+      console.error('❌ Erro ao buscar config atual:', {
+        message: configError.message,
+        code: configError.code,
+        details: configError.details,
+        hint: configError.hint
+      })
+      return NextResponse.json(
+        {
+          error: 'Erro ao buscar configuração do evento',
+          details: configError.message,
+          code: configError.code,
+          hint: configError.hint
+        },
+        { status: 500 }
+      )
+    }
 
     const now = new Date().toISOString()
     const updateData: any = {
@@ -92,7 +123,7 @@ export async function POST(request: Request) {
     const { error, data: updatedData } = await supabaseAdmin
       .from('event_config')
       .update(updateData)
-      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .eq('id', eventConfigId)
       .select()
 
     if (error) {

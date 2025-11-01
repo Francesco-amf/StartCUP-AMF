@@ -67,29 +67,29 @@ export default function PhaseTimer({
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+    <Card className="p-4 md:p-6 bg-gradient-to-r from-[#0A1E47]0 to-[#001A4D]0 text-white overflow-hidden">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">{phaseName}</h2>
-        
+        <h2 className="text-lg md:text-2xl font-bold mb-2 truncate">{phaseName}</h2>
+
         {timeLeft.isExpired ? (
-          <div className="text-4xl font-bold animate-pulse">
+          <div className="text-2xl md:text-4xl font-bold animate-pulse">
             ⏰ TEMPO ESGOTADO!
           </div>
         ) : (
-          <div className="flex justify-center gap-4 text-6xl font-bold font-mono">
-            <div className="flex flex-col items-center">
+          <div className="flex justify-center gap-1 md:gap-4 text-3xl md:text-6xl font-bold font-mono overflow-x-auto">
+            <div className="flex flex-col items-center flex-shrink-0">
               <span>{formatNumber(timeLeft.hours)}</span>
-              <span className="text-sm font-normal">horas</span>
+              <span className="text-xs md:text-sm font-normal">horas</span>
             </div>
-            <span>:</span>
-            <div className="flex flex-col items-center">
+            <span className="flex-shrink-0">:</span>
+            <div className="flex flex-col items-center flex-shrink-0">
               <span>{formatNumber(timeLeft.minutes)}</span>
-              <span className="text-sm font-normal">min</span>
+              <span className="text-xs md:text-sm font-normal">min</span>
             </div>
-            <span>:</span>
-            <div className="flex flex-col items-center">
+            <span className="flex-shrink-0">:</span>
+            <div className="flex flex-col items-center flex-shrink-0">
               <span>{formatNumber(timeLeft.seconds)}</span>
-              <span className="text-sm font-normal">seg</span>
+              <span className="text-xs md:text-sm font-normal">seg</span>
             </div>
           </div>
         )}

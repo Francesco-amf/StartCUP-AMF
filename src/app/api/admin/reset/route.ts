@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       console.log('✅ RESET COMPLETO via RPC:', rpcResult)
       return NextResponse.json({
         success: true,
-        message: 'Sistema resetado com sucesso! Todas as avaliações, submissões, BOSS battles, achievements, power-ups e penalidades foram removidas. O evento voltou para o modo de preparação.',
+        message: 'Sistema resetado com sucesso! Todas as avaliações, submissões, power-ups, penalidades e dados de evento foram removidos. O evento voltou para o modo de preparação (Fase 0).',
         details: rpcResult
       })
     }
@@ -96,7 +96,21 @@ export async function POST(request: Request) {
       totalDeleted += submCount
     }
 
+    // 2.5. Deletar power_ups
+    console.log('🔄 Deletando power_ups...')
+    const { error: powerupError, count: powerupCount } = await supabaseAdmin
+      .from('power_ups')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (!powerupError && powerupCount) {
+      console.log('✅ Power-ups deletados:', powerupCount)
+      results.power_ups_deleted = powerupCount
+      totalDeleted += powerupCount
+    }
+
     // 3. Resetar event_config (se existir)
+    const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
     const { error: eventError } = await supabaseAdmin
       .from('event_config')
       .update({
@@ -112,7 +126,7 @@ export async function POST(request: Request) {
         event_end_time: null,
         updated_at: new Date().toISOString()
       })
-      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .eq('id', eventConfigId)
 
     if (!eventError) {
       console.log('✅ Event config resetado')
@@ -123,7 +137,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Sistema resetado com sucesso! ${totalDeleted} registros foram removidos. O evento voltou para o modo de preparação.`,
+      message: `Sistema resetado com sucesso! ${totalDeleted} registros foram removidos. Avaliações, submissões, power-ups e penalidades foram deletadas. O evento voltou para o modo de preparação (Fase 0).`,
       details: results
     })
 

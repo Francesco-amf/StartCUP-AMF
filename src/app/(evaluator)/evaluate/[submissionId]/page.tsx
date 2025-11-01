@@ -62,19 +62,19 @@ export default async function EvaluateSubmissionPage({
 
   if (!submission) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <Card className="p-6 max-w-2xl mx-auto">
-          <h2 className="text-xl font-bold text-red-600 mb-4">Entrega não encontrada</h2>
-          <p className="text-gray-700 mb-4">
+      <div className="min-h-screen gradient-startcup p-6 flex items-center justify-center">
+        <Card className="p-6 max-w-2xl mx-auto bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF3D00]/40">
+          <h2 className="text-xl font-bold text-[#FF3D00] mb-4">Entrega não encontrada</h2>
+          <p className="text-[#00E5FF] mb-4">
             Não foi possível encontrar a entrega com ID: <strong>{submissionId}</strong>
           </p>
           {submissionError && (
-            <div className="mb-4 p-3 bg-gray-100 rounded text-xs font-mono">
+            <div className="mb-4 p-3 bg-[#FF3D00]/20 rounded text-xs font-mono text-[#FF6B47] border border-[#FF3D00]/40">
               Error: {submissionError.message}
             </div>
           )}
           <Link href="/evaluate">
-            <Button>Voltar para Dashboard</Button>
+            <Button className="bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-semibold">Voltar para Dashboard</Button>
           </Link>
         </Card>
       </div>
@@ -96,7 +96,7 @@ export default async function EvaluateSubmissionPage({
   console.log('✅ Using evaluation:', existingEvaluation)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-startcup">
       <Header
         title="Avaliar Entrega"
         backHref="/evaluate"
@@ -107,30 +107,30 @@ export default async function EvaluateSubmissionPage({
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Informações da Entrega */}
           <div className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">📋 Informações</h2>
+            <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+              <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📋 Informações</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500">Equipe</p>
-                  <p className="font-bold text-lg">{submission.team?.name}</p>
-                  <p className="text-gray-600">{submission.team?.course}</p>
-                  <p className="text-sm text-gray-500 mt-1">{submission.team?.members}</p>
+                  <p className="text-sm text-[#00E5FF]/70">Equipe</p>
+                  <p className="font-bold text-lg text-white">{submission.team?.name}</p>
+                  <p className="text-[#00E5FF]">{submission.team?.course}</p>
+                  <p className="text-sm text-[#00E5FF]/70 mt-1">{submission.team?.members}</p>
                 </div>
 
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-500">Quest</p>
-                  <p className="font-bold">{submission.quest?.name}</p>
-                  <p className="text-gray-600 text-sm mt-1">{submission.quest?.description}</p>
+                <div className="pt-3 border-t border-[#00E5FF]/20">
+                  <p className="text-sm text-[#00E5FF]/70">Quest</p>
+                  <p className="font-bold text-white">{submission.quest?.name}</p>
+                  <p className="text-[#00E5FF] text-sm mt-1">{submission.quest?.description}</p>
                 </div>
 
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-500">Pontuação Máxima</p>
-                  <p className="font-bold text-2xl text-purple-600">{submission.quest?.max_points} pontos</p>
+                <div className="pt-3 border-t border-[#00E5FF]/20">
+                  <p className="text-sm text-[#00E5FF]/70">Pontuação Máxima</p>
+                  <p className="font-bold text-2xl text-[#00E5FF]">{submission.quest?.max_points} pontos</p>
                 </div>
 
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-500">Data de Envio</p>
-                  <p className="font-medium">{new Date(submission.submitted_at).toLocaleString('pt-BR')}</p>
+                <div className="pt-3 border-t border-[#00E5FF]/20">
+                  <p className="text-sm text-[#00E5FF]/70">Data de Envio</p>
+                  <p className="font-medium text-white">{new Date(submission.submitted_at).toLocaleString('pt-BR')}</p>
                 </div>
               </div>
             </Card>
@@ -138,25 +138,25 @@ export default async function EvaluateSubmissionPage({
             {/* Formulário de Avaliação */}
             {existingEvaluation ? (
               <div className="space-y-4">
-                <Card className="p-6 bg-green-50 border-green-200">
-                  <h2 className="text-2xl font-bold mb-4 text-green-700">✅ Já Avaliado</h2>
+                <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
+                  <h2 className="text-2xl font-bold mb-4 text-[#00E676]">✅ Já Avaliado</h2>
                   <div className="space-y-2">
-                    <p className="text-green-800">
+                    <p className="text-[#00E676]">
                       <strong>Pontuação:</strong> {existingEvaluation.points} / {submission.quest?.max_points}
                     </p>
-                    <p className="text-green-800">
+                    <p className="text-[#00E676]">
                       <strong>Comentário:</strong> {existingEvaluation.comments || 'Nenhum comentário'}
                     </p>
-                    <p className="text-sm text-green-600 mt-4">
+                    <p className="text-sm text-[#00E676]/70 mt-4">
                       Avaliado em: {new Date(existingEvaluation.created_at).toLocaleString('pt-BR')}
                     </p>
                   </div>
                 </Card>
 
                 {/* Permitir reavaliação */}
-                <Card className="p-6 border-orange-200 bg-orange-50">
-                  <h3 className="text-lg font-bold mb-2 text-orange-800">🔄 Reavaliar</h3>
-                  <p className="text-sm text-orange-700 mb-4">
+                <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
+                  <h3 className="text-lg font-bold mb-2 text-[#FF9800]">🔄 Reavaliar</h3>
+                  <p className="text-sm text-[#FF9800] mb-4">
                     Você pode revisar e atualizar sua avaliação abaixo:
                   </p>
                   <form action="/api/evaluate" method="POST" className="space-y-4">
@@ -165,7 +165,7 @@ export default async function EvaluateSubmissionPage({
                     <input type="hidden" name="is_update" value="true" />
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
                         Pontuação Base (0 - {submission.quest?.max_points})
                       </label>
                       <input
@@ -175,12 +175,12 @@ export default async function EvaluateSubmissionPage({
                         max={submission.quest?.max_points}
                         defaultValue={existingEvaluation.base_points || 0}
                         required
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-600 focus:outline-none"
+                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
                         Pontos Bônus (0 - {submission.quest?.max_points})
                       </label>
                       <input
@@ -189,12 +189,12 @@ export default async function EvaluateSubmissionPage({
                         min="0"
                         max={submission.quest?.max_points}
                         defaultValue={existingEvaluation.bonus_points || 0}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-600 focus:outline-none"
+                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
                         Multiplicador (1.0x - 2.0x)
                       </label>
                       <input
@@ -204,12 +204,12 @@ export default async function EvaluateSubmissionPage({
                         max="2"
                         step="0.1"
                         defaultValue={existingEvaluation.multiplier || 1.0}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-600 focus:outline-none"
+                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
                         Comentários (opcional)
                       </label>
                       <textarea
@@ -217,25 +217,25 @@ export default async function EvaluateSubmissionPage({
                         rows={4}
                         defaultValue={existingEvaluation.comments || ''}
                         placeholder="Feedback para a equipe..."
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-600 focus:outline-none"
+                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
                       />
                     </div>
 
-                    <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700">
+                    <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#FF8800] text-[#0A1E47] font-semibold">
                       Atualizar Avaliação
                     </Button>
                   </form>
                 </Card>
               </div>
             ) : (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4">⭐ Avaliar</h2>
+              <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+                <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">⭐ Avaliar</h2>
                 <form action="/api/evaluate" method="POST" className="space-y-4">
                   <input type="hidden" name="submission_id" value={submissionId} />
                   <input type="hidden" name="evaluator_id" value={evaluator?.id} />
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
                       Pontuação Base (0 - {submission.quest?.max_points})
                     </label>
                     <input
@@ -245,15 +245,15 @@ export default async function EvaluateSubmissionPage({
                       max={submission.quest?.max_points}
                       defaultValue="0"
                       required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[#00E5FF]/70 mt-1">
                       Pontuação base de acordo com o cumprimento da quest
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
                       Pontos Bônus (0 - {submission.quest?.max_points})
                     </label>
                     <input
@@ -262,15 +262,15 @@ export default async function EvaluateSubmissionPage({
                       min="0"
                       max={submission.quest?.max_points}
                       defaultValue="0"
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[#00E5FF]/70 mt-1">
                       Pontos extras por criatividade, inovação, qualidade excepcional
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
                       Multiplicador (1.0x - 2.0x)
                     </label>
                     <input
@@ -280,32 +280,32 @@ export default async function EvaluateSubmissionPage({
                       max="2"
                       step="0.1"
                       defaultValue="1.0"
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[#00E5FF]/70 mt-1">
                       Multiplicador de dificuldade ou destaque
                     </p>
                   </div>
 
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900">
+                  <div className="p-3 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg">
+                    <p className="text-sm font-medium text-[#00E5FF]">
                       💡 Fórmula: (Pontuação Base + Bônus) × Multiplicador
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
                       Comentários (opcional)
                     </label>
                     <textarea
                       name="comments"
                       rows={4}
                       placeholder="Feedback para a equipe..."
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                  <Button type="submit" className="w-full bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-semibold">
                     Enviar Avaliação
                   </Button>
                 </form>
@@ -315,11 +315,11 @@ export default async function EvaluateSubmissionPage({
 
           {/* Visualização do PDF */}
           <div>
-            <Card className="p-6 h-full">
-              <h2 className="text-2xl font-bold mb-4">📄 Documento</h2>
+            <Card className="p-6 h-full bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+              <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📄 Documento</h2>
               {submission.file_url ? (
                 <>
-                  <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '800px' }}>
+                  <div className="bg-[#0A1E47]/40 rounded-lg overflow-hidden border-2 border-[#00E5FF]/20" style={{ height: '800px' }}>
                     <iframe
                       src={submission.file_url}
                       className="w-full h-full"
@@ -333,17 +333,17 @@ export default async function EvaluateSubmissionPage({
                       rel="noopener noreferrer"
                       className="inline-block w-full"
                     >
-                      <Button variant="outline" className="w-full">
+                      <Button className="w-full bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold">
                         Abrir em Nova Aba
                       </Button>
                     </a>
                   </div>
-                  <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono break-all">
+                  <div className="mt-2 p-2 bg-[#0A1E47]/40 rounded text-xs font-mono break-all border border-[#00E5FF]/20 text-[#00E5FF]/70">
                     <strong>URL:</strong> {submission.file_url}
                   </div>
                 </>
               ) : (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg">
+                <div className="bg-[#FF9800]/20 border-2 border-[#FF9800]/40 text-[#FF9800] p-4 rounded-lg">
                   <p className="font-semibold">Arquivo não disponível</p>
                   <p className="text-sm mt-2">
                     {submission.content ? (

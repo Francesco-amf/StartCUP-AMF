@@ -60,10 +60,11 @@ export function useRealtimePhase(refreshInterval = 5000) {
   useEffect(() => {
     // Função para buscar fase
     const fetchPhase = async () => {
+      const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
       const { data, error } = await supabase
         .from('event_config')
         .select('*')
-        .eq('id', '00000000-0000-0000-0000-000000000001')
+        .eq('id', eventConfigId)
         .single()
 
       if (!error && data) {
@@ -106,4 +107,40 @@ export function useRealtimePhase(refreshInterval = 5000) {
   }, [refreshInterval])
 
   return { phase, loading }
+}
+
+// Hook para status dos avaliadores com auto-refresh
+export function useRealtimeEvaluators(refreshInterval = 5000) {
+  const [evaluators, setEvaluators] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Função para buscar avaliadores
+    const fetchEvaluators = async () => {
+      const { data, error } = await supabase
+        .from('evaluators')
+        .select('id, name, email, specialty, is_online')
+        .order('is_online', { ascending: false })
+        .order('name', { ascending: true })
+
+      if (!error && data) {
+        setEvaluators(data)
+      }
+      setLoading(false)
+    }
+
+    // Buscar imediatamente
+    fetchEvaluators()
+
+    // Configurar intervalo de atualização
+    const interval = setInterval(fetchEvaluators, refreshInterval)
+
+    // Cleanup
+    return () => {
+      clearInterval(interval)
+    }
+  }, [refreshInterval])
+
+  return { evaluators, loading }
 }

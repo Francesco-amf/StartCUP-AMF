@@ -35,13 +35,13 @@ export default async function EvaluatorDashboard() {
   // Se o avaliador não existe, mostrar erro
   if (!evaluator) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen gradient-startcup flex items-center justify-center">
         <Card className="p-6 max-w-md">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Erro de Acesso</h2>
           <p className="text-gray-700 mb-4">
             Não foi encontrado um registro de avaliador para o email: <strong>{user.email}</strong>
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[#00E5FF]/70">
             Entre em contato com o administrador para cadastrar seu email como avaliador.
           </p>
           <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono">
@@ -112,7 +112,7 @@ export default async function EvaluatorDashboard() {
   console.log('✅ My evaluations:', myEvaluations)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-startcup">
       <Header
         title={`Bem-vindo, ${evaluator?.name || 'Avaliador'}! ⭐`}
         subtitle={evaluator?.specialty || 'Avaliador Geral'}
@@ -123,40 +123,40 @@ export default async function EvaluatorDashboard() {
         <div className="grid gap-6">
           {/* Estatísticas */}
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold">Total Submissions</h3>
+                <h3 className="text-lg font-semibold text-[#00E5FF]">Total Submissions</h3>
                 <span className="text-2xl">📦</span>
               </div>
-              <p className="text-3xl font-bold text-purple-600">
+              <p className="text-3xl font-bold text-[#00E5FF]">
                 {submissions?.length || 0}
               </p>
             </Card>
 
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold">Já Avaliadas</h3>
+                <h3 className="text-lg font-semibold text-[#00E676]">Já Avaliadas</h3>
                 <span className="text-2xl">✅</span>
               </div>
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-3xl font-bold text-[#00E676]">
                 {evaluatedIds.length}
               </p>
             </Card>
 
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold">Pendentes</h3>
+                <h3 className="text-lg font-semibold text-[#FF9800]">Pendentes</h3>
                 <span className="text-2xl">⏳</span>
               </div>
-              <p className="text-3xl font-bold text-orange-600">
+              <p className="text-3xl font-bold text-[#FF9800]">
                 {pendingForMe.length}
               </p>
             </Card>
           </div>
 
           {/* Lista de Entregas */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">📋 Entregas para Avaliar</h2>
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+            <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📋 Entregas para Avaliar</h2>
             {pendingForMe && pendingForMe.length > 0 ? (
               <div className="space-y-4">
                 {pendingForMe.map((submission: any) => {
@@ -170,18 +170,18 @@ export default async function EvaluatorDashboard() {
                   return (
                     <div
                       key={submission.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-4 bg-[#0A1E47]/40 border border-[#00E5FF]/30 rounded-lg hover:bg-[#0A1E47]/60 transition-colors"
                     >
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg">{submission.team?.name}</h3>
-                        <p className="text-gray-600">{submission.quest?.name}</p>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <h3 className="font-bold text-lg text-white">{submission.team?.name}</h3>
+                        <p className="text-[#00E5FF]">{submission.quest?.name}</p>
+                        <p className="text-sm text-[#00E5FF]/70 mt-1">
                           {submission.team?.course} • Max: {submission.quest?.max_points} pontos
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-[#00E5FF]/60 mt-1">
                           Enviado em: {new Date(submission.submitted_at).toLocaleString('pt-BR')}
                         </p>
-                        <p className="text-xs text-gray-500 font-mono mt-1">
+                        <p className="text-xs text-[#00E5FF]/50 font-mono mt-1">
                           ID: {submission.id}
                         </p>
                       </div>
@@ -193,17 +193,17 @@ export default async function EvaluatorDashboard() {
                             rel="noopener noreferrer"
                             className="inline-block"
                           >
-                            <Button variant="outline" className="w-full">
+                            <Button className="bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold w-full">
                               📄 Ver PDF
                             </Button>
                           </a>
                         ) : (
-                          <Button variant="outline" className="w-full" disabled>
+                          <Button className="bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF]/50 font-semibold w-full" disabled>
                             📄 Sem arquivo
                           </Button>
                         )}
                         <Link href={`/evaluate/${submission.id}`}>
-                          <Button className="bg-purple-600 hover:bg-purple-700 w-full">
+                          <Button className="bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-semibold w-full">
                             ⭐ Avaliar
                           </Button>
                         </Link>
@@ -213,7 +213,7 @@ export default async function EvaluatorDashboard() {
                 })}
               </div>
             ) : (
-              <p className="text-gray-600">
+              <p className="text-[#00E5FF]">
                 {submissions?.length === 0
                   ? "Nenhuma entrega cadastrada no momento."
                   : "Você já avaliou todas as entregas disponíveis! ✨"
@@ -223,27 +223,27 @@ export default async function EvaluatorDashboard() {
           </Card>
 
           {/* Minhas Avaliações */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">📝 Minhas Avaliações</h2>
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
+            <h2 className="text-2xl font-bold mb-4 text-[#00E676]">📝 Minhas Avaliações</h2>
             {myEvaluations && myEvaluations.length > 0 ? (
               <div className="space-y-3">
                 {myEvaluations.map((evaluation: any) => (
                   <div
                     key={evaluation.id}
-                    className="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                    className="p-4 bg-[#0A1E47]/40 border border-[#00E676]/30 rounded-lg hover:bg-[#0A1E47]/60 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg text-green-900">
+                        <h3 className="font-bold text-lg text-white">
                           {evaluation.submission?.team?.name}
                         </h3>
-                        <p className="text-green-700 text-sm">
+                        <p className="text-[#00E676] text-sm">
                           {evaluation.submission?.quest?.name}
                         </p>
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-[#00E676]/70 mt-1">
                           {evaluation.submission?.team?.course}
                         </p>
-                        <div className="flex gap-2 mt-2 text-xs text-green-800">
+                        <div className="flex gap-2 mt-2 text-xs text-[#00E676]">
                           <span className="font-medium">
                             📊 {evaluation.points} pontos
                           </span>
@@ -254,7 +254,7 @@ export default async function EvaluatorDashboard() {
                         </div>
                       </div>
                       <Link href={`/evaluate/${evaluation.submission_id}`}>
-                        <Button variant="outline" size="sm" className="ml-4">
+                        <Button className="bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E676]/60 text-[#00E676] font-semibold ml-4 whitespace-nowrap">
                           ✏️ Editar
                         </Button>
                       </Link>
@@ -263,16 +263,16 @@ export default async function EvaluatorDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600">
+              <p className="text-[#00E5FF]">
                 Você ainda não fez nenhuma avaliação.
               </p>
             )}
           </Card>
 
           {/* Informações */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">ℹ️ Informações</h2>
-            <div className="space-y-2 text-gray-700">
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+            <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">ℹ️ Informações</h2>
+            <div className="space-y-2 text-[#00E5FF]">
               <p>• Você pode editar suas avaliações a qualquer momento</p>
               <p>• Cada equipe deve ser avaliada em todos os critérios</p>
               <p>• Suas avaliações serão anônimas para as equipes</p>
@@ -283,3 +283,4 @@ export default async function EvaluatorDashboard() {
     </div>
   )
 }
+

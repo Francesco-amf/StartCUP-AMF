@@ -15,16 +15,23 @@ export function usePenalties() {
   useEffect(() => {
     const fetchPenalties = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('penalties')
           .select('team_id, points_deduction')
+
+        if (error) {
+          console.error('Erro ao buscar penalidades:', error)
+          setPenalties(new Map())
+          setLoading(false)
+          return
+        }
 
         const penaltyMap = new Map<string, number>()
 
         if (data) {
           data.forEach((penalty: any) => {
             const current = penaltyMap.get(penalty.team_id) || 0
-            penaltyMap.set(penalty.team_id, current + penalty.points_deduction)
+            penaltyMap.set(penalty.team_id, current + (penalty.points_deduction || 0))
           })
         }
 

@@ -9,9 +9,9 @@ function getPhaseInfo(phase: number): { name: string; duration_minutes: number }
     { name: 'Preparação', duration_minutes: 0 },
     { name: 'Fase 1: Descoberta', duration_minutes: 150 }, // 2h30min
     { name: 'Fase 2: Criação', duration_minutes: 210 },    // 3h30min
-    { name: 'Fase 3: Estratégia', duration_minutes: 90 },  // 1h30min
+    { name: 'Fase 3: Estratégia', duration_minutes: 150 }, // 2h30min (CORRIGIDO: era 90)
     { name: 'Fase 4: Refinamento', duration_minutes: 120 }, // 2h
-    { name: 'Fase 5: Pitch Final', duration_minutes: 150 }  // 2h30min
+    { name: 'Fase 5: Pitch Final', duration_minutes: 90 }  // 1h30min (CORRIGIDO: era 150)
   ]
   return phases[phase] || { name: 'Fase Desconhecida', duration_minutes: 0 }
 }

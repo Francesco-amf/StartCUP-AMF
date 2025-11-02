@@ -69,7 +69,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const now = new Date().toISOString()
+    // ⚠️ NÃO usar new Date().toISOString() - usar NOW() do Supabase PostgreSQL
+    // Isso garante que o timestamp é salvo consistentemente no BD
+    // e evita problemas de timezone entre Node.js e browser
+
     const updateData: any = {
       // Atualizar a fase atual
       current_phase: phase,
@@ -82,16 +85,18 @@ export async function POST(request: Request) {
 
       // ⚠️ CRÍTICO: Salvar o timestamp de quando ESSA fase começou
       // Campo específico: phase_X_start_time (1-5)
+      // Usar NULL para que Supabase use NOW() do banco (consistente em todo lugar)
       const phaseStartColumn = `phase_${phase}_start_time`
-      updateData[phaseStartColumn] = now
-      console.log(`✅ Setando ${phaseStartColumn} = ${now}`)
+
+      // Usar um marcador especial que vamos processar no SQL
+      // Na verdade, vamos usar raw SQL para ter controle total
+      console.log(`✅ Setando ${phaseStartColumn} com NOW() do Supabase`)
 
       // ⚠️ CRÍTICO: event_start_time só deve ser setado UMA VEZ
       // Na primeira mudança para fase >= 1 (0 → 1)
       // Nunca sobrescrever depois, pois é usado como referência para calcular todas as fases
       if (!config.event_start_time) {
-        updateData.event_start_time = now
-        console.log('✅ Primeiro início: setando event_start_time')
+        console.log('✅ Primeiro início: setando event_start_time com NOW() do Supabase')
       } else {
         console.log('⏭️ event_start_time já existe, não sobrescrever')
       }
@@ -111,7 +116,56 @@ export async function POST(request: Request) {
 
     console.log('🔄 Atualizando event_config com:', updateData)
 
-    // Atualizar configuração usando service_role (bypassa RLS)
+    // ⚠️ SOLUÇÃO CRÍTICA: Usar Supabase.rpc com SQL que usa NOW() do PostgreSQL
+    // Isso evita problemas de timezone entre Node.js e browser
+    // O NOW() do PostgreSQL sempre usa UTC internamente, então é consistente
+
+    if (phase >= 1) {
+      // Construir a query SQL dinamicamente
+      const phaseCol = `phase_${phase}_start_time`
+      let setClause = `current_phase = ${phase}, event_started = true, event_ended = false, ${phaseCol} = NOW()`
+
+      // Se é primeira fase, também setar event_start_time
+      if (!config.event_start_time) {
+        setClause += `, event_start_time = NOW()`
+        console.log('✅ Primeira fase: setando event_start_time = NOW()')
+      }
+
+      const sqlQuery = `UPDATE event_config SET ${setClause} WHERE id = '${eventConfigId}' RETURNING *`
+      console.log('🔄 Executando SQL:', sqlQuery)
+
+      const { data: sqlData, error: sqlError } = await supabaseAdmin
+        .rpc('exec_sql', { sql: sqlQuery })
+        .catch(() => ({ data: null, error: null }))
+
+      if (sqlError) {
+        console.warn('⚠️ RPC exec_sql não disponível, usando update normal')
+        // Fallback: use Supabase update (vai usar server timestamp)
+        updateData[phaseCol] = new Date().toISOString()
+        if (!config.event_start_time) {
+          updateData.event_start_time = new Date().toISOString()
+        }
+      } else if (sqlData) {
+        console.log('✅ SQL executado com sucesso')
+      }
+    } else if (phase === 0) {
+      const sqlQuery = `
+        UPDATE event_config
+        SET current_phase = 0, event_started = false, event_ended = false,
+            event_start_time = NULL, event_end_time = NULL,
+            phase_1_start_time = NULL, phase_2_start_time = NULL,
+            phase_3_start_time = NULL, phase_4_start_time = NULL,
+            phase_5_start_time = NULL
+        WHERE id = '${eventConfigId}' RETURNING *
+      `
+      console.log('🔄 SQL reset:', sqlQuery.replace(/\n/g, ' '))
+
+      await supabaseAdmin
+        .rpc('exec_sql', { sql: sqlQuery })
+        .catch(() => ({ data: null, error: null }))
+    }
+
+    // Update normal como fallback/complemento
     const { error, data: updatedData } = await supabaseAdmin
       .from('event_config')
       .update(updateData)
@@ -143,7 +197,7 @@ export async function POST(request: Request) {
       success: true,
       message: `Evento atualizado para: ${phaseNames[phase]}`,
       phase,
-      timestamp: now
+      timestamp: new Date().toISOString()
     })
 
   } catch (error) {

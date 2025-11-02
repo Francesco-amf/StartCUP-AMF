@@ -78,11 +78,22 @@ export function useRealtimePhase(refreshInterval = 5000) {
           // ✅ Usar phase_X_start_time do BD (salvo quando admin ativa a fase)
           // Coluna dinâmica: phase_1_start_time, phase_2_start_time, etc.
           const phaseStartColumn = `phase_${data.current_phase}_start_time`
-          phaseStartTime = data[phaseStartColumn]
+          let rawTimestamp = data[phaseStartColumn]
 
-          console.log(`📍 Phase ${data.current_phase}:`)
-          console.log(`   ${phaseStartColumn}: ${phaseStartTime}`)
-          console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
+          // ⚠️ TIMEZONE FIX: Se há offset de -3h (Brasília UTC-3)
+          // O timestamp foi salvo com offset. Precisamos compensar.
+          // Brasília é UTC-3, então adicionar 3 horas (10800000 ms)
+          if (rawTimestamp) {
+            const date = new Date(rawTimestamp)
+            const offsetMs = 3 * 60 * 60 * 1000 // 3 hours
+            const adjustedMs = date.getTime() + offsetMs
+            phaseStartTime = new Date(adjustedMs).toISOString()
+
+            console.log(`📍 Phase ${data.current_phase}:`)
+            console.log(`   ${phaseStartColumn} (raw): ${rawTimestamp}`)
+            console.log(`   ${phaseStartColumn} (adjusted): ${phaseStartTime}`)
+            console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
+          }
         }
 
         // Buscar quest ativa para a fase atual

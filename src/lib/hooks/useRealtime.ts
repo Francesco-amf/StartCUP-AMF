@@ -77,47 +77,62 @@ export function useRealtimePhase(refreshInterval = 5000) {
         let phaseStartTime = null
 
         if (data.current_phase > 0 && data.event_started) {
-          // Preferir phase_started_at se existir
+          // Preferir phase_started_at se existir no banco
           if (data.phase_started_at) {
             phaseStartTime = data.phase_started_at
-            console.log(`📍 Phase ${data.current_phase} using phase_started_at: ${phaseStartTime}`)
+            console.log(`📍 Phase ${data.current_phase} using phase_started_at from DB: ${phaseStartTime}`)
           } else if (data.event_start_time) {
-            // ⚠️ CRÍTICO: O banco armazena timestamps SEM timezone
-            // Eles foram salvos em horário local (Brasília/UTC-3) MAS sem o Z
-            // Quando fazemos new Date("2025-11-02T05:34:25"), JS interpreta como LOCAL
-            // e diferente de quando foi salvo!
-            //
-            // SOLUÇÃO: Usar new Date() para GET now() em local time também
-            // Depois calcular difference, que fica correto mesmo com timezone diferente
+            // NOVO APPROACH: Calcular fase CORRETA com base no tempo decorrido
+            // Isso funciona mesmo que o evento tenha rodado muitas horas
 
+            const eventStartTime = new Date(data.event_start_time).getTime()
+            const now = new Date().getTime()
+            const elapsedMs = now - eventStartTime
+            const elapsedMins = elapsedMs / (60 * 1000)
+
+            // Calcular qual DEVERIA ser a fase atual baseado no tempo decorrido
+            // Phase 1: 0-150 min
+            // Phase 2: 150-360 min
+            // Phase 3: 360-450 min
+            // etc.
+            let correctPhase = 1
+            let phaseStartMinutes = 0 // When current phase started (in minutes from event start)
+            let cumulativeMinutes = 0
+
+            for (let i = 1; i <= 5; i++) {
+              const phaseDuration = getPhaseInfo(i).duration_minutes
+              if (elapsedMins < cumulativeMinutes + phaseDuration) {
+                // Encontrou a fase correta
+                correctPhase = i
+                phaseStartMinutes = cumulativeMinutes
+                break
+              }
+              cumulativeMinutes += phaseDuration
+            }
+
+            // ⚠️ Se a fase calculada NÃO bate com data.current_phase
+            // pode significar que há desincronização ou evento rodou muito
+            if (correctPhase !== data.current_phase) {
+              console.warn(`⚠️ DESINCRONIZAÇÃO: DB diz fase ${data.current_phase} mas tempo decorrido indica fase ${correctPhase}`)
+              console.warn(`   Elapsed: ${elapsedMins.toFixed(1)} min, usando phase ${data.current_phase} do DB`)
+            }
+
+            // Usar a fase do DB, mas calcular quando ela começou
             const prevPhaseDuration = Array.from({ length: data.current_phase })
               .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
 
-            // Parse como LOCAL time (sem Z)
-            // Isso faz JS interpretar no timezone local do usuário
-            const eventStartTime = new Date(data.event_start_time).getTime()
-            const now = new Date().getTime()
-
-            // Calcular quando a fase atual deveria ter começado
             const prevPhaseDurationMs = prevPhaseDuration * 60 * 1000
             const phaseStartMs = eventStartTime + prevPhaseDurationMs
 
-            // IMPORTANTE: Converter para ISO string (vai incluir Z porque é UTC)
-            // Mas internamente o cálculo foi feito com local time, então fica correto
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
-            const actualElapsedMs = now - eventStartTime
-            const actualElapsedMins = actualElapsedMs / (60 * 1000)
-
-            console.log(`🔍 Phase ${data.current_phase} Debug:`)
-            console.log(`   DB event_start_time (local): ${data.event_start_time}`)
-            console.log(`   Parsed as LOCAL timestamp (ms): ${eventStartTime}`)
-            console.log(`   Current time (ms): ${now}`)
-            console.log(`   Actual elapsed since event: ${actualElapsedMins.toFixed(1)} min`)
-            console.log(`   Previous phases total: ${prevPhaseDuration} min`)
-            console.log(`   PHASE START should be at: ${new Date(phaseStartMs).toLocaleString()}`)
-            console.log(`   Phase should start ISO: ${phaseStartTime}`)
-            console.log(`   Current phase duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
+            console.log(`🔍 Phase ${data.current_phase} Calculation:`)
+            console.log(`   Event start: ${data.event_start_time}`)
+            console.log(`   Elapsed: ${elapsedMins.toFixed(1)} min (${(elapsedMins / 60).toFixed(2)}h)`)
+            console.log(`   Calculated phase from elapsed: ${correctPhase} (current DB: ${data.current_phase})`)
+            console.log(`   Phase ${data.current_phase} started at: ${phaseStartTime}`)
+            console.log(`   Phase ${data.current_phase} duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
+            console.log(`   Time into current phase: ${(elapsedMins - prevPhaseDuration).toFixed(1)} min`)
           }
         }
 

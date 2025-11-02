@@ -232,7 +232,11 @@ export default function CurrentQuestTimer({
 
         console.log(`📊 Resultado da query - Total de quests: ${data?.length || 0}`, data)
 
-        if (!error && data && data.length > 0) {
+        // Fallback data para comparação
+        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[phase]?.length || 0
+        const hasInsufficientQuests = data && data.length < expectedFallbackQuestCount
+
+        if (!error && data && data.length > 0 && !hasInsufficientQuests) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a, b) => a.order_index - b.order_index)
 
@@ -245,8 +249,12 @@ export default function CurrentQuestTimer({
           console.log(`✅ Quests carregadas para Fase ${phase}:`, normalizedQuests.map(q => `[${q.order_index}] ${q.name}`))
           setQuests(normalizedQuests)
         } else {
-          // Usar fallback se não houver quests no banco para essa fase
-          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
+          // Usar fallback se não houver quests no banco para essa fase OU se houver menos quests do que esperado
+          if (hasInsufficientQuests) {
+            console.log(`⚠️ Fase ${phase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
+          } else {
+            console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
+          }
           const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
           // Normalizar fallback também para garantir consistência
           const normalizedFallback = fallbackQuests.map((q, idx) => ({

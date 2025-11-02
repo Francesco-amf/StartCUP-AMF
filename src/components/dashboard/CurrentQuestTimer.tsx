@@ -227,17 +227,35 @@ export default function CurrentQuestTimer({
         if (!error && data && data.length > 0) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a, b) => a.order_index - b.order_index)
-          console.log(`✅ Quests carregadas para Fase ${phase}:`, sortedData.map(q => `[${q.order_index}] ${q.name}`))
-          setQuests(sortedData)
+
+          // Remapear order_index para ser local da fase (1, 2, 3...)
+          const normalizedQuests = sortedData.map((q, idx) => ({
+            ...q,
+            order_index: idx + 1
+          }))
+
+          console.log(`✅ Quests carregadas para Fase ${phase}:`, normalizedQuests.map(q => `[${q.order_index}] ${q.name}`))
+          setQuests(normalizedQuests)
         } else {
           // Usar fallback se não houver quests no banco para essa fase
           console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase}, usando fallback`)
-          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+          const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
+          // Normalizar fallback também para garantir consistência
+          const normalizedFallback = fallbackQuests.map((q, idx) => ({
+            ...q,
+            order_index: idx + 1
+          }))
+          setQuests(normalizedFallback)
         }
       } catch (err) {
         console.error('Erro ao carregar quests:', err)
         // Usar fallback em caso de erro
-        setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+        const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
+        const normalizedFallback = fallbackQuests.map((q, idx) => ({
+          ...q,
+          order_index: idx + 1
+        }))
+        setQuests(normalizedFallback)
       } finally {
         setLoadingQuests(false)
       }

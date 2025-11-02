@@ -71,11 +71,27 @@ export function useRealtimePhase(refreshInterval = 5000) {
         // Mapear event_started/event_ended para event_status
         const phaseInfo = getPhaseInfo(data.current_phase)
 
-        // Usar event_start_time quando o evento está em andamento
-        // Isso fornece o timestamp de quando o evento (e a fase atual) começou
-        const phaseStartTime = data.current_phase > 0 && data.event_started
-          ? data.event_start_time  // Timestamp de quando o evento começou
-          : null
+        // Calcular quando a fase atual começou
+        // Se houver phase_started_at, usar isso
+        // Caso contrário, calcular baseado em quando o evento começou + duração das fases anteriores
+        let phaseStartTime = null
+
+        if (data.current_phase > 0 && data.event_started) {
+          // Preferir phase_started_at se existir
+          if (data.phase_started_at) {
+            phaseStartTime = data.phase_started_at
+          } else if (data.event_start_time) {
+            // Caso contrário, calcular subtraindo a duração das fases anteriores
+            const prevPhaseDuration = Array.from({ length: data.current_phase })
+              .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
+
+            const eventStartTime = new Date(data.event_start_time).getTime()
+            const phaseStartMs = eventStartTime + (prevPhaseDuration * 60 * 1000)
+            phaseStartTime = new Date(phaseStartMs).toISOString()
+
+            console.log(`📍 Phase ${data.current_phase} started: ${phaseStartTime} (${prevPhaseDuration}min de fases anteriores)`)
+          }
+        }
 
         // Buscar quest ativa para a fase atual
         let activeQuest = null

@@ -476,31 +476,6 @@ export default function CurrentQuestTimer({
           </div>
         </div>
       </Card>
-
-      {/* Próximas Quests */}
-      {currentQuestIndex < quests.length - 1 && (
-        <div className="bg-[#0A1E47]/40 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-4">
-          <p className="text-xs md:text-sm font-bold text-[#00E5FF] mb-3 uppercase tracking-wide">📋 PRÓXIMAS QUESTS</p>
-          <div className="space-y-2">
-            {quests.slice(currentQuestIndex + 1, currentQuestIndex + 3).map((quest, idx) => (
-              <div key={quest.id} className="flex items-start gap-3 p-3 bg-[#0A1E47]/60 border border-[#00E5FF]/20 rounded-lg hover:border-[#00E5FF]/40 transition-all">
-                <span className="text-base font-bold text-[#00E5FF] flex-shrink-0">
-                  {currentQuestIndex + 2 + idx}.
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-semibold text-white truncate">
-                    {quest.name}
-                  </p>
-                  <p className="text-xs text-[#00E5FF]/80 line-clamp-1">{quest.description}</p>
-                </div>
-                <span className="text-xs md:text-sm font-bold text-yellow-300 flex-shrink-0 whitespace-nowrap">
-                  {quest.max_points}pts
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

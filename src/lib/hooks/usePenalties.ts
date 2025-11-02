@@ -17,7 +17,7 @@ export function usePenalties() {
       try {
         const { data, error } = await supabase
           .from('penalties')
-          .select('team_id, points_deduction')
+          .select('team_id, points_deducted')
 
         if (error) {
           console.error('Erro ao buscar penalidades:', error)
@@ -31,7 +31,7 @@ export function usePenalties() {
         if (data) {
           data.forEach((penalty: any) => {
             const current = penaltyMap.get(penalty.team_id) || 0
-            penaltyMap.set(penalty.team_id, current + (penalty.points_deduction || 0))
+            penaltyMap.set(penalty.team_id, current + (penalty.points_deducted || 0))
           })
         }
 

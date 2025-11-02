@@ -82,24 +82,35 @@ export function useRealtimePhase(refreshInterval = 5000) {
             phaseStartTime = data.phase_started_at
             console.log(`📍 Phase ${data.current_phase} using phase_started_at: ${phaseStartTime}`)
           } else if (data.event_start_time) {
-            // Caso contrário, calcular subtraindo a duração das fases anteriores
+            // Calcular duração das fases anteriores
             const prevPhaseDuration = Array.from({ length: data.current_phase })
               .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
 
-            // Garantir que o timestamp tem Z (UTC)
+            // IMPORTANTE: Calcular usando NOW como reference point
+            // e subtrair o tempo decorrido desde o event começou
+            const now = new Date().getTime()
+
+            // Interpretar event_start_time como UTC (mesmo sem Z)
             const eventStartStr = data.event_start_time.endsWith('Z')
               ? data.event_start_time
-              : data.event_start_time + 'Z'
+              : `${data.event_start_time}Z`
             const eventStartTime = new Date(eventStartStr).getTime()
-            const phaseStartMs = eventStartTime + (prevPhaseDuration * 60 * 1000)
+            const elapsedSinceEventStart = now - eventStartTime
+
+            // Phase start = now - (elapsed from phase start until now)
+            // elapsed from phase start = total elapsed - duration of previous phases
+            const prevPhaseDurationMs = prevPhaseDuration * 60 * 1000
+            const elapsedFromPhaseStart = elapsedSinceEventStart - prevPhaseDurationMs
+            const phaseStartMs = now - elapsedFromPhaseStart
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
             console.log(`📍 Phase ${data.current_phase} calculation:`)
             console.log(`   - event_start_time (DB): ${data.event_start_time}`)
-            console.log(`   - event_start_time (UTC): ${eventStartStr}`)
+            console.log(`   - now: ${now}`)
             console.log(`   - eventStartTime (ms): ${eventStartTime}`)
-            console.log(`   - now (ms): ${new Date().getTime()}`)
-            console.log(`   - previous phases duration: ${prevPhaseDuration} minutes`)
+            console.log(`   - elapsedSinceEventStart (ms): ${elapsedSinceEventStart}`)
+            console.log(`   - prevPhaseDuration: ${prevPhaseDuration} minutes (${prevPhaseDurationMs}ms)`)
+            console.log(`   - elapsedFromPhaseStart (ms): ${elapsedFromPhaseStart}`)
             console.log(`   - calculated phase_start_time: ${phaseStartTime}`)
           }
         }

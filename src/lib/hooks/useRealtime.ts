@@ -95,9 +95,10 @@ export function useRealtimePhase(refreshInterval = 5000) {
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
             console.log(`📍 Phase ${data.current_phase} calculation:`)
-            console.log(`   - event_start_time: ${data.event_start_time}`)
-            console.log(`   - event_start_time (with Z): ${eventStartStr}`)
+            console.log(`   - event_start_time (DB): ${data.event_start_time}`)
+            console.log(`   - event_start_time (UTC): ${eventStartStr}`)
             console.log(`   - eventStartTime (ms): ${eventStartTime}`)
+            console.log(`   - now (ms): ${new Date().getTime()}`)
             console.log(`   - previous phases duration: ${prevPhaseDuration} minutes`)
             console.log(`   - calculated phase_start_time: ${phaseStartTime}`)
           }

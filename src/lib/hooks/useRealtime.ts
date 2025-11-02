@@ -82,50 +82,38 @@ export function useRealtimePhase(refreshInterval = 5000) {
             phaseStartTime = data.phase_started_at
             console.log(`📍 Phase ${data.current_phase} using phase_started_at: ${phaseStartTime}`)
           } else if (data.event_start_time) {
-            // Calcular duração das fases ANTERIORES (não incluindo a atual)
+            // ⚠️ NOVA ABORDAGEM: O database armazena timestamps SEM timezone marker
+            // Exemplo: "2025-11-02T05:22:47.336"
+            // Precisamos assumir que foi salvo em UTC e tratar como tal
+
             const prevPhaseDuration = Array.from({ length: data.current_phase })
               .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
 
-            // ⚠️ CRITICAL FIX: event_start_time stored WITHOUT timezone marker
-            // The timestamp is ambiguous - could be local or UTC
-            // Solution: Parse as local browser time (not UTC!)
-            // This way, if event started at "2025-11-02T05:22:47" in São Paulo time,
-            // we interpret it as that local time in the current browser's timezone
-            const eventStartStr = data.event_start_time
+            // Garantir que tem Z no final para parse como UTC
+            const eventStartStr = data.event_start_time.endsWith('Z')
+              ? data.event_start_time
+              : `${data.event_start_time}Z`
 
-            // Parse WITHOUT adding Z - treat as local time
-            // Remove any trailing Z if present
-            const cleanTimeStr = eventStartStr.endsWith('Z')
-              ? eventStartStr.slice(0, -1)
-              : eventStartStr
-
-            // Create date WITHOUT timezone conversion
-            // This treats it as local browser time
-            const eventStartTime = new Date(cleanTimeStr).getTime()
-            const now = new Date().getTime()
-
-            // Calculate phase start
+            const eventStartTime = new Date(eventStartStr).getTime()
             const prevPhaseDurationMs = prevPhaseDuration * 60 * 1000
             const phaseStartMs = eventStartTime + prevPhaseDurationMs
+
+            // IMPORTANTE: Converter para ISO string que será usado no componente
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
-            // Calculate actual elapsed to verify
+            const now = new Date().getTime()
             const actualElapsedMs = now - eventStartTime
             const actualElapsedMins = actualElapsedMs / (60 * 1000)
-            const actualElapsedHours = actualElapsedMins / 60
 
-            // Debug logging
-            console.log(`📍 Phase ${data.current_phase} Calculation (Fixed Timezone):`)
-            console.log(`   event_start_time (DB): ${data.event_start_time}`)
-            console.log(`   cleanTimeStr: ${cleanTimeStr}`)
-            console.log(`   eventStartTime (ms): ${eventStartTime}`)
-            console.log(`   now (ms): ${now}`)
-            console.log(`   actual elapsed: ${actualElapsedHours.toFixed(2)}h (${actualElapsedMins.toFixed(1)} min)`)
-            console.log(`   expected elapsed for phase ${data.current_phase}: ~${(prevPhaseDuration / 60).toFixed(2)}h (${prevPhaseDuration} min)`)
-            console.log(`   → Timer should show: ${(getPhaseInfo(data.current_phase).duration_minutes - (actualElapsedMins % (getPhaseInfo(data.current_phase).duration_minutes || 1))).toFixed(0)} min remaining`)
-            console.log(`   prevPhaseDuration: ${prevPhaseDuration} minutes`)
-            console.log(`   phaseStartMs: ${phaseStartMs}`)
-            console.log(`   calculated phase_start_time: ${phaseStartTime}`)
+            console.log(`🔍 Phase ${data.current_phase} Debug:`)
+            console.log(`   DB event_start_time: ${data.event_start_time}`)
+            console.log(`   With Z marker: ${eventStartStr}`)
+            console.log(`   Parsed as UTC timestamp (ms): ${eventStartTime}`)
+            console.log(`   Current time (ms): ${now}`)
+            console.log(`   Actual elapsed: ${actualElapsedMins.toFixed(1)} min`)
+            console.log(`   Previous phases total: ${prevPhaseDuration} min`)
+            console.log(`   Phase should start at: ${phaseStartTime}`)
+            console.log(`   Current phase duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
           }
         }
 

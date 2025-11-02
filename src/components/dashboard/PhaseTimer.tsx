@@ -28,13 +28,13 @@ export default function PhaseTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // ⚠️ CRITICAL FIX: phaseStartedAt is treated as LOCAL time, not UTC
-      // Remove Z if present, then parse as local browser time
-      const cleanTimestamp = phaseStartedAt.endsWith('Z')
-        ? phaseStartedAt.slice(0, -1)
-        : phaseStartedAt
+      // phaseStartedAt vem como ISO string com Z (UTC)
+      // Tratar como UTC para ser consistente
+      const ensureZFormat = phaseStartedAt.endsWith('Z')
+        ? phaseStartedAt
+        : `${phaseStartedAt}Z`
 
-      const startTime = new Date(cleanTimestamp).getTime()
+      const startTime = new Date(ensureZFormat).getTime()
       const endTime = startTime + durationMinutes * 60 * 1000
       const now = new Date().getTime()
       const difference = endTime - now

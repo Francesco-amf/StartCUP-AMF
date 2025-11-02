@@ -287,25 +287,23 @@ export default function CurrentQuestTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // ⚠️ CRITICAL FIX: phaseStartedAt is treated as LOCAL time, not UTC
-      // Remove Z if present, then parse as local browser time
-      const cleanTimestamp = phaseStartedAt.endsWith('Z')
-        ? phaseStartedAt.slice(0, -1)
-        : phaseStartedAt
+      // phaseStartedAt vem como ISO string com Z (UTC)
+      // Tratar como UTC para ser consistente com o servidor
+      const ensureZFormat = phaseStartedAt.endsWith('Z')
+        ? phaseStartedAt
+        : `${phaseStartedAt}Z`
 
-      const startTime = new Date(cleanTimestamp).getTime()
+      const startTime = new Date(ensureZFormat).getTime()
       const now = new Date().getTime()
       const elapsed = now - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
 
-      console.log(`⏱️ CurrentQuestTimer - Phase ${phase} (Fixed Timezone):`)
-      console.log(`   - phaseStartedAt (original): ${phaseStartedAt}`)
-      console.log(`   - cleanTimestamp: ${cleanTimestamp}`)
+      console.log(`⏱️ CurrentQuestTimer - Phase ${phase}:`)
+      console.log(`   - phaseStartedAt: ${phaseStartedAt}`)
       console.log(`   - startTime (ms): ${startTime}`)
       console.log(`   - now (ms): ${now}`)
       console.log(`   - elapsed: ${(elapsed / 1000 / 60).toFixed(1)} minutes`)
-      console.log(`   - totalDuration (ms): ${totalDuration}`)
-      console.log(`   - totalDuration (mins): ${phaseDurationMinutes}`)
+      console.log(`   - totalDuration: ${(totalDuration / 1000 / 60).toFixed(1)} minutes`)
 
       if (elapsed >= totalDuration) {
         setTimeLeft({
@@ -343,13 +341,13 @@ export default function CurrentQuestTimer({
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // Determine which quest is current based on time elapsed
-  // ⚠️ CRITICAL FIX: phaseStartedAt is treated as LOCAL time, not UTC
-  const cleanTimestampForQuestCalc = phaseStartedAt.endsWith('Z')
-    ? phaseStartedAt.slice(0, -1)
-    : phaseStartedAt
+  // phaseStartedAt é tratado como UTC (com Z)
+  const ensureZForQuestCalc = phaseStartedAt.endsWith('Z')
+    ? phaseStartedAt
+    : `${phaseStartedAt}Z`
   const elapsedSeconds = Math.floor(
     (new Date().getTime() -
-      new Date(cleanTimestampForQuestCalc).getTime()) / 1000
+      new Date(ensureZForQuestCalc).getTime()) / 1000
   )
   const timePerQuestSeconds = (phaseDurationMinutes / (questCount || 1)) * 60
 

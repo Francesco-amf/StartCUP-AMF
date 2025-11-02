@@ -80,6 +80,7 @@ export function useRealtimePhase(refreshInterval = 5000) {
           // Preferir phase_started_at se existir
           if (data.phase_started_at) {
             phaseStartTime = data.phase_started_at
+            console.log(`📍 Phase ${data.current_phase} using phase_started_at: ${phaseStartTime}`)
           } else if (data.event_start_time) {
             // Caso contrário, calcular subtraindo a duração das fases anteriores
             const prevPhaseDuration = Array.from({ length: data.current_phase })
@@ -89,7 +90,10 @@ export function useRealtimePhase(refreshInterval = 5000) {
             const phaseStartMs = eventStartTime + (prevPhaseDuration * 60 * 1000)
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
-            console.log(`📍 Phase ${data.current_phase} started: ${phaseStartTime} (${prevPhaseDuration}min de fases anteriores)`)
+            console.log(`📍 Phase ${data.current_phase} calculation:`)
+            console.log(`   - event_start_time: ${data.event_start_time}`)
+            console.log(`   - previous phases duration: ${prevPhaseDuration} minutes`)
+            console.log(`   - calculated phase_start_time: ${phaseStartTime}`)
           }
         }
 

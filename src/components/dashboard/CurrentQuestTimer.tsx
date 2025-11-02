@@ -293,6 +293,14 @@ export default function CurrentQuestTimer({
       const elapsed = now - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
 
+      console.log(`⏱️ CurrentQuestTimer - Phase ${phase}:`)
+      console.log(`   - phaseStartedAt: ${phaseStartedAt}`)
+      console.log(`   - startTime (ms): ${startTime}`)
+      console.log(`   - now (ms): ${now}`)
+      console.log(`   - elapsed (ms): ${elapsed}`)
+      console.log(`   - totalDuration (ms): ${totalDuration}`)
+      console.log(`   - totalDuration (mins): ${phaseDurationMinutes}`)
+
       if (elapsed >= totalDuration) {
         setTimeLeft({
           hours: 0,
@@ -308,6 +316,9 @@ export default function CurrentQuestTimer({
       const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60))
       const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000)
       const percentage = Math.round((timeRemaining / totalDuration) * 100)
+
+      console.log(`   - timeRemaining (ms): ${timeRemaining}`)
+      console.log(`   - timeRemaining: ${hours}h ${minutes}m ${seconds}s`)
 
       setTimeLeft({
         hours,

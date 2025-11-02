@@ -36,7 +36,7 @@ export default function LivePowerUpStatus() {
         const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
         const { data: eventConfig, error: configError } = await supabase
           .from('event_config')
-          .select('current_phase, event_status')
+          .select('current_phase, event_started, event_ended')
           .eq('id', eventConfigId)
           .single()
 
@@ -48,7 +48,8 @@ export default function LivePowerUpStatus() {
         }
 
         // Se evento não está em andamento, limpar power-ups
-        if (eventConfig.event_status !== 'running') {
+        const isEventRunning = eventConfig.event_started && !eventConfig.event_ended
+        if (!isEventRunning) {
           setPowerUps([])
           setCurrentPhase(eventConfig.current_phase)
           setLoading(false)

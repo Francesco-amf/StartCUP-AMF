@@ -12,7 +12,7 @@ interface Penalty {
   reason: string | null
   assigned_by_admin: boolean
   evaluator_name: string | null
-  assigned_at: string
+  created_at: string
 }
 
 const PENALTY_ICONS: Record<string, string> = {
@@ -43,7 +43,7 @@ export default function LivePenaltiesStatus() {
         const { data: penaltiesData, error: penaltiesError } = await supabase
           .from('penalties')
           .select('*')
-          .order('assigned_at', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(10)
 
         if (penaltiesError) {
@@ -105,7 +105,7 @@ export default function LivePenaltiesStatus() {
           reason: p.reason || null,
           assigned_by_admin: p.assigned_by_admin || false,
           evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
-          assigned_at: p.assigned_at
+          created_at: p.created_at
         }))
 
         setPenalties(formatted)

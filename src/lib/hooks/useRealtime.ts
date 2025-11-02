@@ -82,37 +82,41 @@ export function useRealtimePhase(refreshInterval = 5000) {
             phaseStartTime = data.phase_started_at
             console.log(`📍 Phase ${data.current_phase} using phase_started_at: ${phaseStartTime}`)
           } else if (data.event_start_time) {
-            // ⚠️ NOVA ABORDAGEM: O database armazena timestamps SEM timezone marker
-            // Exemplo: "2025-11-02T05:22:47.336"
-            // Precisamos assumir que foi salvo em UTC e tratar como tal
+            // ⚠️ CRÍTICO: O banco armazena timestamps SEM timezone
+            // Eles foram salvos em horário local (Brasília/UTC-3) MAS sem o Z
+            // Quando fazemos new Date("2025-11-02T05:34:25"), JS interpreta como LOCAL
+            // e diferente de quando foi salvo!
+            //
+            // SOLUÇÃO: Usar new Date() para GET now() em local time também
+            // Depois calcular difference, que fica correto mesmo com timezone diferente
 
             const prevPhaseDuration = Array.from({ length: data.current_phase })
               .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
 
-            // Garantir que tem Z no final para parse como UTC
-            const eventStartStr = data.event_start_time.endsWith('Z')
-              ? data.event_start_time
-              : `${data.event_start_time}Z`
+            // Parse como LOCAL time (sem Z)
+            // Isso faz JS interpretar no timezone local do usuário
+            const eventStartTime = new Date(data.event_start_time).getTime()
+            const now = new Date().getTime()
 
-            const eventStartTime = new Date(eventStartStr).getTime()
+            // Calcular quando a fase atual deveria ter começado
             const prevPhaseDurationMs = prevPhaseDuration * 60 * 1000
             const phaseStartMs = eventStartTime + prevPhaseDurationMs
 
-            // IMPORTANTE: Converter para ISO string que será usado no componente
+            // IMPORTANTE: Converter para ISO string (vai incluir Z porque é UTC)
+            // Mas internamente o cálculo foi feito com local time, então fica correto
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
-            const now = new Date().getTime()
             const actualElapsedMs = now - eventStartTime
             const actualElapsedMins = actualElapsedMs / (60 * 1000)
 
             console.log(`🔍 Phase ${data.current_phase} Debug:`)
-            console.log(`   DB event_start_time: ${data.event_start_time}`)
-            console.log(`   With Z marker: ${eventStartStr}`)
-            console.log(`   Parsed as UTC timestamp (ms): ${eventStartTime}`)
+            console.log(`   DB event_start_time (local): ${data.event_start_time}`)
+            console.log(`   Parsed as LOCAL timestamp (ms): ${eventStartTime}`)
             console.log(`   Current time (ms): ${now}`)
-            console.log(`   Actual elapsed: ${actualElapsedMins.toFixed(1)} min`)
+            console.log(`   Actual elapsed since event: ${actualElapsedMins.toFixed(1)} min`)
             console.log(`   Previous phases total: ${prevPhaseDuration} min`)
-            console.log(`   Phase should start at: ${phaseStartTime}`)
+            console.log(`   PHASE START should be at: ${new Date(phaseStartMs).toLocaleString()}`)
+            console.log(`   Phase should start ISO: ${phaseStartTime}`)
             console.log(`   Current phase duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
           }
         }

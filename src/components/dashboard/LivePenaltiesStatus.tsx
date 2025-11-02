@@ -8,7 +8,7 @@ interface Penalty {
   team_id: string
   team_name: string
   penalty_type: string
-  points_deduction: number
+  points_deducted: number
   reason: string | null
   assigned_by_admin: boolean
   evaluator_name: string | null
@@ -101,7 +101,7 @@ export default function LivePenaltiesStatus() {
           team_id: p.team_id,
           team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
           penalty_type: p.penalty_type,
-          points_deduction: p.points_deduction || 0,
+          points_deducted: p.points_deducted || 0,
           reason: p.reason || null,
           assigned_by_admin: p.assigned_by_admin || false,
           evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
@@ -165,7 +165,7 @@ export default function LivePenaltiesStatus() {
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-sm truncate">{penalty.team_name}</p>
                   <span className="text-xs font-bold text-[#FF3D00] bg-[#FF3D00]/20 px-2 py-1 rounded whitespace-nowrap">
-                    -{penalty.points_deduction}pts
+                    -{penalty.points_deducted}pts
                   </span>
                 </div>
 

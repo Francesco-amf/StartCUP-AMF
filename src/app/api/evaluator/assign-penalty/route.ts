@@ -80,12 +80,11 @@ export async function POST(request: Request) {
       .insert({
         team_id: teamId,
         penalty_type: penaltyType,
-        points_deduction: pointsDeduction,
+        points_deducted: pointsDeduction,
         reason: reason || null,
         phase_applied: phaseApplied || null,
         assigned_by_admin: false,
-        assigned_by_evaluator_id: evaluator.id,
-        assigned_at: new Date().toISOString()
+        assigned_by_evaluator_id: evaluator.id
       })
       .select()
       .single()

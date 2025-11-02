@@ -71,18 +71,17 @@ export function useRealtimePhase(refreshInterval = 5000) {
         // Mapear event_started/event_ended para event_status
         const phaseInfo = getPhaseInfo(data.current_phase)
 
-        // Calcular quando a fase atual começou
-        // Se houver phase_started_at, usar isso
-        // Caso contrário, calcular baseado em quando o evento começou + duração das fases anteriores
+        // Obter timestamp de quando a fase atual começou
         let phaseStartTime = null
 
-        if (data.current_phase > 0 && data.event_started && data.phase_started_at) {
-          // ✅ SOLUÇÃO DEFINITIVA: phase_started_at é salvo no BD pela API
-          // Não precisa calcular no cliente, todos usam o mesmo valor
-          phaseStartTime = data.phase_started_at
+        if (data.current_phase > 0 && data.event_started) {
+          // ✅ Usar phase_X_start_time do BD (salvo quando admin ativa a fase)
+          // Coluna dinâmica: phase_1_start_time, phase_2_start_time, etc.
+          const phaseStartColumn = `phase_${data.current_phase}_start_time`
+          phaseStartTime = data[phaseStartColumn]
 
           console.log(`📍 Phase ${data.current_phase}:`)
-          console.log(`   phase_started_at (from DB): ${phaseStartTime}`)
+          console.log(`   ${phaseStartColumn}: ${phaseStartTime}`)
           console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
         }
 
@@ -120,7 +119,8 @@ export function useRealtimePhase(refreshInterval = 5000) {
           event_status: data.event_started
             ? (data.event_ended ? 'ended' : 'running')
             : 'not_started',
-          // Usar o timestamp de quando o evento começou
+          // Adicionar phase_started_at como alias para o campo phase_X_start_time
+          // Isso facilita o uso nos componentes
           phase_started_at: phaseStartTime,
           phases: phaseInfo,
           // Adicionar quest ativa aos dados da fase

@@ -71,17 +71,20 @@ export async function POST(request: Request) {
 
     const now = new Date().toISOString()
     const updateData: any = {
-      // Atualizar a fase atual e status do evento
+      // Atualizar a fase atual
       current_phase: phase,
-      // ⚠️ CRÍTICO: phase_started_at deve ser calculado e salvo quando a fase muda
-      // Isso garante que todos os clientes usem o mesmo valor
-      phase_started_at: phase > 0 ? now : null,
     }
 
     // Se está em qualquer fase >= 1, o evento deve estar marcado como iniciado
     if (phase >= 1) {
       updateData.event_started = true
       updateData.event_ended = false
+
+      // ⚠️ CRÍTICO: Salvar o timestamp de quando ESSA fase começou
+      // Campo específico: phase_X_start_time (1-5)
+      const phaseStartColumn = `phase_${phase}_start_time`
+      updateData[phaseStartColumn] = now
+      console.log(`✅ Setando ${phaseStartColumn} = ${now}`)
 
       // ⚠️ CRÍTICO: event_start_time só deve ser setado UMA VEZ
       // Na primeira mudança para fase >= 1 (0 → 1)
@@ -100,7 +103,10 @@ export async function POST(request: Request) {
       updateData.event_ended = false
       updateData.event_start_time = null
       updateData.event_end_time = null
-      updateData.phase_started_at = null
+      // Limpar todos os timestamps de fase
+      for (let i = 1; i <= 5; i++) {
+        updateData[`phase_${i}_start_time`] = null
+      }
     }
 
     console.log('🔄 Atualizando event_config com:', updateData)

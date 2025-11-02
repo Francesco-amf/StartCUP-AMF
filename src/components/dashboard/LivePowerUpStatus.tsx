@@ -36,19 +36,31 @@ export default function LivePowerUpStatus() {
         const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
         const { data: eventConfig } = await supabase
           .from('event_config')
-          .select('current_phase')
+          .select('current_phase, event_status')
           .eq('id', eventConfigId)
           .single()
 
-        if (eventConfig) {
-          setCurrentPhase(eventConfig.current_phase)
+        if (!eventConfig) {
+          setPowerUps([])
+          setLoading(false)
+          return
         }
 
-        // Obter power-ups usados nesta fase
+        // Se evento não está em andamento, limpar power-ups
+        if (eventConfig.event_status !== 'running') {
+          setPowerUps([])
+          setCurrentPhase(eventConfig.current_phase)
+          setLoading(false)
+          return
+        }
+
+        setCurrentPhase(eventConfig.current_phase)
+
+        // Obter power-ups usados APENAS nesta fase específica e que estão com status 'used'
         const { data: pups } = await supabase
           .from('power_ups')
           .select('team_id, power_up_type')
-          .eq('phase_used', eventConfig?.current_phase || 0)
+          .eq('phase_used', eventConfig.current_phase)
           .eq('status', 'used')
 
         if (pups && pups.length > 0) {
@@ -70,17 +82,21 @@ export default function LivePowerUpStatus() {
               power_up_type: p.power_up_type
             }))
           setPowerUps(formatted)
+        } else {
+          setPowerUps([])
         }
       } catch (err) {
         console.error('Erro ao buscar power-ups:', err)
+        setPowerUps([])
       } finally {
         setLoading(false)
       }
     }
 
+    setLoading(true)
     fetchPowerUps()
 
-    // Atualizar a cada 5 segundos
+    // Atualizar a cada 5 segundos para pegar mudanças de fase
     const interval = setInterval(fetchPowerUps, 5000)
     return () => clearInterval(interval)
   }, [supabase])

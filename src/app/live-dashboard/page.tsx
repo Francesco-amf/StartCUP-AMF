@@ -49,10 +49,21 @@ export default function LiveDashboard() {
       </div>
 
       <div className="container mx-auto p-4 md:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+        {/* Timer da Fase e Quest Atual - Topo em destaque */}
+        {phase?.event_status === 'running' && phase?.phase_started_at && (
+          <div className="mb-6">
+            <CurrentQuestTimer
+              phase={phase.current_phase}
+              phaseStartedAt={phase.phase_started_at}
+              phaseDurationMinutes={phase.phases?.duration_minutes || 60}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
           {/* Coluna Principal - Ranking */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-3xl font-bold text-[#00E5FF]">
                 🏆 Ranking Geral
@@ -80,25 +91,14 @@ export default function LiveDashboard() {
             </div>
           </div>
 
-          {/* Coluna Lateral - Timer e Info */}
-          <div className="space-y-6">
-            
-            {/* Timer da Fase e Quest Atual */}
-            {phase?.event_status === 'running' && phase?.phase_started_at && (
-              <>
-                <CurrentQuestTimer
-                  phase={phase.current_phase}
-                  phaseStartedAt={phase.phase_started_at}
-                  phaseDurationMinutes={phase.phases?.duration_minutes || 60}
-                />
-              </>
-            )}
+          {/* Coluna Lateral - Info Cards */}
+          <div className="space-y-4">
 
             {/* Status do Evento */}
-            <div className="bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-6 text-white">
-              <h3 className="text-xl font-bold mb-4 text-[#00E5FF]">📊 Status do Evento</h3>
+            <div className="bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-4 text-white">
+              <h3 className="text-lg font-bold mb-3 text-[#00E5FF]">📊 Status do Evento</h3>
 
-              <div className="space-y-3">
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-[#00E5FF]/80">Status:</span>
                   <span className="font-bold capitalize">
@@ -110,8 +110,8 @@ export default function LiveDashboard() {
 
                 {phase?.phases && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[#00E5FF]/80">Fase Atual:</span>
-                    <span className="font-bold text-white">{phase.phases.name}</span>
+                    <span className="text-[#00E5FF]/80">Fase:</span>
+                    <span className="font-bold text-white text-xs truncate">{phase.phases.name}</span>
                   </div>
                 )}
 
@@ -121,9 +121,9 @@ export default function LiveDashboard() {
                 </div>
 
                 {ranking.length > 0 && (
-                  <div className="flex justify-between items-center border-t border-[#00E5FF]/20 pt-3">
-                    <span className="text-[#00E5FF]/80">Pontuação Líder:</span>
-                    <span className="font-bold text-[#00E5FF] text-xl">
+                  <div className="flex justify-between items-center border-t border-[#00E5FF]/20 pt-2">
+                    <span className="text-[#00E5FF]/80">Líder:</span>
+                    <span className="font-bold text-[#00E5FF]">
                       {ranking[0]?.total_points.toFixed(0)} pts
                     </span>
                   </div>
@@ -133,20 +133,19 @@ export default function LiveDashboard() {
 
             {/* Top 3 Resumido */}
             {ranking.length >= 3 && (
-              <div className="bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-6 text-white">
-                <h3 className="text-xl font-bold mb-4 text-[#00E5FF]">🏅 Pódio</h3>
+              <div className="bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-4 text-white">
+                <h3 className="text-lg font-bold mb-3 text-[#00E5FF]">🏅 Pódio</h3>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {ranking.slice(0, 3).map((team, index) => (
-                    <div key={team.team_id} className="flex items-center gap-3 p-3 bg-[#0A1E47]/40 rounded-lg border-l-4 border-[#00E5FF]/60">
-                      <span className="text-2xl">
+                    <div key={team.team_id} className="flex items-center gap-2 p-2 bg-[#0A1E47]/40 rounded border-l-4 border-[#00E5FF]/60">
+                      <span className="text-xl">
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                       </span>
-                      <div className="flex-1">
-                        <p className="font-bold truncate text-white">{team.team_name}</p>
-                        <p className="text-xs text-[#00E5FF]/70 truncate">{team.course}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold truncate text-white text-xs">{team.team_name}</p>
                       </div>
-                      <span className="font-bold text-lg text-[#00E5FF]">
+                      <span className="font-bold text-sm text-[#00E5FF]">
                         {team.total_points.toFixed(0)}
                       </span>
                     </div>
@@ -156,10 +155,14 @@ export default function LiveDashboard() {
             )}
 
             {/* Power-ups Ativados */}
-            <LivePowerUpStatus />
+            <div className="hidden lg:block">
+              <LivePowerUpStatus />
+            </div>
 
             {/* Penalidades Aplicadas */}
-            <LivePenaltiesStatus />
+            <div className="hidden lg:block">
+              <LivePenaltiesStatus />
+            </div>
 
           </div>
 

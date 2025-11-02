@@ -103,7 +103,7 @@ export default async function TeamDashboard() {
 
         <div className="grid gap-2 md:gap-3 p-3">
           {/* Fase Atual do Evento */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-r from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/30">
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-r from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <div>
                 <p className="text-xs sm:text-sm text-[#00E5FF] font-semibold mb-1">🎮 FASE ATUAL DO EVENTO</p>
@@ -133,17 +133,17 @@ export default async function TeamDashboard() {
 
           {/* Estatísticas */}
           <div className="grid gap-1 sm:gap-2 md:gap-4 md:grid-cols-3">
-            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#00E5FF]/60">
+            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B4A7F] via-[#0F3860] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
               <div className="flex items-center justify-between mb-1 sm:mb-2">
                 <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white">Pontuação Total</h3>
                 <span className="text-lg sm:text-2xl">🏆</span>
               </div>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[#00E5FF]">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[#00B3FF]">
                 {totalPoints}
               </p>
             </Card>
 
-            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#00E5FF]/60">
+            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0B5A80] via-[#0A3A5A] to-[#0A1E47] border-l-4 border-[#00D4FF]/80">
               <div className="flex items-center justify-between mb-1 sm:mb-2">
                 <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white">Entregas</h3>
                 <span className="text-lg sm:text-2xl">📦</span>
@@ -153,12 +153,12 @@ export default async function TeamDashboard() {
               </p>
             </Card>
 
-            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#00E676]/60">
+            <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B5A5A] via-[#0A4040] to-[#0A1E47] border-l-4 border-[#00FF88]/80">
               <div className="flex items-center justify-between mb-1 sm:mb-2">
                 <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white">Avaliadas</h3>
                 <span className="text-lg sm:text-2xl">✅</span>
               </div>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[#00E676]">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[#00FF88]">
                 {submissions?.filter(s => s.status === 'evaluated').length || 0}
               </p>
             </Card>
@@ -171,8 +171,8 @@ export default async function TeamDashboard() {
           />
 
           {/* Minhas Submissões */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/50 to-[#001A4D]/50 border border-[#00E5FF]/20">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00E5FF]">📋 Minhas Entregas</h2>
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B5A7F] via-[#0F3A5A] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00B3FF]">📋 Minhas Entregas</h2>
             {submissions && submissions.length > 0 ? (
               <div className="space-y-1 sm:space-y-2">
                 {submissions.map((submission, index) => (
@@ -199,8 +199,8 @@ export default async function TeamDashboard() {
           </Card>
 
           {/* Avaliadores Disponíveis */}
-          <Card className="p-1 md:p-2 lg:p-3">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4">👥 Avaliadores Disponíveis</h2>
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0B5A80] via-[#0A3A60] to-[#0A1E47] border-l-4 border-[#00D4FF]/80">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00E5FF]">👥 Avaliadores Disponíveis</h2>
             <EvaluatorStatusList />
           </Card>
 
@@ -208,23 +208,23 @@ export default async function TeamDashboard() {
           <PowerUpActivator />
 
           {/* Power-ups - Guia */}
-          <Card className="p-1 md:p-2 lg:p-3">
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B5A5A] via-[#0A4040] to-[#0A1E47] border-l-4 border-[#00FF88]/80">
             <PowerUpsGuide />
           </Card>
 
           {/* Penalidades - Guia */}
-          <Card className="p-1 md:p-2 lg:p-3">
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B4A7F] via-[#0F3860] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
             <PenaltiesGuide />
           </Card>
 
           {/* Avaliação Final */}
-          <Card className="p-1 md:p-2 lg:p-3">
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0B5A80] via-[#0A3A5A] to-[#0A1E47] border-l-4 border-[#00D4FF]/80">
             <FinalEvaluationGuide />
           </Card>
 
           {/* Ações Rápidas */}
-          <Card className="p-1 md:p-2 lg:p-3">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4">⚡ Ações Rápidas</h2>
+          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/70 to-[#001A4D]/70 border border-[#00E5FF]/40">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00E5FF]">⚡ Ações Rápidas</h2>
             <div className="space-y-2">
               <Link href="/submit">
                 <Button className="w-full text-xs sm:text-sm" size="sm">

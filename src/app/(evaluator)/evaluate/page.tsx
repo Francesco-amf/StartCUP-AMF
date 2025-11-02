@@ -52,7 +52,7 @@ export default async function EvaluatorDashboard() {
     )
   }
 
-  // Buscar submissions pendentes para avaliar
+  // Buscar submissions pendentes para avaliar (apenas de quests ativas/fechadas)
   const { data: submissions, error: submissionsError } = await supabase
     .from('submissions')
     .select(`
@@ -62,19 +62,32 @@ export default async function EvaluatorDashboard() {
         course
       ),
       quest:quest_id (
+        id,
         name,
         max_points,
-        phase_id
+        status,
+        phase_id,
+        phase:phase_id (
+          id,
+          name
+        )
       )
     `)
     .eq('status', 'pending')
+    .in('quest.status', ['active', 'closed', 'completed'])
     .order('submitted_at', { ascending: true })
 
   // Debug: Log para verificar submissions
   console.log('📦 Submissions query:', {
     count: submissions?.length || 0,
     error: submissionsError,
-    submissions: submissions
+    submissions: submissions,
+    firstSubmission: submissions?.[0] ? {
+      id: submissions[0].id,
+      team_id: submissions[0].team_id,
+      team: submissions[0].team,
+      quest: submissions[0].quest,
+    } : null
   })
 
   // Buscar submissions já avaliadas por este avaliador
@@ -88,7 +101,7 @@ export default async function EvaluatorDashboard() {
   // Filtrar apenas submissions que ainda não foram avaliadas por este avaliador
   const pendingForMe = submissions?.filter(s => !evaluatedIds.includes(s.id)) || []
 
-  // Buscar submissions já avaliadas com detalhes completos
+  // Buscar submissions já avaliadas com detalhes completos (apenas de quests no novo sistema)
   const { data: myEvaluations } = await supabase
     .from('evaluations')
     .select(`
@@ -101,8 +114,15 @@ export default async function EvaluatorDashboard() {
           course
         ),
         quest:quest_id (
+          id,
           name,
-          max_points
+          max_points,
+          status,
+          phase_id,
+          phase:phase_id (
+            id,
+            name
+          )
         )
       )
     `)
@@ -163,8 +183,12 @@ export default async function EvaluatorDashboard() {
                   console.log('🎯 Rendering submission:', {
                     id: submission.id,
                     file_url: submission.file_url,
-                    team: submission.team?.name,
-                    quest: submission.quest?.name
+                    team: submission.team,
+                    teamName: submission.team?.name,
+                    teamCourse: submission.team?.course,
+                    questName: submission.quest?.name,
+                    questPhase: submission.quest?.phase,
+                    fullSubmission: submission
                   })
 
                   return (
@@ -173,13 +197,23 @@ export default async function EvaluatorDashboard() {
                       className="flex items-center justify-between p-4 bg-[#0A1E47]/40 border border-[#00E5FF]/30 rounded-lg hover:bg-[#0A1E47]/60 transition-colors"
                     >
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg text-white">{submission.team?.name}</h3>
-                        <p className="text-[#00E5FF]">{submission.quest?.name}</p>
-                        <p className="text-sm text-[#00E5FF]/70 mt-1">
-                          {submission.team?.course} • Max: {submission.quest?.max_points} pontos
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-bold text-lg text-white">👥 {submission.team?.name || 'Equipe desconhecida'}</h3>
+                          <span className="inline-block bg-[#00E5FF]/20 border border-[#00E5FF]/50 text-[#00E5FF] text-xs font-semibold px-2 py-1 rounded">
+                            {submission.team?.course || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="font-semibold text-[#00E5FF]">📝 {submission.quest?.name}</p>
+                          <span className="inline-block bg-[#FF9800]/20 border border-[#FF9800]/50 text-[#FF9800] text-xs font-semibold px-2 py-1 rounded">
+                            🎯 {submission.quest?.phase?.name || 'Fase desconhecida'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#00E5FF]/70 mt-2">
+                          📊 Máximo: {submission.quest?.max_points} pontos
                         </p>
                         <p className="text-xs text-[#00E5FF]/60 mt-1">
-                          Enviado em: {new Date(submission.submitted_at).toLocaleString('pt-BR')}
+                          ⏰ Enviado em: {new Date(submission.submitted_at).toLocaleString('pt-BR')}
                         </p>
                         <p className="text-xs text-[#00E5FF]/50 font-mono mt-1">
                           ID: {submission.id}
@@ -234,15 +268,22 @@ export default async function EvaluatorDashboard() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg text-white">
-                          {evaluation.submission?.team?.name}
-                        </h3>
-                        <p className="text-[#00E676] text-sm">
-                          {evaluation.submission?.quest?.name}
-                        </p>
-                        <p className="text-xs text-[#00E676]/70 mt-1">
-                          {evaluation.submission?.team?.course}
-                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-bold text-lg text-white">
+                            👥 {evaluation.submission?.team?.name}
+                          </h3>
+                          <span className="inline-block bg-[#00E676]/20 border border-[#00E676]/50 text-[#00E676] text-xs font-semibold px-2 py-1 rounded">
+                            {evaluation.submission?.team?.course}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="font-semibold text-[#00E676] text-sm">
+                            📝 {evaluation.submission?.quest?.name}
+                          </p>
+                          <span className="inline-block bg-[#FF9800]/20 border border-[#FF9800]/50 text-[#FF9800] text-xs font-semibold px-2 py-1 rounded">
+                            🎯 {evaluation.submission?.quest?.phase?.name || 'Fase desconhecida'}
+                          </span>
+                        </div>
                         <div className="flex gap-2 mt-2 text-xs text-[#00E676]">
                           <span className="font-medium">
                             📊 {evaluation.points} pontos

@@ -81,7 +81,7 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
           >
             <Card
               className={`
-                relative overflow-hidden
+                relative overflow-hidden bg-gradient-to-br from-[#0A2540] to-[#001A4D]
                 ${index < 3 ? 'border-2 shadow-lg' : 'border'}
                 ${index === 0 ? 'border-yellow-400' : ''}
                 ${index === 1 ? 'border-gray-400' : ''}
@@ -91,24 +91,24 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
             >
               {/* Gradient Background para Top 3 */}
               {index < 3 && (
-                <div 
+                <div
                   className={`
-                    absolute inset-0 opacity-5
+                    absolute inset-0 opacity-20
                     bg-gradient-to-r ${getPositionColor(index + 1)}
                   `}
                 />
               )}
 
-              <div className="relative p-4 md:p-6">
-                <div className="flex items-center gap-4">
-                  
+              <div className="relative p-4 md:p-5">
+                <div className="flex items-center gap-3 md:gap-4">
+
                   {/* Posição */}
                   <div className="flex-shrink-0">
                     <div
                       className={`
-                        w-16 h-16 md:w-20 md:h-20
+                        w-14 h-14 md:w-16 md:h-16
                         flex items-center justify-center
-                        rounded-full font-black text-2xl md:text-3xl
+                        rounded-full font-black text-xl md:text-2xl
                         bg-gradient-to-br ${getPositionColor(index + 1)}
                         text-white shadow-lg
                       `}
@@ -119,26 +119,26 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
 
                   {/* Info da Equipe */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl md:text-2xl font-bold truncate">
+                    <h3 className="text-base md:text-lg font-bold text-white truncate">
                       {team.team_name}
                     </h3>
-                    <p className="text-sm md:text-base text-[#00E5FF]/70 truncate">
+                    <p className="text-xs md:text-sm text-[#00E5FF] truncate">
                       {team.course}
                     </p>
 
                     {/* Estatísticas */}
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        📋 {team.quests_completed} quests
+                    <div className="flex gap-1 md:gap-2 mt-1 flex-wrap">
+                      <Badge variant="secondary" className="text-xs bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF]/40">
+                        📋 {team.quests_completed}
                       </Badge>
                       {team.power_ups_used > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          ⚡ {team.power_ups_used} power-ups
+                        <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-200 border-purple-500/40">
+                          ⚡ {team.power_ups_used}
                         </Badge>
                       )}
                       {getPenalty(team.team_id) > 0 && (
-                        <Badge className="text-xs bg-[#FF3D00]/20 text-[#FF3D00] border border-[#FF3D00]/40">
-                          ⚖️ -{getPenalty(team.team_id)} pts
+                        <Badge className="text-xs bg-[#FF3D00]/30 text-[#FFB74D] border border-[#FF3D00]/60">
+                          ⚠️ -{getPenalty(team.team_id)}
                         </Badge>
                       )}
                     </div>
@@ -146,7 +146,7 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
 
                   {/* Pontos */}
                   <div className="flex-shrink-0 text-right">
-                    <div className={`text-3xl md:text-5xl font-black ${getPointsColor(index + 1)}`}>
+                    <div className={`text-2xl md:text-4xl font-black ${getPointsColor(index + 1)}`}>
                       {team.total_points.toFixed(0)}
                     </div>
                     <div className="text-xs md:text-sm text-[#00E5FF]/50 font-medium">

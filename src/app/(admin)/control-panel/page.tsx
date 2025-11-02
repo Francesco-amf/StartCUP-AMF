@@ -67,9 +67,9 @@ export default async function AdminControlPanel() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-[#00E5FF] font-semibold">Fase Atual:</p>
+              <p className="text-sm text-[#00E5FF] font-semibold">Quests Ativas:</p>
               <p className="text-3xl font-bold text-[#00E5FF]">
-                {eventConfig?.current_phase === 0 ? 'Preparação' : `Fase ${eventConfig?.current_phase}`}
+                {eventConfig?.event_started ? '🟢 Sim' : '🔴 Não'}
               </p>
             </div>
           </div>
@@ -97,30 +97,30 @@ export default async function AdminControlPanel() {
             </p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#00FF88]/60">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Submissões</h2>
+              <h2 className="text-xl font-bold text-white">Submissões</h2>
               <span className="text-3xl">📄</span>
             </div>
-            <p className="text-4xl font-bold text-green-600">
+            <p className="text-4xl font-bold text-[#00FF88]">
               {submissions?.length || 0}
             </p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#FF9800]/60">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Avaliações</h2>
+              <h2 className="text-xl font-bold text-white">Avaliações</h2>
               <span className="text-3xl">✅</span>
             </div>
-            <p className="text-4xl font-bold text-orange-600">
+            <p className="text-4xl font-bold text-[#FF9800]">
               {evaluations?.length || 0}
             </p>
           </Card>
         </div>
 
         {/* Controle de Fases */}
-        <Card className="p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+        <Card className="p-6 mb-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/30">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[#00E5FF]">
             <span>🎯</span>
             Controle de Fases do Evento
           </h2>
@@ -131,25 +131,25 @@ export default async function AdminControlPanel() {
         </Card>
 
         {/* Gerenciamento de Equipes */}
-        <Card className="p-6 mt-6">
-          <h2 className="text-2xl font-bold mb-4">Equipes Cadastradas</h2>
+        <Card className="p-6 mt-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00D4FF]/30">
+          <h2 className="text-2xl font-bold mb-4 text-[#00D4FF]">👥 Equipes Cadastradas</h2>
           {teams && teams.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Nome</th>
-                    <th className="text-left p-2">Curso</th>
-                    <th className="text-left p-2">Membros</th>
-                    <th className="text-left p-2">Email</th>
+                  <tr className="border-b border-[#00D4FF]/20">
+                    <th className="text-left p-2 text-[#00D4FF]">Nome</th>
+                    <th className="text-left p-2 text-[#00D4FF]">Curso</th>
+                    <th className="text-left p-2 text-[#00D4FF]">Membros</th>
+                    <th className="text-left p-2 text-[#00D4FF]">Email</th>
                   </tr>
                 </thead>
                 <tbody>
                   {teams.map((team) => (
-                    <tr key={team.id} className="border-b hover:gradient-startcup">
-                      <td className="p-2 font-medium">{team.name}</td>
-                      <td className="p-2">{team.course}</td>
-                      <td className="p-2">{team.members}</td>
+                    <tr key={team.id} className="border-b border-[#00D4FF]/10 hover:bg-[#0A1E47]/40">
+                      <td className="p-2 font-medium text-white">{team.name}</td>
+                      <td className="p-2 text-[#00E5FF]">{team.course}</td>
+                      <td className="p-2 text-[#00E5FF]">{team.members}</td>
                       <td className="p-2 text-sm text-[#00E5FF]/70">{team.email}</td>
                     </tr>
                   ))}
@@ -157,49 +157,49 @@ export default async function AdminControlPanel() {
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">Nenhuma equipe cadastrada ainda.</p>
+            <p className="text-[#00E5FF]/60">Nenhuma equipe cadastrada ainda.</p>
           )}
         </Card>
 
         {/* Gerenciamento de Avaliadores */}
-        <Card className="p-6 mt-6">
-          <h2 className="text-2xl font-bold mb-4">Avaliadores</h2>
+        <Card className="p-6 mt-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/30">
+          <h2 className="text-2xl font-bold mb-4 text-[#FF9800]">⭐ Avaliadores</h2>
           {evaluators && evaluators.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Nome</th>
-                    <th className="text-left p-2">Email</th>
-                    <th className="text-left p-2">Especialidade</th>
+                  <tr className="border-b border-[#FF9800]/20">
+                    <th className="text-left p-2 text-[#FF9800]">Nome</th>
+                    <th className="text-left p-2 text-[#FF9800]">Email</th>
+                    <th className="text-left p-2 text-[#FF9800]">Especialidade</th>
                   </tr>
                 </thead>
                 <tbody>
                   {evaluators.map((evaluator) => (
-                    <tr key={evaluator.id} className="border-b hover:gradient-startcup">
-                      <td className="p-2 font-medium">{evaluator.name}</td>
+                    <tr key={evaluator.id} className="border-b border-[#FF9800]/10 hover:bg-[#0A1E47]/40">
+                      <td className="p-2 font-medium text-white">{evaluator.name}</td>
                       <td className="p-2 text-sm text-[#00E5FF]/70">{evaluator.email}</td>
-                      <td className="p-2">{evaluator.specialty || 'Geral'}</td>
+                      <td className="p-2 text-[#00E5FF]">{evaluator.specialty || 'Geral'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">Nenhum avaliador cadastrado ainda.</p>
+            <p className="text-[#00E5FF]/60">Nenhum avaliador cadastrado ainda.</p>
           )}
         </Card>
 
         {/* Ações Rápidas */}
-        <Card className="p-6 mt-6">
-          <h2 className="text-2xl font-bold mb-4">Ações Rápidas</h2>
+        <Card className="p-6 mt-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/30">
+          <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">⚡ Ações Rápidas</h2>
           <QuickActions />
         </Card>
 
         {/* Zona de Perigo */}
-        <Card className="p-6 mt-6 border-red-300 bg-red-50">
-          <h2 className="text-2xl font-bold mb-2 text-red-700">🚨 Zona de Perigo</h2>
-          <p className="text-red-600 mb-4 text-sm">
+        <Card className="p-6 mt-6 border-2 border-[#FF3333]/40 bg-gradient-to-br from-[#4A0A0A]/40 to-[#1A0000]/40">
+          <h2 className="text-2xl font-bold mb-2 text-[#FF6B6B]">🚨 Zona de Perigo</h2>
+          <p className="text-[#FF9999] mb-4 text-sm">
             Estas ações são irreversíveis. Use com extrema cautela.
           </p>
           <div className="flex flex-wrap gap-4">

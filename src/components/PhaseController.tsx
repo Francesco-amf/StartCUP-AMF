@@ -10,15 +10,17 @@ interface PhaseControllerProps {
 
 export default function PhaseController({ currentPhase, eventStarted }: PhaseControllerProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [phase, setPhase] = useState(currentPhase)
+  // Usa currentPhase do servidor, que é atualizado a cada clique
+  // Reflete sempre o estado real do banco de dados
+  const activePhase = currentPhase
 
   const phases = [
-    { id: 0, name: 'Preparação', icon: '⏸️', color: 'bg-gray-500' },
-    { id: 1, name: 'Fase 1: Descoberta', icon: '🔍', color: 'bg-blue-600', duration: '2h30min', points: 200 },
-    { id: 2, name: 'Fase 2: Criação', icon: '💡', color: 'bg-purple-600', duration: '3h30min', points: 300 },
-    { id: 3, name: 'Fase 3: Estratégia', icon: '📊', color: 'bg-green-600', duration: '2h30min', points: 200 },
-    { id: 4, name: 'Fase 4: Refinamento', icon: '✨', color: 'bg-yellow-600', duration: '2h', points: 150 },
-    { id: 5, name: 'Fase 5: Pitch Final', icon: '🎯', color: 'bg-red-600', duration: '1h30min', points: 150 },
+    { id: 0, name: 'Preparação', icon: '⏸️', color: 'bg-[#0A1E47] border-[#00E5FF]' },
+    { id: 1, name: 'Fase 1: Descoberta', icon: '🔍', color: 'bg-[#0A3A5A] border-[#00D4FF]', duration: '2h30min', points: 200 },
+    { id: 2, name: 'Fase 2: Criação', icon: '💡', color: 'bg-[#1B4A7F] border-[#0077FF]', duration: '3h30min', points: 300 },
+    { id: 3, name: 'Fase 3: Estratégia', icon: '📊', color: 'bg-[#1B5A3F] border-[#00FF88]', duration: '2h30min', points: 200 },
+    { id: 4, name: 'Fase 4: Refinamento', icon: '✨', color: 'bg-[#5A5A0A] border-[#FFD700]', duration: '2h', points: 150 },
+    { id: 5, name: 'Fase 5: Pitch Final', icon: '🎯', color: 'bg-[#5A0A0A] border-[#FF6B6B]', duration: '1h30min', points: 150 },
   ]
 
   const handleStartPhase = async (phaseId: number) => {
@@ -66,8 +68,8 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
         )
       }
 
-      setPhase(phaseId)
       alert(`✅ ${data.message}`)
+      // Recarrega a página para obter os dados atualizados do banco
       window.location.reload()
     } catch (error) {
       console.error('Erro:', error)
@@ -85,51 +87,59 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
             key={p.id}
             className={`
               border-2 rounded-xl p-4 transition-all
-              ${phase === p.id ? 'border-purple-500 bg-purple-50 shadow-lg' : 'border-gray-200 bg-white'}
+              ${activePhase === p.id
+                ? 'border-[#00FF88] bg-[#0A1E47]/80 shadow-lg shadow-[#00FF88]/40'
+                : 'border-[#00E5FF]/40 bg-[#0A1E47]/40'}
             `}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-3xl">{p.icon}</span>
                 <div>
-                  <h4 className="font-bold text-sm">{p.name}</h4>
+                  <h4 className="font-bold text-sm text-white">{p.name}</h4>
                   {p.duration && (
-                    <p className="text-xs text-gray-600">⏱️ {p.duration}</p>
+                    <p className="text-xs text-[#00E5FF]/70">⏱️ {p.duration}</p>
                   )}
                 </div>
               </div>
-              {phase === p.id && (
-                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                  ATIVA
+              {activePhase === p.id && (
+                <span className="bg-[#00FF88] text-[#0A1E47] text-xs px-2 py-1 rounded-full font-bold">
+                  ✓ ATIVA
                 </span>
               )}
             </div>
 
             {p.points && (
-              <div className="text-xs text-gray-600 mb-3">
+              <div className="text-xs text-[#FFD700] mb-3">
                 💎 {p.points} pontos totais
               </div>
             )}
 
             <Button
               onClick={() => handleStartPhase(p.id)}
-              disabled={isLoading || phase === p.id}
-              className={`w-full ${p.color} hover:opacity-90`}
+              disabled={isLoading || activePhase === p.id}
+              className={`w-full text-white font-bold hover:opacity-90 ${p.color}`}
               size="sm"
             >
-              {phase === p.id ? '✓ Fase Atual' : `Iniciar ${p.icon}`}
+              {activePhase === p.id ? '✓ Fase Atual' : `Ativar ${p.icon}`}
             </Button>
           </div>
         ))}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-        <p className="font-semibold text-blue-900 mb-2">ℹ️ Instruções:</p>
-        <ul className="list-disc list-inside text-blue-800 space-y-1">
-          <li>Clique no botão da fase para ativá-la</li>
-          <li>O cronômetro oficial inicia ao ativar a Fase 1</li>
-          <li>As equipes verão qual fase está ativa em tempo real</li>
-          <li>Voltar para "Preparação" encerra o evento</li>
+      <div className="bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40 rounded-lg p-4 text-sm">
+        <p className="font-semibold text-[#00E5FF] mb-3">🚀 Como Começar o Evento:</p>
+        <ol className="list-decimal list-inside text-[#00E5FF]/80 space-y-2 mb-3">
+          <li><span className="font-bold">Clique em "Ativar"</span> em qualquer fase (Fase 1, 2, 3, 4 ou 5)</li>
+          <li>O evento começará imediatamente naquela fase</li>
+          <li>O cronômetro oficial inicia quando você ativar a primeira fase</li>
+          <li>Os times e avaliadores verão qual fase está ativa em tempo real</li>
+        </ol>
+
+        <p className="font-semibold text-[#FF9800] mb-2">⏸️ Como Navegar Entre Fases:</p>
+        <ul className="list-disc list-inside text-[#FF9800]/80 space-y-1">
+          <li>Clique em outra fase para mudar durante o evento</li>
+          <li>Voltar para <span className="font-bold text-red-400">"Preparação"</span> encerra o evento completamente</li>
         </ul>
       </div>
     </div>

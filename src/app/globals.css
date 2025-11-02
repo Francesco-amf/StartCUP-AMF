@@ -219,32 +219,32 @@
   border: 1px solid rgba(0, 229, 255, 0.5);
 }
 
-/* Override Card Styles com Tema StartCup */
-[data-slot="card"] {
+/* Override Card Styles com Tema StartCup - DESATIVADO para permitir cores personalizadas por card */
+/* [data-slot="card"] {
   background: rgba(10, 30, 71, 0.6) !important;
   border-color: rgba(0, 229, 255, 0.3) !important;
-}
+} */
 
-/* Titles com cor turquesa */
-[data-slot="card-title"] {
+/* Titles com cor turquesa - DESATIVADO para permitir cores personalizadas */
+/* [data-slot="card-title"] {
   color: #00E5FF;
   font-weight: 700;
-}
+} */
 
-/* Descriptions em turquesa suave */
-[data-slot="card-description"] {
+/* Descriptions em turquesa suave - DESATIVADO para permitir cores personalizadas */
+/* [data-slot="card-description"] {
   color: rgba(0, 229, 255, 0.7);
-}
+} */
 
 /* Foreground branco */
 .text-card-foreground {
   color: #FFFFFF;
 }
 
-/* Muted text com cor turquesa */
-.text-muted-foreground {
+/* Muted text com cor turquesa - DESATIVADO */
+/* .text-muted-foreground {
   color: rgba(0, 229, 255, 0.6);
-}
+} */
 
 /* Input styles */
 input, textarea, select {
@@ -309,7 +309,7 @@ tr:hover {
   background: rgba(10, 30, 71, 0.8);
 }
 
-/* Heading styles */
-h1, h2, h3, h4, h5, h6 {
+/* Heading styles - DESATIVADO para permitir cores personalizadas por card */
+/* h1, h2, h3, h4, h5, h6 {
   color: #00E5FF;
-}
+} */

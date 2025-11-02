@@ -71,50 +71,23 @@ export async function POST(request: Request) {
 
     const now = new Date().toISOString()
     const updateData: any = {
+      // Atualizar a fase atual e status do evento
       current_phase: phase,
-      updated_at: now,
     }
 
     // Se está em qualquer fase >= 1, o evento deve estar marcado como iniciado
     if (phase >= 1) {
       updateData.event_started = true
       updateData.event_ended = false
-
-      // SEMPRE atualizar event_start_time quando iniciar qualquer fase
-      // Isso garante que o timer sempre comece do zero
       updateData.event_start_time = now
-    }
-
-    // Registrar horário de início de cada fase
-    // SEMPRE atualiza o timestamp quando muda para uma fase
-    if (phase === 1) {
-      updateData.phase_1_start_time = now
-    }
-    if (phase === 2) {
-      updateData.phase_2_start_time = now
-    }
-    if (phase === 3) {
-      updateData.phase_3_start_time = now
-    }
-    if (phase === 4) {
-      updateData.phase_4_start_time = now
-    }
-    if (phase === 5) {
-      updateData.phase_5_start_time = now
     }
 
     // Se está voltando para preparação (fase 0)
     if (phase === 0) {
       updateData.event_started = false
       updateData.event_ended = false
-      // Resetar timestamps se voltar para preparação
       updateData.event_start_time = null
       updateData.event_end_time = null
-      updateData.phase_1_start_time = null
-      updateData.phase_2_start_time = null
-      updateData.phase_3_start_time = null
-      updateData.phase_4_start_time = null
-      updateData.phase_5_start_time = null
     }
 
     console.log('🔄 Atualizando event_config com:', updateData)

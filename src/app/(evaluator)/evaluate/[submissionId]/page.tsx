@@ -40,6 +40,7 @@ export default async function EvaluateSubmissionPage({
     .select(`
       *,
       team:team_id (
+        id,
         name,
         course,
         members
@@ -48,7 +49,11 @@ export default async function EvaluateSubmissionPage({
         name,
         description,
         max_points,
-        phase_id
+        phase_id,
+        phase:phase_id (
+          name,
+          duration_minutes
+        )
       )
     `)
     .eq('id', submissionId)
@@ -127,6 +132,14 @@ export default async function EvaluateSubmissionPage({
                   <p className="text-sm text-[#00E5FF]/70">Pontuação Máxima</p>
                   <p className="font-bold text-2xl text-[#00E5FF]">{submission.quest?.max_points} pontos</p>
                 </div>
+
+                {submission.quest?.phase && (
+                  <div className="pt-3 border-t border-[#00E5FF]/20">
+                    <p className="text-sm text-[#00E5FF]/70">Fase</p>
+                    <p className="font-bold text-white">{submission.quest.phase.name}</p>
+                    <p className="text-[#00D4FF] text-sm mt-1">⏱️ Duração: {submission.quest.phase.duration_minutes} minutos</p>
+                  </div>
+                )}
 
                 <div className="pt-3 border-t border-[#00E5FF]/20">
                   <p className="text-sm text-[#00E5FF]/70">Data de Envio</p>

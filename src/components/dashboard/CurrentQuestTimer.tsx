@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 
 interface Quest {
-  questNumber: number
+  id: string
+  order_index: number
   name: string
   description: string
-  maxPoints: number
-  deliveryType: string[]
+  max_points: number
+  deliverable_type: string
+  status: string
 }
 
 interface CurrentQuestTimerProps {
@@ -17,121 +20,151 @@ interface CurrentQuestTimerProps {
   phaseDurationMinutes: number
 }
 
-// Quest data by phase
-const PHASES_QUESTS: Record<number, Quest[]> = {
+// Fallback quest data para fases sem quests no banco
+const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
   1: [
     {
-      questNumber: 1,
+      id: 'f-1-1',
+      order_index: 1,
       name: 'Conhecendo o Terreno',
       description: 'Análise do mercado através de TAM/SAM/SOM',
-      maxPoints: 100,
-      deliveryType: ['file']
+      max_points: 100,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 2,
+      id: 'f-1-2',
+      order_index: 2,
       name: 'A Persona Secreta',
       description: 'Definir o público-alvo da startup',
-      maxPoints: 50,
-      deliveryType: ['file', 'text']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 3,
+      id: 'f-1-3',
+      order_index: 3,
       name: 'Construindo Pontes',
       description: 'Estratégia de relacionamento e distribuição',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     }
   ],
   2: [
     {
-      questNumber: 1,
+      id: 'f-2-1',
+      order_index: 1,
       name: 'A Grande Ideia',
       description: 'Proposta de valor única + Business Model Canvas',
-      maxPoints: 100,
-      deliveryType: ['file', 'text']
+      max_points: 100,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 2,
+      id: 'f-2-2',
+      order_index: 2,
       name: 'Identidade Secreta',
       description: 'Nome e logotipo da startup',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 3,
+      id: 'f-2-3',
+      order_index: 3,
       name: 'Prova de Conceito',
       description: 'Protótipo navegável da solução',
-      maxPoints: 150,
-      deliveryType: ['url', 'file']
+      max_points: 150,
+      deliverable_type: 'url',
+      status: 'scheduled'
     }
   ],
   3: [
     {
-      questNumber: 1,
+      id: 'f-3-1',
+      order_index: 1,
       name: 'Montando o Exército',
       description: 'Atividades-chave e recursos necessários',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 2,
+      id: 'f-3-2',
+      order_index: 2,
       name: 'Aliados Estratégicos',
       description: 'Definir 2 parceiros-chave',
-      maxPoints: 50,
-      deliveryType: ['file', 'text']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 3,
+      id: 'f-3-3',
+      order_index: 3,
       name: 'Show Me The Money',
       description: 'Estrutura de custos e receitas',
-      maxPoints: 100,
-      deliveryType: ['file']
+      max_points: 100,
+      deliverable_type: 'file',
+      status: 'scheduled'
     }
   ],
   4: [
     {
-      questNumber: 1,
+      id: 'f-4-1',
+      order_index: 1,
       name: 'Teste de Fogo',
       description: 'Simular uso do produto e melhorias',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 2,
+      id: 'f-4-2',
+      order_index: 2,
       name: 'Validação de Mercado',
       description: 'Pesquisa rápida com 5+ pessoas',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 3,
+      id: 'f-4-3',
+      order_index: 3,
       name: 'Números que Convencem',
       description: 'Refinar projeções financeiras',
-      maxPoints: 50,
-      deliveryType: ['file']
+      max_points: 50,
+      deliverable_type: 'file',
+      status: 'scheduled'
     }
   ],
   5: [
     {
-      questNumber: 1,
+      id: 'f-5-1',
+      order_index: 1,
       name: 'A História Épica',
       description: 'Estruturar narrativa do pitch (5 minutos)',
-      maxPoints: 75,
-      deliveryType: ['file']
+      max_points: 75,
+      deliverable_type: 'file',
+      status: 'scheduled'
     },
     {
-      questNumber: 2,
+      id: 'f-5-2',
+      order_index: 2,
       name: 'Slides de Impacto',
       description: 'Criar apresentação visual',
-      maxPoints: 50,
-      deliveryType: ['file', 'url']
+      max_points: 50,
+      deliverable_type: 'url',
+      status: 'scheduled'
     },
     {
-      questNumber: 3,
+      id: 'f-5-3',
+      order_index: 3,
       name: 'Ensaio Geral',
       description: 'Treinar pitch e ajustar timing',
-      maxPoints: 25,
-      deliveryType: ['file']
+      max_points: 25,
+      deliverable_type: 'file',
+      status: 'scheduled'
     }
   ]
 }
@@ -153,9 +186,69 @@ export default function CurrentQuestTimer({
     percentage: 100
   })
 
-  const quests = PHASES_QUESTS[phase] || []
+  const [quests, setQuests] = useState<Quest[]>([])
+  const [loadingQuests, setLoadingQuests] = useState(true)
+  const supabase = createClient()
+
+  // Carregar quests da fase atual do banco de dados
+  useEffect(() => {
+    const fetchQuests = async () => {
+      try {
+        // Primeiro, buscar o ID da fase atual
+        const { data: phaseData, error: phaseError } = await supabase
+          .from('phases')
+          .select('id')
+          .eq('order_index', phase)
+          .single()
+
+        if (phaseError || !phaseData) {
+          console.error('Erro ao buscar fase:', phaseError)
+          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+          setLoadingQuests(false)
+          return
+        }
+
+        // Agora buscar quests APENAS dessa fase
+        const { data, error } = await supabase
+          .from('quests')
+          .select(`
+            id,
+            order_index,
+            name,
+            description,
+            max_points,
+            deliverable_type,
+            status
+          `)
+          .eq('phase_id', phaseData.id)
+          .in('status', ['scheduled', 'active'])
+          .order('order_index')
+
+        if (!error && data && data.length > 0) {
+          // Ordenar por order_index para garantir ordem correta
+          const sortedData = [...data].sort((a, b) => a.order_index - b.order_index)
+          console.log(`✅ Quests carregadas para Fase ${phase}:`, sortedData.map(q => `[${q.order_index}] ${q.name}`))
+          setQuests(sortedData)
+        } else {
+          // Usar fallback se não houver quests no banco para essa fase
+          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase}, usando fallback`)
+          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+        }
+      } catch (err) {
+        console.error('Erro ao carregar quests:', err)
+        // Usar fallback em caso de erro
+        setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+      } finally {
+        setLoadingQuests(false)
+      }
+    }
+
+    setLoadingQuests(true)
+    fetchQuests()
+  }, [phase, supabase])
+
   const questCount = quests.length
-  const timePerQuest = (phaseDurationMinutes / questCount) * 60 * 1000 // Convert to milliseconds
+  const timePerQuest = (phaseDurationMinutes / (questCount || 1)) * 60 * 1000 // Convert to milliseconds
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -202,10 +295,19 @@ export default function CurrentQuestTimer({
     (new Date().getTime() -
       new Date(phaseStartedAt.endsWith('Z') ? phaseStartedAt : phaseStartedAt + 'Z').getTime()) / 1000
   )
-  const timePerQuestSeconds = (phaseDurationMinutes / questCount) * 60
-  const currentQuestIndex = Math.floor(elapsedSeconds / timePerQuestSeconds)
-  const currentQuest = quests[Math.min(currentQuestIndex, quests.length - 1)]
+  const timePerQuestSeconds = (phaseDurationMinutes / (questCount || 1)) * 60
+
+  // Garantir que currentQuestIndex nunca ultrapassa quests.length - 1
+  const rawQuestIndex = Math.floor(elapsedSeconds / timePerQuestSeconds)
+  const currentQuestIndex = Math.min(Math.max(0, rawQuestIndex), Math.max(0, quests.length - 1))
+
+  const currentQuest = quests[currentQuestIndex] || quests[0]
   const questTimeRemaining = timePerQuestSeconds - (elapsedSeconds % timePerQuestSeconds)
+
+  // Debug logging (apenas na primeira renderização após carregar quests)
+  if (quests.length > 0 && Math.random() < 0.05) {
+    console.log(`[Timer] Fase ${phase}: elapsed=${elapsedSeconds}s, timePerQuest=${Math.round(timePerQuestSeconds)}s, currentIndex=${currentQuestIndex}, currentQuest=${currentQuest?.name}`)
+  }
 
   const getProgressColor = () => {
     if (timeLeft.percentage > 66) return 'bg-green-500'
@@ -213,48 +315,58 @@ export default function CurrentQuestTimer({
     return 'bg-red-500'
   }
 
+  if (loadingQuests) {
+    return (
+      <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 text-white">
+        <p className="text-center text-[#00E5FF]">Carregando dados das quests...</p>
+      </Card>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {/* Quest Atual */}
-      <Card className="p-4 md:p-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white overflow-hidden">
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs md:text-sm font-semibold text-indigo-100 mb-1">
-              QUEST ATUAL ({currentQuestIndex + 1}/{questCount})
-            </p>
-            <h3 className="text-lg md:text-2xl font-bold mb-1 truncate">
-              {currentQuest?.questNumber}. {currentQuest?.name}
-            </h3>
-            <p className="text-sm md:text-base text-indigo-100 line-clamp-2">
-              {currentQuest?.description}
-            </p>
-          </div>
-
-          {/* Progress bar for quest */}
-          <div className="pt-2">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs md:text-sm font-semibold">Tempo desta Quest</span>
-              <span className="text-xs md:text-sm font-mono">
-                {Math.floor(questTimeRemaining / 60)}:{formatNumber(Math.floor(questTimeRemaining % 60))}
-              </span>
+      {currentQuest && (
+        <Card className="p-4 md:p-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white overflow-hidden">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs md:text-sm font-semibold text-indigo-100 mb-1">
+                QUEST ATUAL ({currentQuestIndex + 1}/{questCount})
+              </p>
+              <h3 className="text-lg md:text-2xl font-bold mb-1 truncate">
+                {currentQuest.order_index}. {currentQuest.name}
+              </h3>
+              <p className="text-sm md:text-base text-indigo-100 line-clamp-2">
+                {currentQuest.description}
+              </p>
             </div>
-            <div className="w-full bg-[#0A1E47]/20 rounded-full h-2 md:h-3 overflow-hidden">
-              <div
-                className="bg-[#0A1E47] h-full transition-all duration-1000"
-                style={{
-                  width: `${Math.max(0, (questTimeRemaining / timePerQuestSeconds) * 100)}%`
-                }}
-              />
+
+            {/* Progress bar for quest */}
+            <div className="pt-2">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs md:text-sm font-semibold">Tempo desta Quest</span>
+                <span className="text-xs md:text-sm font-mono">
+                  {Math.floor(questTimeRemaining / 60)}:{formatNumber(Math.floor(questTimeRemaining % 60))}
+                </span>
+              </div>
+              <div className="w-full bg-[#0A1E47]/20 rounded-full h-2 md:h-3 overflow-hidden">
+                <div
+                  className="bg-[#0A1E47] h-full transition-all duration-1000"
+                  style={{
+                    width: `${Math.max(0, (questTimeRemaining / timePerQuestSeconds) * 100)}%`
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Points info */}
+            <div className="flex justify-between items-center pt-2 border-t border-[#00E5FF]/40">
+              <span className="text-xs md:text-sm">Pontos desta Quest</span>
+              <span className="text-lg md:text-xl font-bold">{currentQuest.max_points} pts</span>
             </div>
           </div>
-
-          {/* Points info */}
-          <div className="flex justify-between items-center pt-2 border-t border-[#00E5FF]/40">
-            <span className="text-xs md:text-sm">Pontos desta Quest</span>
-            <span className="text-lg md:text-xl font-bold">{currentQuest?.maxPoints} pts</span>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Total Phase Time */}
       <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 text-white overflow-visible border-2 border-[#00E5FF]/40">
@@ -316,9 +428,9 @@ export default function CurrentQuestTimer({
           <p className="text-xs md:text-sm font-bold text-[#00E5FF] mb-3 uppercase tracking-wide">📋 PRÓXIMAS QUESTS</p>
           <div className="space-y-2">
             {quests.slice(currentQuestIndex + 1, currentQuestIndex + 3).map((quest) => (
-              <div key={quest.questNumber} className="flex items-start gap-3 p-3 bg-[#0A1E47]/60 border border-[#00E5FF]/20 rounded-lg hover:border-[#00E5FF]/40 transition-all">
+              <div key={quest.id} className="flex items-start gap-3 p-3 bg-[#0A1E47]/60 border border-[#00E5FF]/20 rounded-lg hover:border-[#00E5FF]/40 transition-all">
                 <span className="text-base font-bold text-[#00E5FF] flex-shrink-0">
-                  {quest.questNumber}.
+                  {quest.order_index}.
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs md:text-sm font-semibold text-white truncate">
@@ -327,7 +439,7 @@ export default function CurrentQuestTimer({
                   <p className="text-xs text-[#00E5FF]/80 line-clamp-1">{quest.description}</p>
                 </div>
                 <span className="text-xs md:text-sm font-bold text-yellow-300 flex-shrink-0 whitespace-nowrap">
-                  {quest.maxPoints}pts
+                  {quest.max_points}pts
                 </span>
               </div>
             ))}

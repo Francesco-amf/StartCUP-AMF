@@ -117,10 +117,10 @@ export default function PowerUpActivator() {
   }
 
   return (
-    <Card className="p-2 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40 w-full overflow-hidden">
+    <Card className="p-2 bg-gradient-to-br from-red-900 via-red-800 to-orange-900 border-2 border-red-400 w-full overflow-hidden">
       <div className="mb-2">
-        <h2 className="text-xs font-bold text-[#00E5FF]">⚡ Power-ups (Fase {currentPhase})</h2>
-        <p className="text-xs text-[#00E5FF]/70 line-clamp-1">
+        <h2 className="text-xs font-bold text-red-200">⚡ Power-ups (Fase {currentPhase})</h2>
+        <p className="text-xs text-red-200/80 line-clamp-1">
           {canUse
             ? 'Escolha um power-up'
             : `Já usou: ${POWER_UPS.find(p => p.id === usedPowerUp)?.name}`}

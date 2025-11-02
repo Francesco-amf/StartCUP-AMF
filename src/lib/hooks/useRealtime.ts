@@ -58,7 +58,7 @@ export function useRealtimePhase(refreshInterval = 5000) {
   const supabase = createClient()
 
   useEffect(() => {
-    // Função para buscar fase
+    // Função para buscar fase e quest ativa
     const fetchPhase = async () => {
       const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
       const { data, error } = await supabase
@@ -71,23 +71,51 @@ export function useRealtimePhase(refreshInterval = 5000) {
         // Mapear event_started/event_ended para event_status
         const phaseInfo = getPhaseInfo(data.current_phase)
 
-        // Determinar qual timestamp de fase usar
-        const phaseStartTime =
-          data.current_phase === 1 ? data.phase_1_start_time :
-          data.current_phase === 2 ? data.phase_2_start_time :
-          data.current_phase === 3 ? data.phase_3_start_time :
-          data.current_phase === 4 ? data.phase_4_start_time :
-          data.current_phase === 5 ? data.phase_5_start_time :
-          data.event_start_time
+        // Usar event_start_time quando o evento está em andamento
+        // Isso fornece o timestamp de quando o evento (e a fase atual) começou
+        const phaseStartTime = data.current_phase > 0 && data.event_started
+          ? data.event_start_time  // Timestamp de quando o evento começou
+          : null
+
+        // Buscar quest ativa para a fase atual
+        let activeQuest = null
+        if (data.current_phase > 0) {
+          const { data: questData } = await supabase
+            .from('quests')
+            .select(`
+              id,
+              name,
+              description,
+              max_points,
+              order_index,
+              duration_minutes,
+              deliverable_type,
+              status,
+              phase:phase_id (
+                id,
+                name,
+                order_index
+              )
+            `)
+            .in('status', ['scheduled', 'active'])
+            .order('order_index')
+            .limit(1)
+
+          if (questData && questData.length > 0) {
+            activeQuest = questData[0]
+          }
+        }
 
         const phaseData = {
           ...data,
           event_status: data.event_started
             ? (data.event_ended ? 'ended' : 'running')
             : 'not_started',
-          // Usar o timestamp correto da fase atual
+          // Usar o timestamp de quando o evento começou
           phase_started_at: phaseStartTime,
-          phases: phaseInfo
+          phases: phaseInfo,
+          // Adicionar quest ativa aos dados da fase
+          active_quest: activeQuest
         }
         setPhase(phaseData)
       }

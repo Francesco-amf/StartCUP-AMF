@@ -208,6 +208,8 @@ export default function CurrentQuestTimer({
           return
         }
 
+        console.log(`🔍 Buscando quests para Fase ${phase} (phase_id: ${phaseData.id})`)
+
         // Agora buscar quests APENAS dessa fase
         const { data, error } = await supabase
           .from('quests')
@@ -224,6 +226,12 @@ export default function CurrentQuestTimer({
           .in('status', ['scheduled', 'active'])
           .order('order_index')
 
+        if (error) {
+          console.error(`❌ Erro ao buscar quests para Fase ${phase}:`, error)
+        }
+
+        console.log(`📊 Resultado da query - Total de quests: ${data?.length || 0}`, data)
+
         if (!error && data && data.length > 0) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a, b) => a.order_index - b.order_index)
@@ -238,13 +246,14 @@ export default function CurrentQuestTimer({
           setQuests(normalizedQuests)
         } else {
           // Usar fallback se não houver quests no banco para essa fase
-          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase}, usando fallback`)
+          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
           const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
           // Normalizar fallback também para garantir consistência
           const normalizedFallback = fallbackQuests.map((q, idx) => ({
             ...q,
             order_index: idx + 1
           }))
+          console.log(`📋 Fallback quests para Fase ${phase}:`, normalizedFallback.map(q => `[${q.order_index}] ${q.name}`))
           setQuests(normalizedFallback)
         }
       } catch (err) {

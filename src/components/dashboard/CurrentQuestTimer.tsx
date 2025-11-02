@@ -287,15 +287,20 @@ export default function CurrentQuestTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // phaseStartedAt é ISO 8601 com Z (UTC)
-      // NÃO remover Z! Isso causa erro de timezone
-      const startTime = new Date(phaseStartedAt).getTime()
+      // ⚠️ CRÍTICO: phaseStartedAt pode vir SEM Z do Supabase
+      // Se não tem Z, adicionar para forçar interpretação como UTC
+      const ensureZFormat = phaseStartedAt.endsWith('Z')
+        ? phaseStartedAt
+        : `${phaseStartedAt}Z`
+
+      const startTime = new Date(ensureZFormat).getTime()
       const now = new Date().getTime()
       const elapsed = now - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
 
       console.log(`⏱️ CurrentQuestTimer - Phase ${phase}:`)
-      console.log(`   - phaseStartedAt: ${phaseStartedAt}`)
+      console.log(`   - phaseStartedAt (raw): ${phaseStartedAt}`)
+      console.log(`   - with Z: ${ensureZFormat}`)
       console.log(`   - startTime (ms): ${startTime}`)
       console.log(`   - now (ms): ${now}`)
       console.log(`   - elapsed: ${(elapsed / 1000 / 60).toFixed(1)} minutes`)
@@ -337,11 +342,13 @@ export default function CurrentQuestTimer({
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // Determine which quest is current based on time elapsed
-  // phaseStartedAt é ISO 8601 com Z (UTC)
-  // NÃO remover Z!
+  // ⚠️ CRÍTICO: Adicionar Z se não existir
+  const ensureZForQuest = phaseStartedAt.endsWith('Z')
+    ? phaseStartedAt
+    : `${phaseStartedAt}Z`
   const elapsedSeconds = Math.floor(
     (new Date().getTime() -
-      new Date(phaseStartedAt).getTime()) / 1000
+      new Date(ensureZForQuest).getTime()) / 1000
   )
   const timePerQuestSeconds = (phaseDurationMinutes / (questCount || 1)) * 60
 

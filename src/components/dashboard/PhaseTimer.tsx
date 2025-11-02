@@ -28,19 +28,20 @@ export default function PhaseTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // phaseStartedAt é ISO 8601 com Z (UTC)
-      // Tratar como UTC - NÃO remover Z!
-      // ISO 8601: "2025-11-02T10:30:00Z" significa 10:30 UTC
-      // Se remover Z e virar "2025-11-02T10:30:00", JS interpreta como local time
-      // Em Brasília (UTC-3): 10:30 UTC = 07:30 local, mas sem Z vira 10:30 local = ERRADO 3h de diferença!
+      // ⚠️ CRÍTICO: phaseStartedAt pode vir SEM Z do Supabase
+      // Se não tem Z, adicionar para forçar interpretação como UTC
+      const ensureZFormat = phaseStartedAt.endsWith('Z')
+        ? phaseStartedAt
+        : `${phaseStartedAt}Z`
 
-      const startTime = new Date(phaseStartedAt).getTime()
+      const startTime = new Date(ensureZFormat).getTime()
       const endTime = startTime + durationMinutes * 60 * 1000
       const now = new Date().getTime()
       const difference = endTime - now
 
       console.log(`⏱️ PhaseTimer - ${phaseName}:`)
-      console.log(`   phaseStartedAt: ${phaseStartedAt}`)
+      console.log(`   phaseStartedAt (raw): ${phaseStartedAt}`)
+      console.log(`   with Z: ${ensureZFormat}`)
       console.log(`   startTime (ms): ${startTime}`)
       console.log(`   endTime (ms): ${endTime}`)
       console.log(`   now (ms): ${now}`)

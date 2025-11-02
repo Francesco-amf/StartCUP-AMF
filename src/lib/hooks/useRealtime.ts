@@ -76,64 +76,14 @@ export function useRealtimePhase(refreshInterval = 5000) {
         // Caso contrário, calcular baseado em quando o evento começou + duração das fases anteriores
         let phaseStartTime = null
 
-        if (data.current_phase > 0 && data.event_started) {
-          // Preferir phase_started_at se existir no banco
-          if (data.phase_started_at) {
-            phaseStartTime = data.phase_started_at
-            console.log(`📍 Phase ${data.current_phase} using phase_started_at from DB: ${phaseStartTime}`)
-          } else if (data.event_start_time) {
-            // NOVO APPROACH: Calcular fase CORRETA com base no tempo decorrido
-            // Isso funciona mesmo que o evento tenha rodado muitas horas
+        if (data.current_phase > 0 && data.event_started && data.phase_started_at) {
+          // ✅ SOLUÇÃO DEFINITIVA: phase_started_at é salvo no BD pela API
+          // Não precisa calcular no cliente, todos usam o mesmo valor
+          phaseStartTime = data.phase_started_at
 
-            const eventStartTime = new Date(data.event_start_time).getTime()
-            const now = new Date().getTime()
-            const elapsedMs = now - eventStartTime
-            const elapsedMins = elapsedMs / (60 * 1000)
-
-            // Calcular qual DEVERIA ser a fase atual baseado no tempo decorrido
-            // Phase 1: 0-150 min
-            // Phase 2: 150-360 min
-            // Phase 3: 360-450 min
-            // etc.
-            let correctPhase = 1
-            let phaseStartMinutes = 0 // When current phase started (in minutes from event start)
-            let cumulativeMinutes = 0
-
-            for (let i = 1; i <= 5; i++) {
-              const phaseDuration = getPhaseInfo(i).duration_minutes
-              if (elapsedMins < cumulativeMinutes + phaseDuration) {
-                // Encontrou a fase correta
-                correctPhase = i
-                phaseStartMinutes = cumulativeMinutes
-                break
-              }
-              cumulativeMinutes += phaseDuration
-            }
-
-            // ⚠️ Se a fase calculada NÃO bate com data.current_phase
-            // pode significar que há desincronização ou evento rodou muito
-            if (correctPhase !== data.current_phase) {
-              console.warn(`⚠️ DESINCRONIZAÇÃO: DB diz fase ${data.current_phase} mas tempo decorrido indica fase ${correctPhase}`)
-              console.warn(`   Elapsed: ${elapsedMins.toFixed(1)} min, usando phase ${data.current_phase} do DB`)
-            }
-
-            // Usar a fase do DB, mas calcular quando ela começou
-            const prevPhaseDuration = Array.from({ length: data.current_phase })
-              .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
-
-            const prevPhaseDurationMs = prevPhaseDuration * 60 * 1000
-            const phaseStartMs = eventStartTime + prevPhaseDurationMs
-
-            phaseStartTime = new Date(phaseStartMs).toISOString()
-
-            console.log(`🔍 Phase ${data.current_phase} Calculation:`)
-            console.log(`   Event start: ${data.event_start_time}`)
-            console.log(`   Elapsed: ${elapsedMins.toFixed(1)} min (${(elapsedMins / 60).toFixed(2)}h)`)
-            console.log(`   Calculated phase from elapsed: ${correctPhase} (current DB: ${data.current_phase})`)
-            console.log(`   Phase ${data.current_phase} started at: ${phaseStartTime}`)
-            console.log(`   Phase ${data.current_phase} duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
-            console.log(`   Time into current phase: ${(elapsedMins - prevPhaseDuration).toFixed(1)} min`)
-          }
+          console.log(`📍 Phase ${data.current_phase}:`)
+          console.log(`   phase_started_at (from DB): ${phaseStartTime}`)
+          console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
         }
 
         // Buscar quest ativa para a fase atual

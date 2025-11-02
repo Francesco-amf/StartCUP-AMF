@@ -287,20 +287,15 @@ export default function CurrentQuestTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // phaseStartedAt vem com Z mas foi calculado com local time
-      // Remover Z para ler como local time (consistente com cálculo original)
-      const cleanTimestamp = phaseStartedAt.endsWith('Z')
-        ? phaseStartedAt.slice(0, -1)
-        : phaseStartedAt
-
-      const startTime = new Date(cleanTimestamp).getTime()
+      // phaseStartedAt é ISO 8601 com Z (UTC)
+      // NÃO remover Z! Isso causa erro de timezone
+      const startTime = new Date(phaseStartedAt).getTime()
       const now = new Date().getTime()
       const elapsed = now - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
 
       console.log(`⏱️ CurrentQuestTimer - Phase ${phase}:`)
-      console.log(`   - phaseStartedAt (original): ${phaseStartedAt}`)
-      console.log(`   - cleanTimestamp: ${cleanTimestamp}`)
+      console.log(`   - phaseStartedAt: ${phaseStartedAt}`)
       console.log(`   - startTime (ms): ${startTime}`)
       console.log(`   - now (ms): ${now}`)
       console.log(`   - elapsed: ${(elapsed / 1000 / 60).toFixed(1)} minutes`)
@@ -342,14 +337,11 @@ export default function CurrentQuestTimer({
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // Determine which quest is current based on time elapsed
-  // phaseStartedAt tem Z mas foi calculado com local time
-  // Remover Z para ser consistente
-  const cleanForQuestCalc = phaseStartedAt.endsWith('Z')
-    ? phaseStartedAt.slice(0, -1)
-    : phaseStartedAt
+  // phaseStartedAt é ISO 8601 com Z (UTC)
+  // NÃO remover Z!
   const elapsedSeconds = Math.floor(
     (new Date().getTime() -
-      new Date(cleanForQuestCalc).getTime()) / 1000
+      new Date(phaseStartedAt).getTime()) / 1000
   )
   const timePerQuestSeconds = (phaseDurationMinutes / (questCount || 1)) * 60
 

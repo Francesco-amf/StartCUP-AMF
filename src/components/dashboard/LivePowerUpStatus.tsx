@@ -34,13 +34,14 @@ export default function LivePowerUpStatus() {
       try {
         // Obter fase atual
         const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
-        const { data: eventConfig } = await supabase
+        const { data: eventConfig, error: configError } = await supabase
           .from('event_config')
           .select('current_phase, event_status')
           .eq('id', eventConfigId)
           .single()
 
-        if (!eventConfig) {
+        if (configError || !eventConfig) {
+          console.error('Erro ao buscar event_config:', configError)
           setPowerUps([])
           setLoading(false)
           return
@@ -57,19 +58,33 @@ export default function LivePowerUpStatus() {
         setCurrentPhase(eventConfig.current_phase)
 
         // Obter power-ups usados APENAS nesta fase específica e que estão com status 'used'
-        const { data: pups } = await supabase
+        const { data: pups, error: pupsError } = await supabase
           .from('power_ups')
-          .select('team_id, power_up_type')
+          .select('team_id, power_up_type, phase_used')
           .eq('phase_used', eventConfig.current_phase)
           .eq('status', 'used')
+
+        if (pupsError) {
+          console.error('Erro ao buscar power-ups:', pupsError)
+          setPowerUps([])
+          setLoading(false)
+          return
+        }
 
         if (pups && pups.length > 0) {
           // Obter nomes das equipes
           const teamIds = [...new Set(pups.map(p => p.team_id))]
-          const { data: teams } = await supabase
+          const { data: teams, error: teamsError } = await supabase
             .from('teams')
             .select('id, name')
             .in('id', teamIds)
+
+          if (teamsError) {
+            console.error('Erro ao buscar equipes:', teamsError)
+            setPowerUps([])
+            setLoading(false)
+            return
+          }
 
           const teamMap = new Map(teams?.map(t => [t.id, t.name]) || [])
 

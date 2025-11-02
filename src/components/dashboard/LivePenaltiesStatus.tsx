@@ -40,55 +40,84 @@ export default function LivePenaltiesStatus() {
     const fetchPenalties = async () => {
       try {
         // Obter todas as penalidades
-        const { data: penaltiesData } = await supabase
+        const { data: penaltiesData, error: penaltiesError } = await supabase
           .from('penalties')
           .select('*')
           .order('assigned_at', { ascending: false })
           .limit(10)
 
-        if (penaltiesData && penaltiesData.length > 0) {
-          // Obter nomes das equipes
-          const teamIds = [...new Set(penaltiesData.map(p => p.team_id))]
-          const { data: teamsData } = await supabase
-            .from('teams')
-            .select('id, name')
-            .in('id', teamIds)
+        if (penaltiesError) {
+          console.error('Erro ao buscar penalidades:', penaltiesError)
+          setPenalties([])
+          setLoading(false)
+          return
+        }
 
-          const teamMap = new Map(teamsData?.map(t => [t.id, t.name]) || [])
+        if (!penaltiesData || penaltiesData.length === 0) {
+          setPenalties([])
+          setLoading(false)
+          return
+        }
 
-          // Obter nomes dos avaliadores
-          const evaluatorIds = penaltiesData
-            .filter(p => p.assigned_by_evaluator_id)
-            .map(p => p.assigned_by_evaluator_id)
-          const { data: evaluatorsData } = await supabase
+        // Obter nomes das equipes
+        const teamIds = [...new Set(penaltiesData.map(p => p.team_id))]
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select('id, name')
+          .in('id', teamIds)
+
+        if (teamsError) {
+          console.error('Erro ao buscar equipes:', teamsError)
+          setPenalties([])
+          setLoading(false)
+          return
+        }
+
+        const teamMap = new Map(teamsData?.map(t => [t.id, t.name]) || [])
+
+        // Obter nomes dos avaliadores (apenas se houver IDs para buscar)
+        let evaluatorMap = new Map()
+        const evaluatorIds = penaltiesData
+          .filter(p => p.assigned_by_evaluator_id)
+          .map(p => p.assigned_by_evaluator_id)
+          .filter((id, index, self) => id && self.indexOf(id) === index) // Remove duplicatas e null/undefined
+
+        if (evaluatorIds.length > 0) {
+          const { data: evaluatorsData, error: evaluatorsError } = await supabase
             .from('evaluators')
             .select('id, name')
             .in('id', evaluatorIds)
 
-          const evaluatorMap = new Map(evaluatorsData?.map(e => [e.id, e.name]) || [])
-
-          // Formatar penalidades
-          const formatted = penaltiesData.map((p: any) => ({
-            id: p.id,
-            team_id: p.team_id,
-            team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
-            penalty_type: p.penalty_type,
-            points_deduction: p.points_deduction,
-            reason: p.reason,
-            assigned_by_admin: p.assigned_by_admin,
-            evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
-            assigned_at: p.assigned_at
-          }))
-
-          setPenalties(formatted)
+          if (evaluatorsError) {
+            console.error('Erro ao buscar avaliadores:', evaluatorsError)
+          } else {
+            evaluatorMap = new Map(evaluatorsData?.map(e => [e.id, e.name]) || [])
+          }
         }
+
+        // Formatar penalidades
+        const formatted = penaltiesData.map((p: any) => ({
+          id: p.id,
+          team_id: p.team_id,
+          team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
+          penalty_type: p.penalty_type,
+          points_deduction: p.points_deduction || 0,
+          reason: p.reason || null,
+          assigned_by_admin: p.assigned_by_admin || false,
+          evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
+          assigned_at: p.assigned_at
+        }))
+
+        setPenalties(formatted)
       } catch (err) {
         console.error('Erro ao buscar penalidades:', err)
+        setPenalties([])
       } finally {
         setLoading(false)
       }
     }
 
+    setLoading(true)
     fetchPenalties()
 
     // Atualizar a cada 5 segundos

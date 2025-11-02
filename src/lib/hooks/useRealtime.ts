@@ -80,18 +80,19 @@ export function useRealtimePhase(refreshInterval = 5000) {
           const phaseStartColumn = `phase_${data.current_phase}_start_time`
           let rawTimestamp = data[phaseStartColumn]
 
-          // ⚠️ TIMEZONE FIX: Se há offset de -3h (Brasília UTC-3)
-          // O timestamp foi salvo com offset. Precisamos compensar.
-          // Brasília é UTC-3, então adicionar 3 horas (10800000 ms)
           if (rawTimestamp) {
+            // ⚠️ TIMEZONE: Deixar JavaScript interpretar o timestamp naturalmente
+            // new Date() já faz a conversão automática para local time
+            // Usar como ISO string direto para os componentes
+            phaseStartTime = rawTimestamp
+
             const date = new Date(rawTimestamp)
-            const offsetMs = 3 * 60 * 60 * 1000 // 3 hours
-            const adjustedMs = date.getTime() + offsetMs
-            phaseStartTime = new Date(adjustedMs).toISOString()
+            const browserTimezone = -new Date().getTimezoneOffset() / 60
 
             console.log(`📍 Phase ${data.current_phase}:`)
             console.log(`   ${phaseStartColumn} (raw): ${rawTimestamp}`)
-            console.log(`   ${phaseStartColumn} (adjusted): ${phaseStartTime}`)
+            console.log(`   Browser timezone: UTC${browserTimezone > 0 ? '+' : ''}${browserTimezone}`)
+            console.log(`   Parsed local: ${date.toLocaleString('pt-BR')}`)
             console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
           }
         }

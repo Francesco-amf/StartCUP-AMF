@@ -86,12 +86,18 @@ export function useRealtimePhase(refreshInterval = 5000) {
             const prevPhaseDuration = Array.from({ length: data.current_phase })
               .reduce((sum, _, i) => sum + getPhaseInfo(i).duration_minutes, 0)
 
-            const eventStartTime = new Date(data.event_start_time).getTime()
+            // Garantir que o timestamp tem Z (UTC)
+            const eventStartStr = data.event_start_time.endsWith('Z')
+              ? data.event_start_time
+              : data.event_start_time + 'Z'
+            const eventStartTime = new Date(eventStartStr).getTime()
             const phaseStartMs = eventStartTime + (prevPhaseDuration * 60 * 1000)
             phaseStartTime = new Date(phaseStartMs).toISOString()
 
             console.log(`📍 Phase ${data.current_phase} calculation:`)
             console.log(`   - event_start_time: ${data.event_start_time}`)
+            console.log(`   - event_start_time (with Z): ${eventStartStr}`)
+            console.log(`   - eventStartTime (ms): ${eventStartTime}`)
             console.log(`   - previous phases duration: ${prevPhaseDuration} minutes`)
             console.log(`   - calculated phase_start_time: ${phaseStartTime}`)
           }

@@ -334,7 +334,7 @@ export default function CurrentQuestTimer({
                 QUEST ATUAL ({currentQuestIndex + 1}/{questCount})
               </p>
               <h3 className="text-lg md:text-2xl font-bold mb-1 truncate">
-                {currentQuest.order_index}. {currentQuest.name}
+                {currentQuestIndex + 1}. {currentQuest.name}
               </h3>
               <p className="text-sm md:text-base text-indigo-100 line-clamp-2">
                 {currentQuest.description}
@@ -427,10 +427,10 @@ export default function CurrentQuestTimer({
         <div className="bg-[#0A1E47]/40 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-4">
           <p className="text-xs md:text-sm font-bold text-[#00E5FF] mb-3 uppercase tracking-wide">📋 PRÓXIMAS QUESTS</p>
           <div className="space-y-2">
-            {quests.slice(currentQuestIndex + 1, currentQuestIndex + 3).map((quest) => (
+            {quests.slice(currentQuestIndex + 1, currentQuestIndex + 3).map((quest, idx) => (
               <div key={quest.id} className="flex items-start gap-3 p-3 bg-[#0A1E47]/60 border border-[#00E5FF]/20 rounded-lg hover:border-[#00E5FF]/40 transition-all">
                 <span className="text-base font-bold text-[#00E5FF] flex-shrink-0">
-                  {quest.order_index}.
+                  {currentQuestIndex + 2 + idx}.
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs md:text-sm font-semibold text-white truncate">

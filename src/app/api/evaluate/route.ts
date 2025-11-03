@@ -151,7 +151,7 @@ export async function POST(request: Request) {
 
     // Calcular pontuação média
     if (allEvaluations && allEvaluations.length > 0) {
-      const totalPoints = allEvaluations.reduce((sum, e) => sum + e.points, 0)
+      const totalPoints = allEvaluations.reduce((sum: number, e: { points: number | null }) => sum + (e.points || 0), 0)
       const avgPoints = Math.round(totalPoints / allEvaluations.length)
 
       console.log('🔢 Calculating final points:', {

@@ -62,7 +62,8 @@ export default async function TeamDashboard() {
   const quests = activeQuestsData || []
 
   // Ordena quests por phase e order_index para garantir a sequencia correta
-  const sortedQuests = quests.sort((a, b) => {
+  // CORREÇÃO: Definindo tipo para 'a' e 'b'
+  const sortedQuests = quests.sort((a: any, b: any) => {
     const phaseCompare = a.phase.order_index - b.phase.order_index
     return phaseCompare !== 0 ? phaseCompare : a.order_index - b.order_index
   });
@@ -70,9 +71,11 @@ export default async function TeamDashboard() {
   const submittedQuestIds = submissions?.map(s => s.quest_id) || []
 
   // Encontra a primeira quest que ainda não foi entregue
-  const currentQuest = sortedQuests.find(q => !submittedQuestIds.includes(q.id));
+  // CORREÇÃO: Definindo tipo para 'q'
+  const currentQuest = sortedQuests.find((q: any) => !submittedQuestIds.includes(q.id));
 
-  const totalPoints = submissions?.reduce((sum, submission) => sum + (submission.final_points || 0), 0) || 0
+  // CORREÇÃO: Definindo tipo para 'sum' e 'submission'
+  const totalPoints = submissions?.reduce((sum: number, submission: { final_points: number | null }) => sum + (submission.final_points || 0), 0) || 0
 
 
   return (

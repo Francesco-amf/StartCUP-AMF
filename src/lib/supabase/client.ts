@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient, type AuthChangeEvent, type Session } from '@supabase/ssr'
 
 let clientInstance: ReturnType<typeof createBrowserClient> | null = null
 let listenerRegistered = false
@@ -17,7 +17,9 @@ export function createClient() {
   // Adicionar listeners para auto-refresh de token APENAS UMA VEZ
   if (typeof window !== 'undefined' && !listenerRegistered) {
     listenerRegistered = true
-    clientInstance.auth.onAuthStateChange((event, session) => {
+    
+    // CORREÇÃO: Adicionados os tipos para 'event' e 'session'
+    clientInstance.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (event === 'TOKEN_REFRESHED' && session) {
         console.log('✅ Token auto-refreshed')
       } else if (event === 'USER_UPDATED') {

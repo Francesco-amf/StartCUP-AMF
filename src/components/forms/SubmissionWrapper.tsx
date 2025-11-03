@@ -79,7 +79,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                 <SubmissionForm
                   questId={quest.id}
                   teamId={team.id}
-                  deliverableType={quest.deliverable_type}
+                  deliverableType={quest.deliverable_type[0]}
                   questName={quest.name}
                   maxPoints={quest.max_points}
                   onSuccess={handleSuccess}

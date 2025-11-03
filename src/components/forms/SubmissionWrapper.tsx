@@ -60,6 +60,9 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                   <h3 className="text-xl font-bold mb-2 text-[#00E5FF]">{quest.name}</h3>
                   <p className="text-[#00E5FF]/70 mb-4">{quest.description}</p>
                   <div className="text-xs text-[#00E5FF]/60 mb-3">
+                    {/* NOTA: quest.phase?.name pode dar erro se 'phase' não foi 
+                      incluído no select do Supabase. Se der, remova esta linha. 
+                    */}
                     📍 {quest.phase?.name}
                   </div>
 
@@ -76,14 +79,26 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                   )}
                 </div>
               ) : (
-                <SubmissionForm
-                  questId={quest.id}
-                  teamId={team.id}
-                  deliverableType={quest.deliverable_type[0]}
-                  questName={quest.name}
-                  maxPoints={quest.max_points}
-                  onSuccess={handleSuccess}
-                />
+                // ****** INÍCIO DA CORREÇÃO ******
+                // Iteramos sobre os tipos de entrega.
+                // Se for ['file'], renderiza 1 form.
+                // Se for ['file', 'url'], renderiza 2 forms.
+                // Se for [], não renderiza nada.
+                <div className="space-y-4">
+                  {quest.deliverable_type.map(type => (
+                    <SubmissionForm
+                      key={type} // Usamos o tipo como key
+                      questId={quest.id}
+                      teamId={team.id}
+                      // Usamos 'as' para forçar o TypeScript a aceitar:
+                      deliverableType={type as 'file' | 'text' | 'url'}
+                      questName={quest.name}
+                      maxPoints={quest.max_points}
+                      onSuccess={handleSuccess}
+                    />
+                  ))}
+                </div>
+                // ****** FIM DA CORREÇÃO ******
               )}
             </div>
           )

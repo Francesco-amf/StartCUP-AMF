@@ -189,12 +189,14 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     const phaseStartTimeKey = `phase_${activePhase}_start_time` as keyof EventConfig;
     const phaseStartTimeISO = eventConfig[phaseStartTimeKey];
 
-    if (!phaseStartTimeISO) {
-      console.log(`Phase ${activePhase} start time not found, cannot calculate auto-advance.`);
+    // CORREÇÃO: Verifique se é UMA STRING antes de usar
+    if (typeof phaseStartTimeISO !== 'string' || !phaseStartTimeISO) {
+      console.log(`Phase ${activePhase} start time not found or invalid type, cannot calculate auto-advance.`);
       return;
     }
 
-    const phaseStartTime = new Date(phaseStartTimeISO as string);
+    // Agora é 100% seguro, 'phaseStartTimeISO' é uma string válida
+    const phaseStartTime = new Date(phaseStartTimeISO);
 
     // Calculate total duration for the current phase
     const questsInActivePhase = allQuests.filter(q => q.phase_id === activePhase);

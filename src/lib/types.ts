@@ -12,6 +12,8 @@ export interface Quest {
   evaluation_criteria: string[];
   status: string;
   started_at: string | null;
+  planned_deadline_minutes: number | null;
+  late_submission_window_minutes: number | null;
   phase: {
     id: number;
     name: string;

@@ -276,9 +276,7 @@ export async function POST(request: Request) {
         }
       },
       { status: 201 }
-    )
-
-  } catch (error) {
+    )  } catch (error) {
     console.error('Erro fatal ao criar submissão:', error)
     return NextResponse.json(
       {

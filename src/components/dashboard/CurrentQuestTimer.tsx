@@ -451,16 +451,48 @@ export default function CurrentQuestTimer({
     <div className="space-y-4">
       {/* Quest Atual */}
       {currentQuest && (
-        <Card className="p-4 md:p-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white overflow-hidden">
+        <Card className={`p-4 md:p-6 text-white overflow-hidden ${
+          currentQuest.deliverable_type === 'presentation' || 
+          (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+            ? 'bg-gradient-to-r from-[#5A0A0A] to-[#3A0A0A] border-4 border-[#FF6B6B]'
+            : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+        }`}>
+          {/* Badge BOSS (se for apresentação) */}
+          {(currentQuest.deliverable_type === 'presentation' || 
+            (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))) && (
+            <div className="absolute top-4 right-4 bg-[#FF6B6B] text-white px-3 py-1 rounded-full font-bold text-xs shadow-lg animate-pulse">
+              🔥 BOSS
+            </div>
+          )}
+          
           <div className="space-y-3">
             <div>
-              <p className="text-xs md:text-sm font-semibold text-indigo-100 mb-1">
-                QUEST ATUAL ({currentQuestIndex + 1}/{questCount})
+              <p className={`text-xs md:text-sm font-semibold mb-1 ${
+                currentQuest.deliverable_type === 'presentation' || 
+                (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+                  ? 'text-[#FF6B6B]'
+                  : 'text-indigo-100'
+              }`}>
+                {currentQuest.deliverable_type === 'presentation' || 
+                 (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+                  ? `🎤 BOSS (${currentQuestIndex + 1}/${questCount})`
+                  : `QUEST ATUAL (${currentQuestIndex + 1}/${questCount})`
+                }
               </p>
-              <h3 className="text-lg md:text-2xl font-bold mb-1 truncate">
+              <h3 className={`text-lg md:text-2xl font-bold mb-1 truncate ${
+                currentQuest.deliverable_type === 'presentation' || 
+                (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+                  ? 'text-[#FFD700]'
+                  : 'text-white'
+              }`}>
                 {currentQuestIndex + 1}. {currentQuest.name}
               </h3>
-              <p className="text-sm md:text-base text-indigo-100 line-clamp-2">
+              <p className={`text-sm md:text-base line-clamp-2 ${
+                currentQuest.deliverable_type === 'presentation' || 
+                (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+                  ? 'text-[#FF6B6B]/80'
+                  : 'text-indigo-100'
+              }`}>
                 {currentQuest.description}
               </p>
             </div>

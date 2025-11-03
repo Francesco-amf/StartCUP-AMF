@@ -101,31 +101,120 @@ export async function POST(request: Request) {
       // Nenhuma próxima quest na fase atual, avançar para a próxima fase
       console.log(`ℹ️ Todas as quests da Fase ${currentQuest.phase_id} concluídas. Tentando avançar para a próxima fase...`)
 
-      // Chamar o endpoint existente para iniciar a próxima fase
       const nextPhaseId = currentQuest.phase_id + 1;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/start-phase-with-quests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phase: nextPhaseId }),
-      });
+      
+      // Verificar se a próxima fase existe (máximo 5 fases)
+      if (nextPhaseId > 5) {
+        console.log(`✅ Todas as fases concluídas! Evento finalizado.`)
+        
+        // Marcar evento como concluído
+        const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
+        await supabaseAdmin
+          .from('event_config')
+          .update({ 
+            event_ended: true,
+            event_end_time: getUTCTimestamp()
+          })
+          .eq('id', eventConfigId)
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Erro ao avançar para a próxima fase:', errorData);
-        return NextResponse.json(
-          { error: errorData.message || 'Erro ao avançar para a próxima fase.' },
-          { status: response.status }
-        );
+        revalidatePath('/dashboard')
+        revalidatePath('/submit')
+        return NextResponse.json({
+          success: true,
+          message: `Todas as quests da Fase ${currentQuest.phase_id} concluídas. Evento finalizado! 🎉`,
+          eventEnded: true,
+        }, { status: 200 })
       }
 
-      const phaseAdvanceData = await response.json();
-      console.log(`✅ Fase ${nextPhaseId} avançada automaticamente.`) 
+      // Iniciar a próxima fase diretamente (sem usar fetch)
+      const phaseNames = [
+        'Preparação',
+        'Fase 1: Descoberta',
+        'Fase 2: Criação',
+        'Fase 3: Estratégia',
+        'Fase 4: Refinamento',
+        'Fase 5: Pitch Final'
+      ]
+
+      const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
+
+      // Atualizar event_config para a nova fase
+      const updateData: Record<string, any> = {
+        current_phase: nextPhaseId,
+        event_started: true,
+        event_ended: false
+      }
+
+      const newPhaseStartTime = getUTCTimestamp()
+      updateData[`phase_${nextPhaseId}_start_time`] = newPhaseStartTime
+
+      const { error: configError } = await supabaseAdmin
+        .from('event_config')
+        .update(updateData)
+        .eq('id', eventConfigId)
+
+      if (configError) {
+        console.error('Erro ao atualizar event_config para nova fase:', configError)
+        return NextResponse.json(
+          { error: 'Erro ao atualizar configuração do evento para nova fase.' },
+          { status: 500 }
+        )
+      }
+
+      console.log(`✅ Event config atualizado para ${phaseNames[nextPhaseId]}`)
+
+      // Buscar a fase do banco
+      const { data: phaseData, error: phaseError } = await supabaseAdmin
+        .from('phases')
+        .select('id')
+        .eq('order_index', nextPhaseId)
+        .single()
+
+      if (phaseError) {
+        console.error('Erro ao buscar próxima fase:', phaseError)
+        return NextResponse.json(
+          { error: 'Erro ao buscar próxima fase' },
+          { status: 500 }
+        )
+      }
+
+      // Ativar a PRIMEIRA quest da nova fase
+      const { data: firstQuestOfNewPhase, error: firstQuestError } = await supabaseAdmin
+        .from('quests')
+        .select('id, name, order_index')
+        .eq('phase_id', phaseData.id)
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .single()
+
+      let questsActivated = 0
+      if (firstQuestError) {
+        console.warn('Nenhuma quest encontrada para a próxima fase:', firstQuestError)
+      } else if (firstQuestOfNewPhase) {
+        const { error: startError } = await supabaseAdmin
+          .from('quests')
+          .update({
+            status: 'active',
+            started_at: getUTCTimestamp()
+          })
+          .eq('id', firstQuestOfNewPhase.id)
+
+        if (startError) {
+          console.error('Erro ao ativar primeira quest da nova fase:', startError)
+        } else {
+          questsActivated = 1
+          console.log(`✅ Primeira quest da ${phaseNames[nextPhaseId]} ativada: ${firstQuestOfNewPhase.name}`)
+        }
+      }
+
+      console.log(`✅ Fase ${nextPhaseId} (${phaseNames[nextPhaseId]}) avançada automaticamente!`) 
       revalidatePath('/dashboard')
       revalidatePath('/submit')
       return NextResponse.json({
         success: true,
-        message: `Todas as quests da Fase ${currentQuest.phase_id} concluídas. ${phaseAdvanceData.message}`,
+        message: `Todas as quests da Fase ${currentQuest.phase_id} concluídas. ${phaseNames[nextPhaseId]} iniciada com ${questsActivated} quest(s) ativada(s).`,
         phaseAdvanced: nextPhaseId,
+        questsActivated,
       }, { status: 200 })
     }
 

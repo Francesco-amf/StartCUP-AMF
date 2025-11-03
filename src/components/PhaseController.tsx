@@ -152,20 +152,21 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
         return;
       }
       const questStartTime = new Date(activeQuest.started_at + 'Z');
-      const questEndTime = new Date(questStartTime.getTime() + 
+      
+      // Agora avança apenas quando a LATE WINDOW expirar (prazo regular + 15min)
+      const finalDeadline = new Date(questStartTime.getTime() + 
         ((activeQuest.planned_deadline_minutes || 0) + (activeQuest.late_submission_window_minutes || 0)) * 60 * 1000
       );
       const now = new Date(new Date().toISOString());
 
       console.log(`Quest ${activeQuest.order_index} Auto-advance check:`);
       console.log(`  - Quest Start Time: ${questStartTime.toISOString()}`);
-      console.log(`  - Quest End Time: ${questEndTime.toISOString()}`);
+      console.log(`  - Final Deadline (regular + late window): ${finalDeadline.toISOString()}`);
       console.log(`  - Current Time: ${now.toISOString()}`);
-      console.log(`  - Should advance quest: ${now > questEndTime}`);
+      console.log(`  - Should advance quest: ${now > finalDeadline}`);
 
-      if (now > questEndTime) {
-        console.log(`🚀 Auto-advancing quest ${activeQuest.id}!`);
-        // Call the new advance-quest API endpoint
+      if (now > finalDeadline) {
+        console.log(`🚀 Late window expired! Auto-advancing quest ${activeQuest.id}!`);
         fetch('/api/admin/advance-quest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -173,7 +174,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
         }).then(response => {
           if (response.ok) {
             console.log('Quest auto-advanced successfully.');
-            fetchEventData(); // Re-fetch data to update UI
+            fetchEventData();
             router.refresh();
           } else {
             console.error('Failed to auto-advance quest.', response.status);
@@ -181,7 +182,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
         }).catch(error => {
           console.error('Error during quest auto-advance API call:', error);
         });
-        return; // Prevent further checks until next interval
+        return;
       }
     }
 

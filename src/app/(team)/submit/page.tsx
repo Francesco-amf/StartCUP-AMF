@@ -83,10 +83,9 @@ export default async function SubmitPage() {
   const submittedQuestIds = submissions?.map(s => s.quest_id) || []
   const evaluatedQuestIds = submissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []
 
-  // Filtrar quests pela fase atual
-  const questsInCurrentPhase = quests.filter(q => q.phase_id === eventConfig?.current_phase);
-
-  const sortedQuests = questsInCurrentPhase.sort((a, b) => a.order_index - b.order_index);
+  // Filtrar quests pela fase atual (event_config.current_phase é um número; usar phase.order_index)
+  const questsInCurrentPhase = quests.filter(q => q.phase?.order_index === eventConfig?.current_phase)
+  const sortedQuests = questsInCurrentPhase.sort((a, b) => a.order_index - b.order_index)
 
   // Encontra a primeira quest não entregue (essa é a única que deve aparecer)
   let firstIncompleteIndex = -1
@@ -139,7 +138,7 @@ export default async function SubmitPage() {
 
         {/* Quests Ativas */}
         {eventConfig?.event_started && sortedQuests.length > 0 ? (
-          <SubmissionWrapper quests={quests} team={team} submissions={submissions || []} eventConfig={eventConfig} />
+          <SubmissionWrapper quests={sortedQuests} team={team} submissions={submissions || []} eventConfig={eventConfig} />
         ) : eventConfig?.event_started ? (
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/40">
             <p className="text-[#00E5FF]">

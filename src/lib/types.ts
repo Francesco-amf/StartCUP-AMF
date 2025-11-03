@@ -11,6 +11,7 @@ export interface Quest {
   tips: string[];
   evaluation_criteria: string[];
   status: string;
+  started_at: string | null;
   phase: {
     id: number;
     name: string;

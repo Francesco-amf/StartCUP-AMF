@@ -27,7 +27,7 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
 
   // Detectar mudanças de pontos e tocar som
   useEffect(() => {
-    ranking.forEach((team) => {
+    ranking.forEach((team: any) => {
       const previousPoints = previousRankingRef.current[team.team_id]
       if (previousPoints !== undefined && team.total_points > previousPoints) {
         // Pontos aumentaram!
@@ -66,7 +66,7 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
   return (
     <div className="space-y-3" role="list" aria-label="Ranking board with team scores">
       <AnimatePresence mode="popLayout">
-        {ranking.map((team, index) => (
+        {ranking.map((team: any, index: number) => (
           <motion.div
             key={team.team_id}
             layout

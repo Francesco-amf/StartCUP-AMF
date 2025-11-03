@@ -70,7 +70,20 @@ export async function POST(request: Request) {
       }
     )
 
-    // 1. Deletar evaluations
+    // 1. Deletar penalidades PRIMEIRO (para evitar problemas com foreign keys)
+    console.log('🔄 Deletando penalties...')
+    const { error: penaltyError, count: penaltyCount } = await supabaseAdmin
+      .from('penalties')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (!penaltyError && penaltyCount) {
+      console.log('✅ Penalties deletadas:', penaltyCount)
+      results.penalties_deleted = penaltyCount
+      totalDeleted += penaltyCount
+    }
+
+    // 2. Deletar evaluations
     console.log('🔄 Deletando evaluations...')
     const { error: evalError, count: evalCount } = await supabaseAdmin
       .from('evaluations')
@@ -83,7 +96,7 @@ export async function POST(request: Request) {
       totalDeleted += evalCount
     }
 
-    // 2. Deletar submissions
+    // 3. Deletar submissions
     console.log('🔄 Deletando submissions...')
     const { error: submError, count: submCount } = await supabaseAdmin
       .from('submissions')
@@ -96,7 +109,7 @@ export async function POST(request: Request) {
       totalDeleted += submCount
     }
 
-    // 2.5. Deletar power_ups
+    // 4. Deletar power_ups
     console.log('🔄 Deletando power_ups...')
     const { error: powerupError, count: powerupCount } = await supabaseAdmin
       .from('power_ups')
@@ -109,7 +122,20 @@ export async function POST(request: Request) {
       totalDeleted += powerupCount
     }
 
-    // 3. Resetar event_config (se existir)
+    // 5. Deletar equipes de teste (admin, avaliadores fake)
+    console.log('🔄 Deletando equipes de teste...')
+    const { error: teamError, count: teamCount } = await supabaseAdmin
+      .from('teams')
+      .delete()
+      .in('email', ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com'])
+
+    if (!teamError && teamCount) {
+      console.log('✅ Equipes de teste deletadas:', teamCount)
+      results.test_teams_deleted = teamCount
+      totalDeleted += teamCount
+    }
+
+    // 6. Resetar event_config (se existir)
     const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
     const { error: eventError } = await supabaseAdmin
       .from('event_config')

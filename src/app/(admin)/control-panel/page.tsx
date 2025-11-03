@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import ResetSystemButton from '@/components/ResetSystemButton'
 import PhaseController from '@/components/PhaseController'
 import QuickActions from '@/components/QuickActions'
+import PenaltyAssigner from '@/components/admin/PenaltyAssigner'
 import Header from '@/components/Header'
 
 export default async function AdminControlPanel() {
@@ -194,6 +195,11 @@ export default async function AdminControlPanel() {
         <Card className="p-6 mt-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/30">
           <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">⚡ Ações Rápidas</h2>
           <QuickActions />
+        </Card>
+
+        {/* Atribuição de Penalidades */}
+        <Card className="p-6 mt-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF3D00]/40">
+          <PenaltyAssigner />
         </Card>
 
         {/* Zona de Perigo */}

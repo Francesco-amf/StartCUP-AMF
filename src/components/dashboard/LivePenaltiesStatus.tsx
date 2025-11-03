@@ -8,7 +8,7 @@ interface Penalty {
   team_id: string
   team_name: string
   penalty_type: string
-  points_deducted: number
+  points_deduction: number
   reason: string | null
   assigned_by_admin: boolean
   evaluator_name: string | null
@@ -59,12 +59,13 @@ export default function LivePenaltiesStatus() {
           return
         }
 
-        // Obter nomes das equipes
-        const teamIds = [...new Set(penaltiesData.map(p => p.team_id))]
+        // Obter nomes das equipes (excluindo equipes fantasma)
+        const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
           .select('id, name')
           .in('id', teamIds)
+          .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
 
         if (teamsError) {
           console.error('Erro ao buscar equipes:', teamsError)
@@ -73,14 +74,14 @@ export default function LivePenaltiesStatus() {
           return
         }
 
-        const teamMap = new Map(teamsData?.map(t => [t.id, t.name]) || [])
+        const teamMap = new Map(teamsData?.map((t: any) => [t.id, t.name]) || [])
 
         // Obter nomes dos avaliadores (apenas se houver IDs para buscar)
         let evaluatorMap = new Map()
         const evaluatorIds = penaltiesData
-          .filter(p => p.assigned_by_evaluator_id)
-          .map(p => p.assigned_by_evaluator_id)
-          .filter((id, index, self) => id && self.indexOf(id) === index) // Remove duplicatas e null/undefined
+          .filter((p: any) => p.assigned_by_evaluator_id)
+          .map((p: any) => p.assigned_by_evaluator_id)
+          .filter((id: any, index: number, self: any[]) => id && self.indexOf(id) === index) // Remove duplicatas e null/undefined
 
         if (evaluatorIds.length > 0) {
           const { data: evaluatorsData, error: evaluatorsError } = await supabase
@@ -91,23 +92,31 @@ export default function LivePenaltiesStatus() {
           if (evaluatorsError) {
             console.error('Erro ao buscar avaliadores:', evaluatorsError)
           } else {
-            evaluatorMap = new Map(evaluatorsData?.map(e => [e.id, e.name]) || [])
+            evaluatorMap = new Map(evaluatorsData?.map((e: any) => [e.id, e.name]) || [])
           }
         }
 
         // Formatar penalidades
-        const formatted = penaltiesData.map((p: any) => ({
-          id: p.id,
-          team_id: p.team_id,
-          team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
-          penalty_type: p.penalty_type,
-          points_deducted: p.points_deducted || 0,
-          reason: p.reason || null,
-          assigned_by_admin: p.assigned_by_admin || false,
-          evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
-          created_at: p.created_at
-        }))
+        const formatted = penaltiesData.map((p: any) => {
+          console.log('📌 Penalty data:', {
+            penalty_type: p.penalty_type,
+            points_deduction: p.points_deduction,
+            all_keys: Object.keys(p)
+          })
+          return {
+            id: p.id,
+            team_id: p.team_id,
+            team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
+            penalty_type: p.penalty_type,
+            points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
+            reason: p.reason || null,
+            assigned_by_admin: p.assigned_by_admin || false,
+            evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
+            created_at: p.created_at
+          }
+        })
 
+        console.log('✅ Formatted penalties:', formatted)
         setPenalties(formatted)
       } catch (err) {
         console.error('Erro ao buscar penalidades:', err)
@@ -165,7 +174,7 @@ export default function LivePenaltiesStatus() {
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-sm truncate">{penalty.team_name}</p>
                   <span className="text-xs font-bold text-[#FF3D00] bg-[#FF3D00]/20 px-2 py-1 rounded whitespace-nowrap">
-                    -{penalty.points_deducted}pts
+                    -{penalty.points_deduction}pts
                   </span>
                 </div>
 

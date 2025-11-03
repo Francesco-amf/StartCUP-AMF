@@ -23,9 +23,9 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!pointsDeduction || pointsDeduction < 0 || pointsDeduction > 100) {
+    if (pointsDeduction === null || pointsDeduction === undefined || pointsDeduction < 5 || pointsDeduction > 100) {
       return NextResponse.json(
-        { error: 'Dedução de pontos deve estar entre 0 e 100' },
+        { error: 'Dedução de pontos deve estar entre 5 e 100' },
         { status: 400 }
       )
     }
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       .insert({
         team_id: teamId,
         penalty_type: penaltyType,
-        points_deducted: pointsDeduction,
+        points_deduction: pointsDeduction,
         reason: reason || null,
         phase_applied: phaseApplied || null,
         assigned_by_admin: true
@@ -72,14 +72,12 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      console.error('Erro ao inserir penalidade:', insertError)
+      console.error('Erro ao inserir penalidade:', insertError.message)
       return NextResponse.json(
         { error: 'Erro ao atribuir penalidade' },
         { status: 500 }
       )
     }
-
-    console.log(`✅ Penalidade atribuída à equipe ${team.name}: ${penaltyType} (-${pointsDeduction}pts)`)
 
     return NextResponse.json({
       success: true,

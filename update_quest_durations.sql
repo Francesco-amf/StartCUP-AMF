@@ -1,0 +1,15 @@
+UPDATE quests SET planned_deadline_minutes = 60, late_submission_window_minutes = 15 WHERE id = '1-1';
+UPDATE quests SET planned_deadline_minutes = 50, late_submission_window_minutes = 15 WHERE id = '1-2';
+UPDATE quests SET planned_deadline_minutes = 30, late_submission_window_minutes = 15 WHERE id = '1-3';
+UPDATE quests SET planned_deadline_minutes = 50, late_submission_window_minutes = 15 WHERE id = '2-1';
+UPDATE quests SET planned_deadline_minutes = 30, late_submission_window_minutes = 15 WHERE id = '2-2';
+UPDATE quests SET planned_deadline_minutes = 120, late_submission_window_minutes = 15 WHERE id = '2-3';
+UPDATE quests SET planned_deadline_minutes = 40, late_submission_window_minutes = 15 WHERE id = '3-1';
+UPDATE quests SET planned_deadline_minutes = 30, late_submission_window_minutes = 15 WHERE id = '3-2';
+UPDATE quests SET planned_deadline_minutes = 70, late_submission_window_minutes = 15 WHERE id = '3-3';
+UPDATE quests SET planned_deadline_minutes = 40, late_submission_window_minutes = 15 WHERE id = '4-1';
+UPDATE quests SET planned_deadline_minutes = 40, late_submission_window_minutes = 15 WHERE id = '4-2';
+UPDATE quests SET planned_deadline_minutes = 30, late_submission_window_minutes = 15 WHERE id = '4-3';
+UPDATE quests SET planned_deadline_minutes = 20, late_submission_window_minutes = 15 WHERE id = '5-1';
+UPDATE quests SET planned_deadline_minutes = 40, late_submission_window_minutes = 15 WHERE id = '5-2';
+UPDATE quests SET planned_deadline_minutes = 30, late_submission_window_minutes = 15 WHERE id = '5-3';

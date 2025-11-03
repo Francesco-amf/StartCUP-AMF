@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
@@ -57,6 +58,7 @@ const PENALTY_TYPES: PenaltyType[] = [
 ]
 
 export default function PenaltyAssigner() {
+  const router = useRouter()
   const [teams, setTeams] = useState<Team[]>([])
   const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [selectedPenalty, setSelectedPenalty] = useState<string>('')
@@ -72,6 +74,7 @@ export default function PenaltyAssigner() {
       const { data } = await supabase
         .from('teams')
         .select('id, name, course')
+        .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
         .order('name')
 
       if (data) {
@@ -103,6 +106,15 @@ export default function PenaltyAssigner() {
           reason: reason || undefined
         })
       })
+
+      // Verificar se sessão expirou (401/403)
+      if (response.status === 401 || response.status === 403) {
+        setMessage({ type: 'error', text: 'Sua sessão expirou. Redirecionando para login...' })
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+        return
+      }
 
       const data = await response.json()
 
@@ -140,11 +152,11 @@ export default function PenaltyAssigner() {
             <select
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
-              className="w-full bg-[#0A1E47]/50 border-2 border-[#00E5FF]/40 text-white rounded-lg p-3 focus:outline-none focus:border-[#00E5FF]"
+              className="w-full bg-[#001A4D] border-2 border-[#00E5FF]/60 text-[#00E5FF] rounded-lg p-3 focus:outline-none focus:border-[#00E5FF] font-semibold"
             >
-              <option value="">Selecione uma equipe...</option>
+              <option value="" className="bg-[#001A4D] text-[#00E5FF]">Selecione uma equipe...</option>
               {teams.map((team) => (
-                <option key={team.id} value={team.id}>
+                <option key={team.id} value={team.id} className="bg-[#001A4D] text-[#00E5FF]">
                   {team.name} ({team.course})
                 </option>
               ))}

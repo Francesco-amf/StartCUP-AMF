@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAudioFiles } from '@/lib/hooks/useAudioFiles'
@@ -46,6 +47,7 @@ const POWER_UPS: PowerUpOption[] = [
 ]
 
 export default function PowerUpActivator() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -71,6 +73,16 @@ export default function PowerUpActivator() {
           },
           body: JSON.stringify({ powerUpType })
         })
+
+        // Verificar se sessão expirou (401/403)
+        if (response.status === 401 || response.status === 403) {
+          setError('Sua sessão expirou. Redirecionando para login...')
+          setTimeout(() => {
+            router.push('/login')
+          }, 1000)
+          setIsLoading(false)
+          return
+        }
 
         const data = await response.json()
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
@@ -9,6 +10,7 @@ interface OnlineStatusToggleProps {
 }
 
 export default function OnlineStatusToggle({ evaluatorName }: OnlineStatusToggleProps) {
+  const router = useRouter() // Mantém router para 401/403 handling
   const [isOnline, setIsOnline] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,6 +57,15 @@ export default function OnlineStatusToggle({ evaluatorName }: OnlineStatusToggle
         },
         body: JSON.stringify({ isOnline: !isOnline })
       })
+
+      // Verificar se sessão expirou (401/403)
+      if (response.status === 401 || response.status === 403) {
+        setError('Sua sessão expirou. Redirecionando para login...')
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+        return
+      }
 
       if (!response.ok) {
         const errorData = await response.json()

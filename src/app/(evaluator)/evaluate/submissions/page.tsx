@@ -100,7 +100,7 @@ function TeamSubmissionsContent() {
             .select('submission_id')
             .eq('evaluator_id', evaluatorData.id)
 
-          setEvaluatedIds(evaluatedData?.map(e => e.submission_id) || [])
+          setEvaluatedIds(evaluatedData?.map((e: any) => e.submission_id) || [])
         }
       } catch (err) {
         console.error('Erro ao buscar submissões:', err)

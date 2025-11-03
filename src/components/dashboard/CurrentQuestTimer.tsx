@@ -12,6 +12,7 @@ interface Quest {
   max_points: number
   deliverable_type: string
   status: string
+  duration_minutes: number
 }
 
 interface CurrentQuestTimerProps {
@@ -30,7 +31,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Análise do mercado através de TAM/SAM/SOM',
       max_points: 100,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 60
     },
     {
       id: 'f-1-2',
@@ -39,7 +41,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Definir o público-alvo da startup',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 50
     },
     {
       id: 'f-1-3',
@@ -48,7 +51,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Estratégia de relacionamento e distribuição',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 30
     }
   ],
   2: [
@@ -59,7 +63,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Proposta de valor única + Business Model Canvas',
       max_points: 100,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 50
     },
     {
       id: 'f-2-2',
@@ -68,7 +73,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Nome e logotipo da startup',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 30
     },
     {
       id: 'f-2-3',
@@ -77,7 +83,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Protótipo navegável da solução',
       max_points: 150,
       deliverable_type: 'url',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 120
     }
   ],
   3: [
@@ -88,7 +95,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Atividades-chave e recursos necessários',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 40
     },
     {
       id: 'f-3-2',
@@ -97,7 +105,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Definir 2 parceiros-chave',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 30
     },
     {
       id: 'f-3-3',
@@ -106,7 +115,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Estrutura de custos e receitas',
       max_points: 100,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 70
     }
   ],
   4: [
@@ -117,7 +127,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Simular uso do produto e melhorias',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 40
     },
     {
       id: 'f-4-2',
@@ -126,7 +137,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Pesquisa rápida com 5+ pessoas',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 40
     },
     {
       id: 'f-4-3',
@@ -135,7 +147,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Refinar projeções financeiras',
       max_points: 50,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 30
     }
   ],
   5: [
@@ -146,7 +159,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Estruturar narrativa do pitch (5 minutos)',
       max_points: 75,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 20
     },
     {
       id: 'f-5-2',
@@ -155,7 +169,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Criar apresentação visual',
       max_points: 50,
       deliverable_type: 'url',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 40
     },
     {
       id: 'f-5-3',
@@ -164,7 +179,8 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
       description: 'Treinar pitch e ajustar timing',
       max_points: 25,
       deliverable_type: 'file',
-      status: 'scheduled'
+      status: 'scheduled',
+      duration_minutes: 30
     }
   ]
 }
@@ -220,7 +236,8 @@ export default function CurrentQuestTimer({
             description,
             max_points,
             deliverable_type,
-            status
+            status,
+            duration_minutes
           `)
           .eq('phase_id', phaseData.id)
           .in('status', ['scheduled', 'active'])
@@ -238,15 +255,15 @@ export default function CurrentQuestTimer({
 
         if (!error && data && data.length > 0 && !hasInsufficientQuests) {
           // Ordenar por order_index para garantir ordem correta
-          const sortedData = [...data].sort((a, b) => a.order_index - b.order_index)
+          const sortedData = [...data].sort((a: any, b: any) => a.order_index - b.order_index)
 
           // Remapear order_index para ser local da fase (1, 2, 3...)
-          const normalizedQuests = sortedData.map((q, idx) => ({
+          const normalizedQuests = sortedData.map((q: any, idx: number) => ({
             ...q,
             order_index: idx + 1
           }))
 
-          console.log(`✅ Quests carregadas para Fase ${phase}:`, normalizedQuests.map(q => `[${q.order_index}] ${q.name}`))
+          console.log(`✅ Quests carregadas para Fase ${phase}:`, normalizedQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
           setQuests(normalizedQuests)
         } else {
           // Usar fallback se não houver quests no banco para essa fase OU se houver menos quests do que esperado
@@ -257,11 +274,11 @@ export default function CurrentQuestTimer({
           }
           const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
           // Normalizar fallback também para garantir consistência
-          const normalizedFallback = fallbackQuests.map((q, idx) => ({
+          const normalizedFallback = fallbackQuests.map((q: any, idx: number) => ({
             ...q,
             order_index: idx + 1
           }))
-          console.log(`📋 Fallback quests para Fase ${phase}:`, normalizedFallback.map(q => `[${q.order_index}] ${q.name}`))
+          console.log(`📋 Fallback quests para Fase ${phase}:`, normalizedFallback.map((q: any) => `[${q.order_index}] ${q.name}`))
           setQuests(normalizedFallback)
         }
       } catch (err) {
@@ -283,10 +300,36 @@ export default function CurrentQuestTimer({
   }, [phase, supabase])
 
   const questCount = quests.length
-  const timePerQuest = (phaseDurationMinutes / (questCount || 1)) * 60 * 1000 // Convert to milliseconds
+
+  // ✅ CORRIGIDO: Usar duration_minutes individual de cada quest, não dividir a fase
+  // Cada quest tem sua própria duração conforme documentação oficial
+  const getQuestDurationMs = (questIndex: number): number => {
+    const quest = quests[questIndex]
+    if (quest && quest.duration_minutes > 0) {
+      // Se a quest tem duration_minutes definido, usar esse valor
+      return quest.duration_minutes * 60 * 1000
+    }
+    // Fallback: dividir duração da fase igualmente (comportamento antigo)
+    return (phaseDurationMinutes / (questCount || 1)) * 60 * 1000
+  }
+
+  const timePerQuest = getQuestDurationMs(0) // Será recalculado para cada quest
 
   useEffect(() => {
     const calculateTimeLeft = () => {
+      // ⚠️ SAFETY CHECK: Handle NULL/undefined phaseStartedAt
+      if (!phaseStartedAt) {
+        console.warn(`⚠️ WARNING: phaseStartedAt is null or undefined for Phase ${phase}`)
+        console.warn('   This means phase_X_start_time is not set in event_config')
+        setTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          percentage: 0
+        })
+        return
+      }
+
       // ⚠️ CRÍTICO: phaseStartedAt pode vir SEM Z do Supabase
       // Se não tem Z, adicionar para forçar interpretação como UTC
       const ensureZFormat = phaseStartedAt.endsWith('Z')
@@ -294,6 +337,19 @@ export default function CurrentQuestTimer({
         : `${phaseStartedAt}Z`
 
       const startTime = new Date(ensureZFormat).getTime()
+
+      // ⚠️ SAFETY CHECK: Ensure startTime is valid (not NaN)
+      if (isNaN(startTime)) {
+        console.error(`❌ ERROR: Could not parse phaseStartedAt timestamp for Phase ${phase}:`, phaseStartedAt)
+        setTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          percentage: 0
+        })
+        return
+      }
+
       const now = new Date().getTime()
       const elapsed = now - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
@@ -337,7 +393,7 @@ export default function CurrentQuestTimer({
     const interval = setInterval(calculateTimeLeft, 1000)
 
     return () => clearInterval(interval)
-  }, [phaseStartedAt, phaseDurationMinutes])
+  }, [phaseStartedAt, phaseDurationMinutes, phase])
 
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
@@ -350,18 +406,31 @@ export default function CurrentQuestTimer({
     (new Date().getTime() -
       new Date(ensureZForQuest).getTime()) / 1000
   )
-  const timePerQuestSeconds = (phaseDurationMinutes / (questCount || 1)) * 60
+
+  // ✅ CORRIGIDO: Calcular qual quest está ativa com base nas durações individuais
+  let currentQuestIndex = 0
+  let timeInCurrentQuest = elapsedSeconds
+  let questTimeRemaining = 0
+
+  for (let i = 0; i < quests.length; i++) {
+    const questDurationSeconds = getQuestDurationMs(i) / 1000
+    if (timeInCurrentQuest < questDurationSeconds) {
+      currentQuestIndex = i
+      questTimeRemaining = questDurationSeconds - timeInCurrentQuest
+      break
+    }
+    timeInCurrentQuest -= questDurationSeconds
+  }
 
   // Garantir que currentQuestIndex nunca ultrapassa quests.length - 1
-  const rawQuestIndex = Math.floor(elapsedSeconds / timePerQuestSeconds)
-  const currentQuestIndex = Math.min(Math.max(0, rawQuestIndex), Math.max(0, quests.length - 1))
+  currentQuestIndex = Math.min(Math.max(0, currentQuestIndex), Math.max(0, quests.length - 1))
 
   const currentQuest = quests[currentQuestIndex] || quests[0]
-  const questTimeRemaining = timePerQuestSeconds - (elapsedSeconds % timePerQuestSeconds)
 
   // Debug logging (apenas na primeira renderização após carregar quests)
   if (quests.length > 0 && Math.random() < 0.05) {
-    console.log(`[Timer] Fase ${phase}: elapsed=${elapsedSeconds}s, timePerQuest=${Math.round(timePerQuestSeconds)}s, currentIndex=${currentQuestIndex}, currentQuest=${currentQuest?.name}`)
+    const currentQuestDurationSeconds = getQuestDurationMs(currentQuestIndex) / 1000
+    console.log(`[Timer] Fase ${phase}: elapsed=${elapsedSeconds}s, currentQuestDuration=${Math.round(currentQuestDurationSeconds)}s, currentIndex=${currentQuestIndex}, currentQuest=${currentQuest?.name}`)
   }
 
   const getProgressColor = () => {
@@ -408,7 +477,7 @@ export default function CurrentQuestTimer({
                 <div
                   className="bg-[#0A1E47] h-full transition-all duration-1000"
                   style={{
-                    width: `${Math.max(0, (questTimeRemaining / timePerQuestSeconds) * 100)}%`
+                    width: `${Math.max(0, (questTimeRemaining / (getQuestDurationMs(currentQuestIndex) / 1000)) * 100)}%`
                   }}
                 />
               </div>

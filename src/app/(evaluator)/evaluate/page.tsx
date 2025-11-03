@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Header from '@/components/Header'
+import EvaluatorPenaltyAssigner from '@/components/evaluator/EvaluatorPenaltyAssigner'
 
 export default async function EvaluatorDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -310,6 +311,11 @@ export default async function EvaluatorDashboard() {
             )}
           </Card>
 
+          {/* Atribuição de Penalidades */}
+          <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF3D00]/40">
+            <EvaluatorPenaltyAssigner />
+          </Card>
+
           {/* Informações */}
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
             <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">ℹ️ Informações</h2>
@@ -317,6 +323,7 @@ export default async function EvaluatorDashboard() {
               <p>• Você pode editar suas avaliações a qualquer momento</p>
               <p>• Cada equipe deve ser avaliada em todos os critérios</p>
               <p>• Suas avaliações serão anônimas para as equipes</p>
+              <p>• Você também pode aplicar penalidades para infrações observadas</p>
             </div>
           </Card>
         </div>

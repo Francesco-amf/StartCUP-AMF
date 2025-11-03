@@ -73,12 +73,13 @@ export default function LivePowerUpStatus() {
         }
 
         if (pups && pups.length > 0) {
-          // Obter nomes das equipes
-          const teamIds = [...new Set(pups.map(p => p.team_id))]
+          // Obter nomes das equipes (excluindo equipes fantasma)
+          const teamIds = [...new Set(pups.map((p: any) => p.team_id))]
           const { data: teams, error: teamsError } = await supabase
             .from('teams')
             .select('id, name')
             .in('id', teamIds)
+            .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
 
           if (teamsError) {
             console.error('Erro ao buscar equipes:', teamsError)
@@ -87,11 +88,11 @@ export default function LivePowerUpStatus() {
             return
           }
 
-          const teamMap = new Map(teams?.map(t => [t.id, t.name]) || [])
+          const teamMap = new Map(teams?.map((t: any) => [t.id, t.name]) || [])
 
           // Filtrar apenas power-ups de equipes que existem
           const formatted = pups
-            .filter(p => teamMap.has(p.team_id))
+            .filter((p: any) => teamMap.has(p.team_id))
             .map((p: any) => ({
               team_id: p.team_id,
               team_name: teamMap.get(p.team_id)!,

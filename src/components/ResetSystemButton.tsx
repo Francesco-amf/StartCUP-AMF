@@ -2,8 +2,10 @@
 
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function ResetSystemButton() {
+  const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +31,15 @@ export default function ResetSystemButton() {
 
       const data = await response.json()
 
+      // Verificar se sessão expirou (401/403)
+      if (response.status === 401 || response.status === 403) {
+        setError('Sua sessão expirou. Redirecionando para login...')
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+        return
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao resetar sistema')
       }
@@ -38,8 +49,10 @@ export default function ResetSystemButton() {
       setIsModalOpen(false)
       setConfirmText('')
 
-      // Recarregar a página para atualizar estatísticas
-      window.location.reload()
+      // Recarregar a página para atualizar estatísticas (preservando sessão de auth)
+      setTimeout(() => {
+        window.location.href = window.location.pathname
+      }, 500)
     } catch (err) {
       console.error('Erro ao resetar:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')

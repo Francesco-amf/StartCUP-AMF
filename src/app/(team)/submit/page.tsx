@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import SubmissionForm from '@/components/forms/SubmissionForm'
+import SubmissionWrapper from '@/components/forms/SubmissionWrapper'
 import Header from '@/components/Header'
 
 export default async function SubmitPage() {
@@ -45,7 +45,6 @@ export default async function SubmitPage() {
     .single()
 
   // Buscar APENAS quests ativas (novo sistema baseado em quests)
-  // NÃO usar mais current_phase - agora controlado manualmente pelo admin
   let quests: any[] = []
 
   const { data: activeQuestsData } = await supabase
@@ -58,7 +57,6 @@ export default async function SubmitPage() {
         order_index
       )
     `)
-    .eq('status', 'active')
     .order('phase_id, order_index')
 
   if (activeQuestsData) quests = activeQuestsData
@@ -76,13 +74,32 @@ export default async function SubmitPage() {
   })
 
   const submittedQuestIds = submissions?.map(s => s.quest_id) || []
+  const evaluatedQuestIds = submissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []
 
-  // No novo sistema, apenas quests com status='active' são visíveis
-  // Não precisamos de lógica de timing - o admin controla manualmente qual quest está ativa
-  const availableQuests = quests.map(quest => ({
+  // Filtrar quests pela fase atual
+  const questsInCurrentPhase = quests.filter(q => q.phase_id === eventConfig?.current_phase);
+
+  const sortedQuests = questsInCurrentPhase.sort((a, b) => a.order_index - b.order_index);
+  console.log('Sorted Quests:', sortedQuests);
+
+  // Encontra a primeira quest não entregue (essa é a única que deve aparecer)
+  let firstIncompleteIndex = -1
+  for (let i = 0; i < sortedQuests.length; i++) {
+    if (!submittedQuestIds.includes(sortedQuests[i].id)) {
+      firstIncompleteIndex = i
+      break
+    }
+  }
+
+  // Quests disponíveis: APENAS a primeira não entregue (sem histórico)
+  // Se não há quest incompleta, nenhuma quest aparece (todas foram entregues)
+  const availableQuests = sortedQuests.map((quest, index) => ({
     ...quest,
-    isAvailable: !submittedQuestIds.includes(quest.id), // Disponível se não foi submetida ainda
+    isAvailable: index === firstIncompleteIndex, // Disponível: APENAS a primeira pendente
+    isBlocked: index > firstIncompleteIndex, // Bloqueada: depois da primeira pendente
+    isCompleted: evaluatedQuestIds.includes(quest.id), // Já foi entregue e avaliada
   }))
+  console.log('Available Quests:', availableQuests);
 
   return (
     <div className="min-h-screen gradient-startcup">
@@ -102,8 +119,8 @@ export default async function SubmitPage() {
               🟢 Evento em Andamento
             </h2>
             <p className="text-[#00E5FF]/70">
-              {quests.length > 0
-                ? `Há ${quests.length} quest(s) disponível(is) para submissão`
+              {availableQuests.filter(q => q.isAvailable).length > 0
+                ? `Há ${availableQuests.filter(q => q.isAvailable).length} quest(s) disponível(is) para submissão`
                 : 'Nenhuma quest ativa no momento. Aguarde...'}
             </p>
           </Card>
@@ -116,51 +133,8 @@ export default async function SubmitPage() {
         )}
 
         {/* Quests Ativas */}
-        {eventConfig?.event_started && availableQuests.length > 0 ? (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-[#00E5FF]">📋 Quests Disponíveis</h2>
-
-            {availableQuests.map((quest) => {
-              const alreadySubmitted = submittedQuestIds.includes(quest.id)
-              const submission = submissions?.find(s => s.quest_id === quest.id)
-
-              return (
-                <div key={quest.id}>
-                  {alreadySubmitted ? (
-                    // Quest já foi submetida - mostrar status
-                    <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/40">
-                      <h3 className="text-xl font-bold mb-2 text-[#00E5FF]">{quest.name}</h3>
-                      <p className="text-[#00E5FF]/70 mb-4">{quest.description}</p>
-                      <div className="text-xs text-[#00E5FF]/60 mb-3">
-                        📍 {quest.phase?.name}
-                      </div>
-
-                      {submission?.status === 'pending' && (
-                        <div className="bg-[#0A3A5A]/40 border border-[#FF9800]/50 text-[#FF9800] px-4 py-3 rounded-lg">
-                          ⏳ Entrega em análise. Aguarde a avaliação.
-                        </div>
-                      )}
-
-                      {submission?.status === 'evaluated' && (
-                        <div className="bg-[#0A3A5A]/40 border border-[#00FF88]/50 text-[#00FF88] px-4 py-3 rounded-lg">
-                          ✅ Avaliada! Pontuação: {submission.final_points} pontos
-                        </div>
-                      )}
-                    </Card>
-                  ) : (
-                    // Quest disponível para submissão
-                    <SubmissionForm
-                      questId={quest.id}
-                      teamId={team.id}
-                      deliverableType={quest.deliverable_type}
-                      questName={quest.name}
-                      maxPoints={quest.max_points}
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
+        {eventConfig?.event_started && sortedQuests.length > 0 ? (
+          <SubmissionWrapper quests={quests} team={team} submissions={submissions || []} eventConfig={eventConfig} />
         ) : eventConfig?.event_started ? (
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/40">
             <p className="text-[#00E5FF]">

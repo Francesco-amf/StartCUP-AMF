@@ -12,6 +12,7 @@ import PhaseDetailsCard from '@/components/PhaseDetailsCard'
 import FinalEvaluationGuide from '@/components/FinalEvaluationGuide'
 import TeamLogoUpload from '@/components/TeamLogoUpload'
 import PowerUpActivator from '@/components/PowerUpActivator'
+import { Accordion } from '@/components/ui/Accordion'
 
 export default async function TeamDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -53,34 +54,38 @@ export default async function TeamDashboard() {
     .eq('team_id', team?.id)
 
   console.log('📦 Team submissions for dashboard:', submissions)
+  console.log('Dashboard Team:', team);
 
   // Calcular pontuação total
   const totalPoints = submissions?.reduce((sum, s) => sum + (s.final_points || 0), 0) || 0
 
-  // Determinar a quest atual (primeira não completa)
-  // Mapa de quests por fase
-  const questsByPhase: Record<number, number[]> = {
-    1: [1, 2, 3],
-    2: [1, 2, 3],
-    3: [1, 2, 3],
-    4: [1, 2, 3],
-    5: [1, 2, 3]
-  }
+  // Determinar a quest atual com base na nova lógica de "quests" ativas
+  const { data: activeQuestsData } = await supabase
+    .from('quests')
+    .select(`
+      *,
+      phase:phase_id (
+        id,
+        name,
+        order_index
+      )
+    `)
+    .order('phase_id, order_index')
+  
+  const quests = activeQuestsData || []
 
-  const phaseQuests = questsByPhase[eventConfig?.current_phase || 1] || [1, 2, 3]
-  const completedQuestIds = submissions
-    ?.filter(s => s.status === 'evaluated')
-    .map(s => s.quest_id) || []
+  // Ordena quests por phase e order_index para garantir a sequencia correta
+  const sortedQuests = quests.sort((a, b) => {
+    const phaseCompare = a.phase.order_index - b.phase.order_index
+    return phaseCompare !== 0 ? phaseCompare : a.order_index - b.order_index
+  });
 
-  // Encontrar primeira quest não completada (por questNumber dentro da fase)
-  let currentQuestNumber = 1
-  for (const questNum of phaseQuests) {
-    const questId = `${eventConfig?.current_phase}-${questNum}`
-    if (!completedQuestIds.includes(questId)) {
-      currentQuestNumber = questNum
-      break
-    }
-  }
+  const submittedQuestIds = submissions?.map(s => s.quest_id) || []
+
+  // Encontra a primeira quest que ainda não foi entregue
+  const currentQuest = sortedQuests.find(q => !submittedQuestIds.includes(q.id));
+
+
 
   return (
     <div className="min-h-screen gradient-startcup overflow-x-hidden">
@@ -164,75 +169,104 @@ export default async function TeamDashboard() {
             </Card>
           </div>
 
-          {/* Detalhes Completos da Fase Atual com Quest Atual */}
-          <PhaseDetailsCard
-            currentPhase={eventConfig?.current_phase || 0}
-            currentQuestNumber={currentQuestNumber}
-          />
-
-          {/* Minhas Submissões */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B5A7F] via-[#0F3A5A] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00B3FF]">📋 Minhas Entregas</h2>
-            {submissions && submissions.length > 0 ? (
-              <div className="space-y-1 sm:space-y-2">
-                {submissions.map((submission, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 sm:p-3 bg-[#0A1E47]/40 border-l-4 border-[#00E5FF]/50 rounded-lg hover:bg-[#0A1E47]/60 transition-colors">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-white">Quest {index + 1}</p>
-                      <p className="text-xs text-[#00E5FF]/70">
-                        Status: {submission.status === 'pending' ? '⏳ Pendente' : '✅ Avaliada'}
+          {/* Seções Interativas com Accordion */}
+          <Accordion
+            items={[
+              {
+                id: 'quest-details',
+                title: 'Detalhes da Quest Atual',
+                icon: '🎯',
+                defaultOpen: true,
+                children: (
+                  <PhaseDetailsCard
+                    currentQuest={currentQuest}
+                    currentPhaseNumber={eventConfig?.current_phase || 0}
+                  />
+                ),
+              },
+              {
+                id: 'my-submissions',
+                title: 'Minhas Entregas',
+                icon: '📋',
+                defaultOpen: false,
+                children: (
+                  <div>
+                    {submissions && submissions.length > 0 ? (
+                      <div className="space-y-2 md:space-y-3">
+                        {submissions.map((submission, index) => (
+                          <div key={index} className="flex justify-between items-center p-3 md:p-4 bg-[#0A1E47]/40 border-l-4 border-[#00E5FF]/50 rounded-lg hover:bg-[#0A1E47]/60 transition-colors">
+                            <div>
+                              <p className="text-sm md:text-base font-medium text-white">Quest {index + 1}</p>
+                              <p className="text-xs md:text-sm text-[#00E5FF]/70">
+                                Status: {submission.status === 'pending' ? '⏳ Pendente' : '✅ Avaliada'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-base md:text-lg font-bold text-[#00E5FF]">
+                                {submission.final_points || 0} pts
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#00E5FF]/70 text-sm md:text-base">
+                        Nenhuma entrega ainda. Clique no botão abaixo para submeter!
                       </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm sm:text-lg font-bold text-[#00E5FF]">
-                        {submission.final_points || 0} pts
-                      </p>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[#00E5FF]/70">
-                Nenhuma entrega ainda. Clique abaixo para submeter!
-              </p>
-            )}
-          </Card>
-
-          {/* Avaliadores Disponíveis */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0B5A80] via-[#0A3A60] to-[#0A1E47] border-l-4 border-[#00D4FF]/80">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00E5FF]">👥 Avaliadores Disponíveis</h2>
-            <EvaluatorStatusList />
-          </Card>
-
-          {/* Power-ups - Ativador */}
-          <PowerUpActivator />
-
-          {/* Power-ups - Guia */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B5A5A] via-[#0A4040] to-[#0A1E47] border-l-4 border-[#00FF88]/80">
-            <PowerUpsGuide />
-          </Card>
-
-          {/* Penalidades - Guia */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B4A7F] via-[#0F3860] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
-            <PenaltiesGuide />
-          </Card>
-
-          {/* Avaliação Final */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0B5A80] via-[#0A3A5A] to-[#0A1E47] border-l-4 border-[#00D4FF]/80">
-            <FinalEvaluationGuide />
-          </Card>
-
-          {/* Ações Rápidas */}
-          <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#0A1E47]/70 to-[#001A4D]/70 border border-[#00E5FF]/40">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 text-[#00E5FF]">⚡ Ações Rápidas</h2>
-            <div className="space-y-2">
-              <Link href="/submit">
-                <Button className="w-full text-xs sm:text-sm" size="sm">
-                  📝 Submeter Entregas
-                </Button>
-              </Link>
-            </div>
-          </Card>
+                ),
+              },
+              {
+                id: 'evaluators',
+                title: 'Avaliadores Disponíveis',
+                icon: '👥',
+                defaultOpen: false,
+                children: <EvaluatorStatusList />,
+              },
+              {
+                id: 'power-ups',
+                title: 'Power-ups do Evento',
+                icon: '⚡',
+                defaultOpen: false,
+                children: (
+                  <div className="space-y-3 md:space-y-4">
+                    <PowerUpActivator />
+                    <PowerUpsGuide />
+                  </div>
+                ),
+              },
+              {
+                id: 'penalties',
+                title: 'Sistema de Penalidades',
+                icon: '⚠️',
+                defaultOpen: false,
+                children: <PenaltiesGuide />,
+              },
+              {
+                id: 'final-eval',
+                title: 'Avaliação Final',
+                icon: '🏆',
+                defaultOpen: false,
+                children: <FinalEvaluationGuide />,
+              },
+              {
+                id: 'actions',
+                title: 'Ações Rápidas',
+                icon: '🚀',
+                defaultOpen: false,
+                children: (
+                  <div className="space-y-2">
+                    <Link href="/submit" className="block">
+                      <Button className="w-full text-xs sm:text-sm md:text-base" size="sm">
+                        📝 Submeter Entregas
+                      </Button>
+                    </Link>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
     </div>

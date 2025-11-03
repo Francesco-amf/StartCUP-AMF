@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import SubmissionDeadlineStatus from '@/components/quest/SubmissionDeadlineStatus'
 
 interface SubmissionFormProps {
   questId: string
@@ -24,6 +26,7 @@ export default function SubmissionForm({
   maxPoints,
   onSuccess,
 }: SubmissionFormProps) {
+  const router = useRouter()
   const [content, setContent] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -67,74 +70,80 @@ export default function SubmissionForm({
     setSuccess(false)
 
     try {
-      // Validação: Verificar se a quest pertence à fase ativa
-      const { data: eventConfig } = await supabase
-        .from('event_config')
-        .select('current_phase')
-        .single()
-
-      const { data: quest } = await supabase
-        .from('quests')
-        .select('phase_id')
-        .eq('id', questId)
-        .single()
-
-      if (!quest || quest.phase_id !== eventConfig?.current_phase) {
-        setError('Esta quest não está disponível para submissão no momento. A fase ativa foi alterada.')
+      // Validação de entrada
+      if (deliverableType === 'file' && !file) {
+        setError('Por favor, selecione um arquivo.')
         setLoading(false)
         return
       }
 
-      let fileUrl = null
-
-      // Upload de arquivo se necessário
-      if (deliverableType === 'file' && file) {
-        if (!file) {
-          setError('Por favor, selecione um arquivo.')
-          setLoading(false)
-          return
-        }
-
-        setUploadingFile(true)
-        const fileName = `${teamId}/${questId}/${Date.now()}-${file.name}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('submissions')
-          .upload(fileName, file)
-
-        if (uploadError) {
-          setFileError(`Erro ao enviar arquivo: ${uploadError.message}`)
-          setLoading(false)
-          setUploadingFile(false)
-          return
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('submissions')
-          .getPublicUrl(fileName)
-
-        fileUrl = publicUrl
-        setUploadingFile(false)
+      if ((deliverableType === 'text' || deliverableType === 'url') && !content.trim()) {
+        setError('Por favor, preencha o conteúdo.')
+        setLoading(false)
+        return
       }
 
-      // Criar submission
-      const { error: insertError } = await supabase
-        .from('submissions')
-        .insert({
-          team_id: teamId,
-          quest_id: questId,
-          content: deliverableType !== 'file' ? content : null,
-          file_url: fileUrl,
-          status: 'pending',
-        })
+      // Preparar FormData para envio
+      const formData = new FormData()
+      formData.append('questId', questId)
+      formData.append('teamId', teamId)
+      formData.append('deliverableType', deliverableType)
+      formData.append('content', content)
 
-      if (insertError) {
-        if (insertError.message.includes('unique')) {
-          setError('Você já enviou uma entrega para esta quest. Apenas uma submissão é permitida.')
-        } else {
-          setError('Erro ao criar submissão. Tente novamente.')
-        }
+      if (deliverableType === 'file' && file) {
+        formData.append('file', file)
+        setUploadingFile(true)
+      }
+
+      // Enviar para API de submissão
+      const response = await fetch('/api/submissions/create', {
+        method: 'POST',
+        body: formData
+      })
+
+      // Verificar se sessão expirou (401/403)
+      if (response.status === 401 || response.status === 403) {
+        setError('Sua sessão expirou. Redirecionando para login...')
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+        setLoading(false)
+        setUploadingFile(false)
         return
+      }
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Tratamento de erros específicos
+        if (data.details?.reason) {
+          // Erro de validação com detalhes
+          let errorMessage = data.error
+
+          if (data.details.lateMinutes > 0) {
+            errorMessage += ` (${data.details.lateMinutes} minutos atrasado)`
+            if (data.details.penalty > 0) {
+              errorMessage += `. Penalidade: -${data.details.penalty}pts`
+            }
+          }
+
+          setError(errorMessage)
+        } else {
+          setError(data.error || 'Erro ao enviar entrega. Tente novamente.')
+        }
+        setLoading(false)
+        setUploadingFile(false)
+        return
+      }
+
+      // Sucesso!
+      let successMessage = '✅ Entrega enviada com sucesso!'
+
+      if (data.submission.isLate) {
+        successMessage += ` (${data.submission.lateMinutes}min atrasado)`
+        if (data.submission.penaltyApplied) {
+          successMessage += ` - Penalidade: -${data.submission.penaltyAmount}pts`
+        }
       }
 
       setSuccess(true)
@@ -162,6 +171,9 @@ export default function SubmissionForm({
 
   return (
     <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/30">
+      {/* Status de deadline */}
+      <SubmissionDeadlineStatus questId={questId} teamId={teamId} />
+
       <div className="mb-6">
         <h3 className="text-xl font-bold text-[#00E5FF] mb-2">{questName}</h3>
         <p className="text-sm text-[#00E5FF]/70">

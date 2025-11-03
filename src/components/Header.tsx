@@ -33,8 +33,14 @@ export default function Header({ title, subtitle, backHref, showLogout = true, l
     const confirm = window.confirm('Tem certeza que deseja sair?')
     if (!confirm) return
 
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
+      // Mesmo com erro, força redirecionamento para login
+      router.push('/login')
+    }
   }
 
   return (

@@ -44,7 +44,7 @@ export default function EvaluatorDashboard() {
 
         // Para cada equipe, contar submissões pendentes e totais
         const teamsWithCounts = await Promise.all(
-          (allTeams || []).map(async (team) => {
+          (allTeams || []).map(async (team: any) => {
             const { count: totalCount } = await supabase
               .from('submissions')
               .select('id', { count: 'exact' })

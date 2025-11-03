@@ -1,4 +1,10 @@
 import QuestCard from '@/components/QuestCard'
+import { type Quest } from '@/lib/types' // Assuming you have a types file
+
+interface PhaseDetailsCardProps {
+  currentQuest: Quest | null
+  currentPhaseNumber: number
+}
 
 const PHASES_DETAILED = {
   0: {
@@ -6,7 +12,6 @@ const PHASES_DETAILED = {
     icon: '⏸️',
     description: 'Fase preparatória - evento ainda não começou',
     color: 'gray',
-    duration: '',
     maxPoints: 0,
     quests: []
   },
@@ -15,7 +20,6 @@ const PHASES_DETAILED = {
     icon: '🧭',
     description: 'Entender o mercado e o cliente',
     color: 'blue',
-    duration: '20h - 22h30 (2h30min)',
     maxPoints: 200,
     quests: [
       {
@@ -98,7 +102,6 @@ const PHASES_DETAILED = {
     icon: '💡',
     description: 'Desenvolver a solução',
     color: 'purple',
-    duration: '22h30 - 01h30 (3h30min)',
     maxPoints: 300,
     quests: [
       {
@@ -187,7 +190,6 @@ const PHASES_DETAILED = {
     icon: '🎯',
     description: 'Planejar a operação',
     color: 'orange',
-    duration: '01h30 - 04h00 (2h30min)',
     maxPoints: 200,
     quests: [
       {
@@ -275,7 +277,6 @@ const PHASES_DETAILED = {
     icon: '✨',
     description: 'Polir e validar',
     color: 'green',
-    duration: '04h00 - 06h00 (2h)',
     maxPoints: 150,
     quests: [
       {
@@ -366,7 +367,6 @@ const PHASES_DETAILED = {
     icon: '🚀',
     description: 'Criar apresentação matadora',
     color: 'red',
-    duration: '06h00 - 07h30 (1h30min)',
     maxPoints: 150,
     quests: [
       {
@@ -454,11 +454,6 @@ const PHASES_DETAILED = {
   }
 }
 
-interface PhaseDetailsCardProps {
-  currentPhase: number
-  currentQuestNumber?: number
-}
-
 const colorClasses = {
   gray: 'bg-[#0A1E47]/40 border-[#00E5FF]/30',
   blue: 'bg-[#0A1E47]/40 border-[#00E5FF]/30',
@@ -486,113 +481,65 @@ const headerGradients = {
   red: 'from-[#0A1E47] to-[#0047AB]'
 }
 
-export default function PhaseDetailsCard({ currentPhase, currentQuestNumber }: PhaseDetailsCardProps) {
-  const phase = PHASES_DETAILED[currentPhase as keyof typeof PHASES_DETAILED] || PHASES_DETAILED[0]
+export default function PhaseDetailsCard({ currentQuest, currentPhaseNumber }: PhaseDetailsCardProps) {
+  const phase = PHASES_DETAILED[currentPhaseNumber as keyof typeof PHASES_DETAILED] || PHASES_DETAILED[0]
+  const quest = phase.quests.find(q => q.questNumber === currentQuest?.order_index) || phase.quests[0];
   const bgColor = colorClasses[phase.color as keyof typeof colorClasses]
   const textColor = textColorClasses[phase.color as keyof typeof textColorClasses]
   const gradient = headerGradients[phase.color as keyof typeof headerGradients]
 
-  // Filtrar quests baseado no parâmetro currentQuestNumber
-  const questsToShow = currentQuestNumber
-    ? phase.quests.filter(quest => quest.questNumber === currentQuestNumber)
-    : phase.quests
-
-  if (!phase.quests || phase.quests.length === 0) {
+  if (!quest) {
     return (
-      <div className={`p-1 rounded-lg border-2 ${bgColor}`}>
-        <div className="flex flex-col items-start justify-between mb-1 gap-1">
+      <div className={`p-3 md:p-4 rounded-lg border-2 ${bgColor}`}>
+        <div className="flex flex-col items-start justify-between gap-3">
           <div>
-            <h2 className={`text-sm font-bold ${textColor}`}>
+            <h2 className={`text-base md:text-lg font-bold ${textColor}`}>
               {phase.icon} {phase.name}
             </h2>
-            <p className={`text-xs ${textColor} opacity-75`}>{phase.description}</p>
+            <p className={`text-xs md:text-sm ${textColor} opacity-75 mt-1`}>{phase.description}</p>
           </div>
-          <span className={`text-xs font-semibold ${textColor} bg-[#0A1E47]/60 px-2 py-0.5 rounded-full`}>
-            Fase {currentPhase}
+          <span className={`text-xs md:text-sm font-semibold ${textColor} bg-[#0A1E47]/60 px-3 py-1 rounded-full`}>
+            Fase {currentPhaseNumber}
           </span>
         </div>
-        <p className={`text-xs ${textColor} opacity-75`}>
-          Nenhuma quest definida para esta fase ainda. Aguarde atualizações!
+        <p className={`text-sm md:text-base ${textColor} opacity-75 mt-3`}>
+          🎯 Todas as quests foram concluídas ou nenhuma quest ativa no momento. Parabéns!
         </p>
       </div>
     )
   }
 
   return (
-    <div className={`p-1 rounded-lg border-2 ${bgColor} space-y-1`}>
+    <div className={`p-3 md:p-4 rounded-lg border-2 ${bgColor} space-y-3 md:space-y-4`}>
       {/* Cabeçalho da Fase */}
-      <div className={`bg-gradient-to-r ${gradient} text-white rounded-lg p-1`}>
-        <div className="flex flex-col items-start justify-between mb-1 gap-1">
+      <div className={`bg-gradient-to-r ${gradient} text-white rounded-lg p-3 md:p-4`}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
           <div className="flex-1">
-            <h2 className="text-sm font-bold mb-0.5">
-              {phase.icon} FASE {currentPhase}: {phase.name}
+            <h2 className="text-lg md:text-xl font-bold mb-1">
+              {phase.icon} FASE {currentPhaseNumber}: {phase.name}
             </h2>
-            <p className="text-white/90 text-xs mb-0.5">{phase.description}</p>
-            {phase.duration && (
-              <p className="text-white/80 text-xs font-semibold">⏰ {phase.duration}</p>
-            )}
           </div>
-          <div className="text-right">
+          <div className="bg-[#0A1E47]/20 backdrop-blur p-2 md:p-3 rounded-lg">
             {phase.maxPoints > 0 && (
-              <div className="bg-[#0A1E47]/20 backdrop-blur p-1 rounded">
-                <p className="text-white/80 text-xs font-semibold">Pontos Totais</p>
-                <p className="text-sm font-bold text-white">{phase.maxPoints}</p>
-              </div>
+              <>
+                <p className="text-white/80 text-xs md:text-sm font-semibold">Pontos Totais da Fase</p>
+                <p className="text-xl md:text-2xl font-bold text-white">{phase.maxPoints}</p>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Quests */}
-      <div className="space-y-1">
-        <h3 className={`text-sm font-bold ${textColor}`}>📋 Quest Atual</h3>
-        {questsToShow.map((quest) => (
-          <QuestCard key={quest.questNumber} {...quest} />
-        ))}
+      {/* Quest Atual */}
+      <div className="space-y-3 md:space-y-4">
+        <h3 className={`text-base md:text-lg font-bold ${textColor}`}>📋 Quest Atual</h3>
+        <QuestCard {...quest} />
       </div>
-
-      {/* Boss da Fase */}
-      {currentPhase > 0 && currentPhase < 5 && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-1 rounded">
-          <p className={`text-xs font-bold text-red-900 mb-0.5`}>🏆 BOSS DA FASE</p>
-          <p className="text-xs text-red-800">
-            {currentPhase === 1 && "Pitch de 2 minutos sobre 'Para quem você está resolvendo e por quê?' (0-100 pontos)"}
-            {currentPhase === 2 && "Demo de 2 minutos do protótipo em funcionamento (0-100 pontos)"}
-            {currentPhase === 3 && "Defender o modelo de negócio em 3 minutos (0-100 pontos)"}
-            {currentPhase === 4 && "Simulação de pitch com jurado surpresa (0-100 pontos)"}
-          </p>
-        </div>
-      )}
-
-      {/* Ultimo Chefão */}
-      {currentPhase === 5 && (
-        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-1 rounded">
-          <p className="text-xs font-bold mb-0.5">🏁 ÚLTIMO CHEFÃO</p>
-          <p className="text-xs">
-            ARENA DOS PITCHES - Apresentação oficial para os jurados (0-200 pontos)
-          </p>
-        </div>
-      )}
-
-      {/* Checkpoint */}
-      {currentPhase === 2 && (
-        <div className="bg-blue-50 border-l-4 border-[#00E5FF]/30400 p-1 rounded">
-          <p className="text-xs font-bold text-[#00E5FF]900">✅ CHECKPOINT DA MEIA-NOITE</p>
-          <p className="text-xs text-[#00E5FF]800">(00h): Salve o progresso! Avaliação rápida + snacks ☕</p>
-        </div>
-      )}
-
-      {currentPhase === 3 && (
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-1 rounded">
-          <p className="text-xs font-bold text-orange-900">☕ BREAK ESTRATÉGICO</p>
-          <p className="text-xs text-orange-800">(03h30 - 04h00): Café + energéticos + música</p>
-        </div>
-      )}
 
       {/* Dicas Gerais */}
-      <div className="bg-[#0A1E47]/50 p-1 rounded-lg border border-current border-opacity-20">
-        <p className={`text-xs font-semibold ${textColor} mb-0.5`}>⚡ Reminders Importantes</p>
-        <ul className={`text-xs ${textColor} opacity-85 space-y-0.5`}>
+      <div className="bg-[#0A1E47]/50 p-3 md:p-4 rounded-lg border border-current border-opacity-20">
+        <p className={`text-sm md:text-base font-semibold ${textColor} mb-2`}>⚡ Reminders Importantes</p>
+        <ul className={`text-xs md:text-sm ${textColor} opacity-85 space-y-1.5 md:space-y-2`}>
           <li>• Respeite os prazos de entrega dessa fase</li>
           <li>• Qualidade é mais importante que quantidade</li>
           <li>• Colabore com seu time e divida responsabilidades</li>

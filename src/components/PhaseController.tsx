@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { type Quest, type EventConfig } from '@/lib/types'
+import { type Quest, type EventConfig, type PhaseControllerProps } from '@/lib/types'
 
 export default function PhaseController({ currentPhase, eventStarted }: PhaseControllerProps) {
   const router = useRouter()

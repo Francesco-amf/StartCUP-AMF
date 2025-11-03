@@ -47,3 +47,8 @@ export interface EventConfig {
   phase_4_start_time: string | null;
   phase_5_start_time: string | null;
 }
+
+export interface PhaseControllerProps {
+  currentPhase: number
+  eventStarted: boolean
+}

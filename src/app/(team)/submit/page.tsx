@@ -59,7 +59,14 @@ export default async function SubmitPage() {
     `)
     .order('phase_id, order_index')
 
-  if (activeQuestsData) quests = activeQuestsData
+  if (activeQuestsData) {
+    quests = activeQuestsData.map(quest => ({
+      ...quest,
+      deliverable_type: Array.isArray(quest.deliverable_type)
+        ? quest.deliverable_type
+        : (quest.deliverable_type ? [quest.deliverable_type] : [])
+    }));
+  }
 
   // Buscar submissions já feitas pela equipe
   const { data: submissions, error: submissionsError } = await supabase

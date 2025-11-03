@@ -57,7 +57,8 @@ export default function SubmissionDeadlineStatus({
         // NOTA: quest.started_at vem do banco em UTC (ISO 8601)
         // JavaScript Date trata strings ISO como UTC, então não há conversão necessária
         // O deadline é calculado corretamente em relação ao UTC
-        const startedAt = new Date(quest.started_at + 'Z')
+        const startedAtString = quest.started_at.replace('+00:00', 'Z');
+        const startedAt = new Date(startedAtString);
         const deadline = new Date(startedAt.getTime() + (quest.planned_deadline_minutes * 60 * 1000))
         const lateWindowEnd = new Date(deadline.getTime() + (quest.late_submission_window_minutes * 60 * 1000))
         const now = new Date(new Date().toISOString())

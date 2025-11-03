@@ -53,6 +53,12 @@ export default async function TeamDashboard() {
     .select('quest_id, status, final_points')
     .eq('team_id', team?.id)
 
+  // Buscar quests ativas
+  const { data: activeQuestsData } = await supabase
+    .from('active_quests')
+    .select('*, phase(*)') // Assuming 'phase' is a related table
+    .eq('team_id', team?.id)
+
   const quests = activeQuestsData || []
 
   // Ordena quests por phase e order_index para garantir a sequencia correta
@@ -66,6 +72,7 @@ export default async function TeamDashboard() {
   // Encontra a primeira quest que ainda não foi entregue
   const currentQuest = sortedQuests.find(q => !submittedQuestIds.includes(q.id));
 
+  const totalPoints = submissions?.reduce((sum, submission) => sum + (submission.final_points || 0), 0) || 0
 
 
   return (

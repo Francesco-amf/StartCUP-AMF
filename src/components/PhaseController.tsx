@@ -4,25 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { type Quest } from '@/lib/types'
-
-interface PhaseControllerProps {
-  currentPhase: number
-  eventStarted: boolean
-}
-
-interface EventConfig {
-  id: string;
-  current_phase: number;
-  event_started: boolean;
-  event_ended: boolean;
-  event_start_time: string | null;
-  phase_1_start_time: string | null;
-  phase_2_start_time: string | null;
-  phase_3_start_time: string | null;
-  phase_4_start_time: string | null;
-  phase_5_start_time: string | null;
-}
+import { type Quest, type EventConfig } from '@/lib/types'
 
 export default function PhaseController({ currentPhase, eventStarted }: PhaseControllerProps) {
   const router = useRouter()
@@ -212,7 +194,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       return;
     }
 
-    const phaseStartTime = new Date(phaseStartTimeISO);
+    const phaseStartTime = new Date(phaseStartTimeISO as string);
 
     // Calculate total duration for the current phase
     const questsInActivePhase = allQuests.filter(q => q.phase_id === activePhase);

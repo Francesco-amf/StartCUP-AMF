@@ -10,6 +10,7 @@ export interface Quest {
   accepted_formats: string[];
   tips: string[];
   evaluation_criteria: string[];
+  status: string;
   phase: {
     id: number;
     name: string;

@@ -79,26 +79,22 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                   )}
                 </div>
               ) : (
-                // ****** INÍCIO DA CORREÇÃO ******
-                // Iteramos sobre os tipos de entrega.
-                // Se for ['file'], renderiza 1 form.
-                // Se for ['file', 'url'], renderiza 2 forms.
-                // Se for [], não renderiza nada.
                 <div className="space-y-4">
-                  {quest.deliverable_type.map(type => (
+                  {/* ****** INÍCIO DA CORREÇÃO ****** */}
+                  {/* Adicionado '?' para evitar erro se deliverable_type for null */}
+                  {quest.deliverable_type?.map(type => (
                     <SubmissionForm
-                      key={type} // Usamos o tipo como key
+                      key={type}
                       questId={quest.id}
                       teamId={team.id}
-                      // Usamos 'as' para forçar o TypeScript a aceitar:
                       deliverableType={type as 'file' | 'text' | 'url'}
                       questName={quest.name}
                       maxPoints={quest.max_points}
                       onSuccess={handleSuccess}
                     />
                   ))}
+                  {/* ****** FIM DA CORREÇÃO ****** */}
                 </div>
-                // ****** FIM DA CORREÇÃO ******
               )}
             </div>
           )

@@ -53,25 +53,6 @@ export default async function TeamDashboard() {
     .select('quest_id, status, final_points')
     .eq('team_id', team?.id)
 
-  console.log('📦 Team submissions for dashboard:', submissions)
-  console.log('Dashboard Team:', team);
-
-  // Calcular pontuação total
-  const totalPoints = submissions?.reduce((sum, s) => sum + (s.final_points || 0), 0) || 0
-
-  // Determinar a quest atual com base na nova lógica de "quests" ativas
-  const { data: activeQuestsData } = await supabase
-    .from('quests')
-    .select(`
-      *,
-      phase:phase_id (
-        id,
-        name,
-        order_index
-      )
-    `)
-    .order('phase_id, order_index')
-  
   const quests = activeQuestsData || []
 
   // Ordena quests por phase e order_index para garantir a sequencia correta

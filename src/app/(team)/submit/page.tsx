@@ -80,7 +80,6 @@ export default async function SubmitPage() {
   const questsInCurrentPhase = quests.filter(q => q.phase_id === eventConfig?.current_phase);
 
   const sortedQuests = questsInCurrentPhase.sort((a, b) => a.order_index - b.order_index);
-  console.log('Sorted Quests:', sortedQuests);
 
   // Encontra a primeira quest não entregue (essa é a única que deve aparecer)
   let firstIncompleteIndex = -1
@@ -99,7 +98,6 @@ export default async function SubmitPage() {
     isBlocked: index > firstIncompleteIndex, // Bloqueada: depois da primeira pendente
     isCompleted: evaluatedQuestIds.includes(quest.id), // Já foi entregue e avaliada
   }))
-  console.log('Available Quests:', availableQuests);
 
   return (
     <div className="min-h-screen gradient-startcup">

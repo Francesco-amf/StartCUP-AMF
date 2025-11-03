@@ -202,67 +202,67 @@ export default function SubmissionDeadlineStatus({
 
         
 
-                fetchDeadlineInfo()
+                    fetchDeadlineInfo()
 
         
 
-            
+                
 
         
 
-                // Atualizar a cada 10 segundos
+                    // Atualizar a cada 10 segundos
 
         
 
-                const interval = setInterval(fetchDeadlineInfo, 10000)
+                    const interval = setInterval(fetchDeadlineInfo, 10000)
 
         
 
-                return () => clearInterval(interval)
+                    return () => clearInterval(interval)
 
         
 
-              }, [questId, supabase])
+                  }, [questId, supabase])
 
         
 
-            
+                
 
         
 
-                // Renderização memoizada para evitar re-renders desnecessários
+                    // Renderização memoizada para evitar re-renders desnecessários
 
         
 
-            
+                
 
         
 
-                const renderedContent = useMemo(() => {
+                    const renderedContent = useMemo(() => {
 
         
 
-            
+                
 
         
 
-                  if (loading || !deadlineInfo) {
+                      if (loading || !deadlineInfo) {
 
         
 
-            
+                
 
         
 
-                    return null
+                        return null
 
         
 
-            
+                
 
         
 
-                  }
+                      }
 
     if (deadlineInfo.isBlocked) {
       return (

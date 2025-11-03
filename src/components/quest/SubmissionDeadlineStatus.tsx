@@ -40,14 +40,18 @@ export default function SubmissionDeadlineStatus({
           .single()
 
         if (questError || !quest) {
+          console.log('Fetch Deadline Info Debug: Quest not found or error', JSON.stringify({ questError, quest }, null, 2));
           setLoading(false)
           return
         }
 
         if (!quest.started_at) {
+          console.log('Fetch Deadline Info Debug: Quest started_at is null', JSON.stringify({ quest }, null, 2));
           setLoading(false)
           return
         }
+
+        console.log('Fetch Deadline Info Debug: Quest data', JSON.stringify({ quest }, null, 2));
 
         // Calcular deadlines
         // NOTA: quest.started_at vem do banco em UTC (ISO 8601)
@@ -58,19 +62,107 @@ export default function SubmissionDeadlineStatus({
         const lateWindowEnd = new Date(deadline.getTime() + (quest.late_submission_window_minutes * 60 * 1000))
         const now = new Date(new Date().toISOString())
 
-        const isOnTime = now <= deadline
-        const isLate = now > deadline && now <= lateWindowEnd
-        const isBlocked = now > lateWindowEnd
+                const isOnTime = now <= deadline
 
-        const minutesRemaining = isOnTime
-          ? Math.ceil((deadline.getTime() - now.getTime()) / (60 * 1000))
-          : isLate
-          ? Math.ceil((lateWindowEnd.getTime() - now.getTime()) / (60 * 1000))
-          : 0
+                const isLate = now > deadline && now <= lateWindowEnd
 
-        const minutesInLateWindow = isLate
-          ? Math.ceil((now.getTime() - deadline.getTime()) / (60 * 1000))
-          : 0
+                const isBlocked = now > lateWindowEnd
+
+        
+
+                                const minutesRemaining = isOnTime
+
+        
+
+                                  ? Math.ceil((deadline.getTime() - now.getTime()) / (60 * 1000))
+
+        
+
+                                  : isLate
+
+        
+
+                                  ? Math.ceil((lateWindowEnd.getTime() - now.getTime()) / (60 * 1000))
+
+        
+
+                                  : 0
+
+        
+
+                        
+
+        
+
+                                const minutesInLateWindow = isLate
+
+        
+
+                                  ? Math.ceil((now.getTime() - deadline.getTime()) / (60 * 1000))
+
+        
+
+                                  : 0
+
+        
+
+                        
+
+        
+
+                                console.log('Deadline Debug:', {
+
+        
+
+                                  questId,
+
+        
+
+                                  startedAt: startedAt.toISOString(),
+
+        
+
+                                  plannedDeadlineMinutes: quest.planned_deadline_minutes,
+
+        
+
+                                  lateSubmissionWindowMinutes: quest.late_submission_window_minutes,
+
+        
+
+                                  deadline: deadline.toISOString(),
+
+        
+
+                                  lateWindowEnd: lateWindowEnd.toISOString(),
+
+        
+
+                                  now: now.toISOString(),
+
+        
+
+                                  isOnTime,
+
+        
+
+                                  isLate,
+
+        
+
+                                  isBlocked,
+
+        
+
+                                  minutesRemaining,
+
+        
+
+                                  minutesInLateWindow
+
+        
+
+                                });
 
                 setDeadlineInfo({
 

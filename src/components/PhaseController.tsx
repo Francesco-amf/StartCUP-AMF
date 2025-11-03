@@ -44,6 +44,31 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     { id: 5, name: 'Fase 5: Pitch Final', icon: '🎯', color: 'bg-[#5A0A0A] border-[#FF6B6B]', duration: '1h30min', points: 150 },
   ]
 
+  const fetchEventData = useCallback(async () => {
+    // Fetch event_config
+    const { data: configData, error: configError } = await supabase
+      .from('event_config')
+      .select('*, phase_1_start_time, phase_2_start_time, phase_3_start_time, phase_4_start_time, phase_5_start_time')
+      .single()
+
+    if (configError) {
+      console.error("Error fetching event config:", configError);
+    } else {
+      setEventConfig(configData);
+    }
+
+    // Fetch all quests to get their durations
+    const { data: questsData, error: questsError } = await supabase
+      .from('quests')
+      .select('id, phase_id, planned_deadline_minutes, late_submission_window_minutes, order_index, status');
+    
+    if (questsError) {
+      console.error("Error fetching quests:", questsError);
+    } else {
+      setAllQuests(questsData as Quest[]);
+    }
+  }, [supabase]);
+
   const handleStartPhase = useCallback(async (phaseId: number) => {
     console.log(`🎯 handleStartPhase called with phaseId: ${phaseId}`)
 
@@ -125,31 +150,6 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     }
   }, [eventConfig, fetchEventData, phases, router]);
 
-  const fetchEventData = useCallback(async () => {
-    // Fetch event_config
-    const { data: configData, error: configError } = await supabase
-      .from('event_config')
-      .select('*, phase_1_start_time, phase_2_start_time, phase_3_start_time, phase_4_start_time, phase_5_start_time')
-      .single()
-
-    if (configError) {
-      console.error("Error fetching event config:", configError);
-    } else {
-      setEventConfig(configData);
-    }
-
-    // Fetch all quests to get their durations
-    const { data: questsData, error: questsError } = await supabase
-      .from('quests')
-      .select('id, phase_id, planned_deadline_minutes, late_submission_window_minutes, order_index, status');
-    
-    if (questsError) {
-      console.error("Error fetching quests:", questsError);
-    } else {
-      setAllQuests(questsData as Quest[]);
-    }
-  }, [supabase]);
-
   useEffect(() => {
     fetchEventData();
     const interval = setInterval(fetchEventData, 30000); // Refresh data every 30 seconds
@@ -165,6 +165,10 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     const activeQuest = allQuests.find(q => q.status === 'active' && q.phase_id === activePhase);
 
     if (activeQuest) {
+      if (!activeQuest.started_at) {
+        console.log(`Quest ${activeQuest.id} has no started_at time, cannot calculate auto-advance.`);
+        return;
+      }
       const questStartTime = new Date(activeQuest.started_at + 'Z');
       const questEndTime = new Date(questStartTime.getTime() + 
         ((activeQuest.planned_deadline_minutes || 0) + (activeQuest.late_submission_window_minutes || 0)) * 60 * 1000

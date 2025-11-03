@@ -114,7 +114,7 @@ DECLARE
   v_minutes_late INTEGER;
   v_penalty INTEGER;
 BEGIN
-  v_now := NOW();
+  v_now := NOW() AT TIME ZONE 'UTC';
   debug_now := v_now;
 
   -- Buscar dados da quest

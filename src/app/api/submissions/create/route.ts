@@ -53,6 +53,8 @@ export async function POST(request: Request) {
 
     console.log('Validation Result:', validationResult);
 
+    console.log('Validation Result:', validationResult);
+
     if (validationError) {
       console.error('Erro ao validar submissão:', validationError)
       return NextResponse.json(

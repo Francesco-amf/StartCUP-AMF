@@ -8,11 +8,11 @@ import Header from '@/components/Header'
 export default async function EvaluateSubmissionPage({
   params,
 }: {
-  // CORREÇÃO: 'params' é o objeto, não uma Promise
-  params: { submissionId: string } 
+  // Esta versão está CORRETA para o seu projeto
+  params: Promise<{ submissionId: string }>
 }) {
-  // CORREÇÃO: 'submissionId' é acessado diretamente
-  const { submissionId } = params
+  // Next.js 15: params é uma Promise
+  const { submissionId } = await params
 
   const supabase = await createServerSupabaseClient()
 

@@ -123,7 +123,7 @@ export default function SubmissionForm({
           if (data.details.lateMinutes > 0) {
             errorMessage += ` (${data.details.lateMinutes} minutos atrasado)`
             if (data.details.penalty > 0) {
-              errorMessage += `. Penalidade: -${data.details.penalty}pts`
+              errorMessage += `. Penalidade: -${data.details.penalty} AMF Coins`
             }
           }
 
@@ -142,7 +142,7 @@ export default function SubmissionForm({
       if (data.submission.isLate) {
         successMessage += ` (${data.submission.lateMinutes}min atrasado)`
         if (data.submission.penaltyApplied) {
-          successMessage += ` - Penalidade: -${data.submission.penaltyAmount}pts`
+          successMessage += ` - Penalidade: -${data.submission.penaltyAmount} AMF Coins`
         }
       }
 
@@ -177,7 +177,7 @@ export default function SubmissionForm({
       <div className="mb-6">
         <h3 className="text-xl font-bold text-[#00E5FF] mb-2">{questName}</h3>
         <p className="text-sm text-[#00E5FF]/70">
-          Pontuação máxima: <span className="font-bold text-[#00FF88]">{maxPoints} pontos</span>
+          Pontuação máxima: <span className="font-bold text-[#00FF88]">🪙 {maxPoints} AMF Coins</span>
         </p>
       </div>
 

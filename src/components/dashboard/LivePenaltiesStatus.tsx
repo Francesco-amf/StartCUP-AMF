@@ -174,7 +174,7 @@ export default function LivePenaltiesStatus() {
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-sm truncate">{penalty.team_name}</p>
                   <span className="text-xs font-bold text-[#FF3D00] bg-[#FF3D00]/20 px-2 py-1 rounded whitespace-nowrap">
-                    -{penalty.points_deduction}pts
+                    -{penalty.points_deduction} AMF Coins
                   </span>
                 </div>
 

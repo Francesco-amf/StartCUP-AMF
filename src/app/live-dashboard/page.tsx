@@ -119,15 +119,6 @@ export default function LiveDashboard() {
                   <span className="text-[#00E5FF]/80">Equipes:</span>
                   <span className="font-bold text-white">{ranking.length}</span>
                 </div>
-
-                {ranking.length > 0 && (
-                  <div className="flex justify-between items-center border-t border-[#00E5FF]/20 pt-2">
-                    <span className="text-[#00E5FF]/80">Líder:</span>
-                    <span className="font-bold text-[#00E5FF]">
-                      {ranking[0]?.total_points.toFixed(0)} pts
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -146,7 +137,7 @@ export default function LiveDashboard() {
                         <p className="font-bold truncate text-white text-xs">{team.team_name}</p>
                       </div>
                       <span className="font-bold text-sm text-[#00E5FF]">
-                        {team.total_points.toFixed(0)}
+                        🪙 {team.total_points.toFixed(0)}
                       </span>
                     </div>
                   ))}

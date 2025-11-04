@@ -6,7 +6,7 @@ const PENALTIES_CONFIG = [
     name: 'Plágio',
     icon: '⚠️',
     description: 'Uso de conteúdo de terceiros sem devida atribuição',
-    deduction: '-50 a -100 pontos',
+    deduction: '-50 a -100 AMF Coins',
     when: 'Detectado durante avaliação',
     color: 'red'
   },
@@ -15,7 +15,7 @@ const PENALTIES_CONFIG = [
     name: 'Desorganização',
     icon: '📌',
     description: 'Entrega desorganizada ou com formatação inadequada',
-    deduction: '-10 a -30 pontos',
+    deduction: '-10 a -30 AMF Coins',
     when: 'Identificado na submissão',
     color: 'orange'
   },
@@ -24,7 +24,7 @@ const PENALTIES_CONFIG = [
     name: 'Desrespeito às Regras',
     icon: '🚫',
     description: 'Violação das regras do evento ou protocolo inadequado',
-    deduction: '-20 a -50 pontos',
+    deduction: '-20 a -50 AMF Coins',
     when: 'Constatado pelos avaliadores',
     color: 'red'
   },
@@ -33,7 +33,7 @@ const PENALTIES_CONFIG = [
     name: 'Ausência',
     icon: '❌',
     description: 'Não comparecimento a atividades obrigatórias',
-    deduction: '-30 a -100 pontos',
+    deduction: '-30 a -100 AMF Coins',
     when: 'Quando aplicável',
     color: 'red'
   },
@@ -42,7 +42,7 @@ const PENALTIES_CONFIG = [
     name: 'Atraso na Entrega',
     icon: '⏰',
     description: 'Submissão após o prazo estabelecido',
-    deduction: '-5 a -20 pontos',
+    deduction: '-5 a -20 AMF Coins',
     when: 'Submissão fora do horário',
     color: 'yellow'
   }

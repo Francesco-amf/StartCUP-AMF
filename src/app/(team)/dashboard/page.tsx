@@ -12,7 +12,9 @@ import PhaseDetailsCard from '@/components/PhaseDetailsCard'
 import FinalEvaluationGuide from '@/components/FinalEvaluationGuide'
 import TeamLogoUpload from '@/components/TeamLogoUpload'
 import PowerUpActivator from '@/components/PowerUpActivator'
+import MentorRequestButton from '@/components/MentorRequestButton'
 import { Accordion } from '@/components/ui/Accordion'
+import DashboardAutoRefresh from '@/components/dashboard/DashboardAutoRefresh'
 
 export default async function TeamDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -53,36 +55,95 @@ export default async function TeamDashboard() {
     .select('quest_id, status, final_points')
     .eq('team_id', team?.id)
 
-  // Buscar quests ativas
-  const { data: activeQuestsData } = await supabase
-    .from('active_quests')
-    .select('*, phase(*)') // Assuming 'phase' is a related table
-    .eq('team_id', team?.id)
+  // Buscar quests da fase atual diretamente da tabela 'quests' (consistência com /submit)
+  const { data: questsData } = await supabase
+    .from('quests')
+    .select(`
+      *,
+      phase:phase_id (
+        id,
+        name,
+        order_index
+      )
+    `)
+    .order('phase_id, order_index')
 
-  const quests = activeQuestsData || []
+  const quests = (questsData || []).map((quest: any) => ({
+    ...quest,
+    deliverable_type: Array.isArray(quest.deliverable_type)
+      ? quest.deliverable_type
+      : (quest.deliverable_type ? [quest.deliverable_type] : [])
+  }))
 
-  // Ordena quests por phase e order_index para garantir a sequencia correta
-  // CORREÇÃO: Definindo tipo para 'a' e 'b'
-  const sortedQuests = quests.sort((a: any, b: any) => {
-    const phaseCompare = a.phase.order_index - b.phase.order_index
-    return phaseCompare !== 0 ? phaseCompare : a.order_index - b.order_index
-  });
+  const sortedQuests = quests
+    .filter((q: any) => q.phase?.order_index === eventConfig?.current_phase)
+    .sort((a: any, b: any) => a.order_index - b.order_index)
 
   const submittedQuestIds = submissions?.map(s => s.quest_id) || []
 
-  // Encontra a primeira quest que ainda não foi entregue
-  // CORREÇÃO: Definindo tipo para 'q'
-  const currentQuest = sortedQuests.find((q: any) => !submittedQuestIds.includes(q.id));
+  // Selecionar a "quest atual" com a mesma regra do SubmissionWrapper:
+  // - primeira não-submetida cuja janela total (prazo + atraso) ainda não expirou
+  // - se planned_deadline_minutes for nulo, tratar como ativa (não expira)
+  // - se nenhuma se qualificar, cair no fallback: primeira não-submetida (expirada)
+  const getDate = (iso?: string | null) => {
+    if (!iso) return null
+    const str = iso.endsWith('Z') ? iso : iso.replace('+00:00', 'Z')
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? null : d
+  }
+
+  const nowMs = Date.now()
+  const epsilon = 500
+  let currentIndex = -1
+  for (let i = 0; i < sortedQuests.length; i++) {
+    const q = sortedQuests[i]
+    if (submittedQuestIds.includes(q.id)) continue
+    const start = getDate(q.started_at)
+    if (!start) { currentIndex = i; break }
+    const planned = typeof q.planned_deadline_minutes === 'number' ? q.planned_deadline_minutes : null
+    const late = typeof q.late_submission_window_minutes === 'number' ? q.late_submission_window_minutes : 0
+    if (planned === null) { currentIndex = i; break }
+    const regularEndMs = start.getTime() + planned * 60_000
+    const finalEndMs = regularEndMs + late * 60_000
+    if (nowMs <= finalEndMs + epsilon) { currentIndex = i; break }
+  }
+
+  if (currentIndex === -1) {
+    for (let i = 0; i < sortedQuests.length; i++) {
+      const q = sortedQuests[i]
+      if (!submittedQuestIds.includes(q.id)) { currentIndex = i; break }
+    }
+  }
+
+  const currentQuest = currentIndex >= 0 ? sortedQuests[currentIndex] : undefined
+
+  // Aviso no dashboard: se a anterior não-submetida expirou totalmente e avançamos
+  let autoAdvancedNotice: { fromName: string, toName: string } | null = null
+  if (currentIndex > 0) {
+    const prev = sortedQuests[currentIndex - 1]
+    if (!submittedQuestIds.includes(prev.id) && prev.started_at) {
+      const start = new Date((prev.started_at.endsWith('Z') ? prev.started_at : prev.started_at.replace('+00:00','Z')))
+      const planned = typeof prev.planned_deadline_minutes === 'number' ? prev.planned_deadline_minutes : null
+      const late = typeof prev.late_submission_window_minutes === 'number' ? prev.late_submission_window_minutes : 0
+      if (!isNaN(start.getTime()) && planned !== null) {
+        const endMs = start.getTime() + planned * 60_000 + late * 60_000
+        if (Date.now() > endMs + 500 && currentQuest) {
+          autoAdvancedNotice = { fromName: prev.name, toName: currentQuest.name }
+        }
+      }
+    }
+  }
 
   // CORREÇÃO: Definindo tipo para 'sum' e 'submission'
   const totalPoints = submissions?.reduce((sum: number, submission: { final_points: number | null }) => sum + (submission.final_points || 0), 0) || 0
 
 
   return (
-    <div className="min-h-screen gradient-startcup overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0A0F1E] via-[#0A1E47] to-[#0A0F1E]">
+      <DashboardAutoRefresh />
       <Header
-        title={`Bem-vindo, ${team?.name || 'Equipe'}! 👋`}
-        subtitle={team?.course}
+        title="🎮 Dashboard da Equipe"
+        subtitle={`${team?.name || 'Equipe'} - ${team?.course || 'Curso'}`}
         showLogout={true}
         logoUrl={team?.logo_url}
       />
@@ -98,6 +159,11 @@ export default async function TeamDashboard() {
         </div>
 
         <div className="grid gap-2 md:gap-3 p-3">
+          {autoAdvancedNotice && (
+            <div className="bg-[#0A3A5A]/60 border border-[#FF6B6B]/60 text-[#FFB3B3] px-4 py-3 rounded-lg">
+              🚦 Prazo finalizado em "{autoAdvancedNotice.fromName}". Agora você está na próxima quest: <span className="font-bold text-white">{autoAdvancedNotice.toName}</span>.
+            </div>
+          )}
           {/* Fase Atual do Evento */}
           <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-r from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
@@ -194,7 +260,7 @@ export default async function TeamDashboard() {
                             </div>
                             <div className="text-right">
                               <p className="text-base md:text-lg font-bold text-[#00E5FF]">
-                                {submission.final_points || 0} pts
+                                🪙 {submission.final_points || 0} AMF Coins
                               </p>
                             </div>
                           </div>
@@ -223,6 +289,10 @@ export default async function TeamDashboard() {
                 children: (
                   <div className="space-y-3 md:space-y-4">
                     <PowerUpActivator />
+                    <MentorRequestButton 
+                      currentPhase={eventConfig?.current_phase || 0}
+                      teamCoins={totalPoints}
+                    />
                     <PowerUpsGuide />
                   </div>
                 ),

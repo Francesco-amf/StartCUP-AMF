@@ -56,7 +56,7 @@ export default function FinalEvaluationGuide() {
       <div className="mb-2">
         <h3 className="text-sm font-semibold text-[#00E5FF] mb-1">🏆 Avaliação Final e Pontuação</h3>
         <p className="text-xs text-[#00E5FF]/70">
-          Entenda como sua solução será avaliada e o potencial máximo de pontos.
+          Entenda como sua solução será avaliada e o potencial máximo de AMF Coins.
         </p>
       </div>
 
@@ -95,18 +95,18 @@ export default function FinalEvaluationGuide() {
         <div className="flex items-start gap-2">
           <span className="text-lg flex-shrink-0">⚡</span>
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 mb-1 text-xs">Multiplicador de Pontos (até 2x)</h4>
-            <p className="text-xs text-gray-700 mb-1">
-              Ao avaliar cada quest, o avaliador atribui os pontos e pode aplicar um multiplicador de até 2x conforme a qualidade da entrega:
+            <h4 className="font-semibold text-gray-900 mb-1 text-xs">Multiplicador de AMF Coins (até 2x)</h4>
+            <p className="text-xs text-gray-700 mb-2">
+              Ao avaliar cada quest, o avaliador atribui os AMF Coins e pode aplicar um multiplicador de até 2x conforme a qualidade da entrega:
             </p>
             <div className="space-y-1">
               <div className="text-xs">
                 <p className="font-semibold text-gray-900 mb-1">Exemplos de aplicação:</p>
                 <ul className="space-y-1 text-gray-700">
-                  <li>• Quest de 100 pts avaliada com 1.0x = <strong>100 pontos</strong></li>
-                  <li>• Quest de 100 pts avaliada com 1.5x = <strong>150 pontos</strong></li>
-                  <li>• Quest de 100 pts avaliada com 2.0x = <strong>200 pontos</strong> (máximo)</li>
-                  <li>• Quest de 50 pts avaliada com 2.0x = <strong>100 pontos</strong> (máximo)</li>
+                  <li>• Quest de 100 AMF Coins avaliada com 1.0x = <strong>100 AMF Coins</strong></li>
+                  <li>• Quest de 100 AMF Coins avaliada com 1.5x = <strong>150 AMF Coins</strong></li>
+                  <li>• Quest de 100 AMF Coins avaliada com 2.0x = <strong>200 AMF Coins</strong> (máximo)</li>
+                  <li>• Quest de 50 AMF Coins avaliada com 2.0x = <strong>100 AMF Coins</strong> (máximo)</li>
                 </ul>
               </div>
             </div>
@@ -162,20 +162,20 @@ export default function FinalEvaluationGuide() {
         <div className="p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
           <p className="text-xs font-semibold text-yellow-900 mb-1">⚠️ Cuidado com Penalidades</p>
           <ul className="text-xs text-yellow-800 space-y-1">
-            <li>• Penalidades reduzem seus pontos totais</li>
-            <li>• Plagio resulta em deduções severas (-50 a -100 pontos)</li>
-            <li>• Atraso na entrega resulta em perdas (-5 a -20 pontos)</li>
+            <li>• Penalidades reduzem seus AMF Coins totais</li>
+            <li>• Plagio resulta em deduções severas (-50 a -100 AMF Coins)</li>
+            <li>• Atraso na entrega resulta em perdas (-5 a -20 AMF Coins)</li>
             <li>• Respeite todas as regras para proteger sua pontuação</li>
           </ul>
         </div>
 
         <div className="p-2 bg-green-50 border-l-4 border-green-400 rounded">
-          <p className="text-xs font-semibold text-green-900 mb-1">🎯 Estratégia para Maximizar Pontos</p>
+          <p className="text-xs font-semibold text-green-900 mb-1">🎯 Estratégia para Maximizar AMF Coins</p>
           <ul className="text-xs text-green-800 space-y-1">
-            <li>✓ Complete todas as quests de forma qualitativa para garantir os {totalQuestPoints} pts</li>
-            <li>✓ Dedique tempo aos boss battles (pitches) para ganhar pontos extras</li>
+            <li>✓ Complete todas as quests de forma qualitativa para garantir os 🪙 {totalQuestPoints} AMF Coins</li>
+            <li>✓ Dedique tempo aos boss battles (pitches) para ganhar AMF Coins extras</li>
             <li>✓ Foque em Viabilidade, Inovação e Qualidade da Apresentação</li>
-            <li>✓ Use power-ups estrategicamente para recuperar pontos se necessário</li>
+            <li>✓ Use power-ups estrategicamente para recuperar AMF Coins se necessário</li>
           </ul>
         </div>
       </div>

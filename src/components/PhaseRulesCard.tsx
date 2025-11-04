@@ -19,7 +19,7 @@ const PHASE_RULES = {
     description: 'Exploração e análise do problema',
     rules: [
       'Duração: 2 horas e 30 minutos',
-      'Pontos máximos: 200',
+      'AMF Coins máximos: 200',
       'Foco em compreender o contexto e requisitos',
       'Entrega: Análise detalhada ou documento de pesquisa'
     ],
@@ -31,7 +31,7 @@ const PHASE_RULES = {
     description: 'Desenvolvimento da solução',
     rules: [
       'Duração: 3 horas e 30 minutos',
-      'Pontos máximos: 300',
+      'AMF Coins máximos: 300',
       'Crie soluções inovadoras baseadas na Fase 1',
       'Entrega: Protótipo, código, design ou documento criativo'
     ],
@@ -43,7 +43,7 @@ const PHASE_RULES = {
     description: 'Planejamento e estratégia de implementação',
     rules: [
       'Duração: 2 horas e 30 minutos',
-      'Pontos máximos: 200',
+      'AMF Coins máximos: 200',
       'Defina plano de implementação e estratégia',
       'Entrega: Documento estratégico ou plano de ação'
     ],
@@ -55,7 +55,7 @@ const PHASE_RULES = {
     description: 'Polimento e optimização da solução',
     rules: [
       'Duração: 2 horas',
-      'Pontos máximos: 150',
+      'AMF Coins máximos: 150',
       'Refine e otimize a solução criada',
       'Entrega: Versão final melhorada da solução'
     ],
@@ -67,7 +67,7 @@ const PHASE_RULES = {
     description: 'Apresentação final da solução',
     rules: [
       'Duração: 1 hora e 30 minutos',
-      'Pontos máximos: 150',
+      'AMF Coins máximos: 150',
       'Apresente sua solução de forma persuasiva',
       'Critérios: Viabilidade, Inovação, Qualidade da Apresentação'
     ],

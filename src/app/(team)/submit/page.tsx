@@ -66,6 +66,11 @@ export default async function SubmitPage() {
         ? quest.deliverable_type
         : (quest.deliverable_type ? [quest.deliverable_type] : [])
     }));
+    // Debug das quests carregadas
+    console.log('🔎 [/submit] Quests carregadas:', quests.map((q: any) => ({
+      id: q.id, name: q.name, order: q.order_index, phase: q.phase?.order_index,
+      started_at: q.started_at, planned: q.planned_deadline_minutes, late: q.late_submission_window_minutes
+    })))
   }
 
   // Buscar submissions já feitas pela equipe
@@ -86,6 +91,7 @@ export default async function SubmitPage() {
   // Filtrar quests pela fase atual (event_config.current_phase é um número; usar phase.order_index)
   const questsInCurrentPhase = quests.filter(q => q.phase?.order_index === eventConfig?.current_phase)
   const sortedQuests = questsInCurrentPhase.sort((a, b) => a.order_index - b.order_index)
+  console.log('🔎 [/submit] Quests na fase atual:', sortedQuests.map((q: any) => ({ id: q.id, name: q.name, order: q.order_index })))
 
   // Encontra a primeira quest não entregue (essa é a única que deve aparecer)
   let firstIncompleteIndex = -1

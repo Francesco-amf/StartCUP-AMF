@@ -13,6 +13,9 @@ interface Quest {
   deliverable_type: string
   status: string
   duration_minutes: number
+  started_at: string | null
+  planned_deadline_minutes: number | null
+  late_submission_window_minutes: number | null
 }
 
 interface CurrentQuestTimerProps {
@@ -22,7 +25,7 @@ interface CurrentQuestTimerProps {
 }
 
 // Fallback quest data para fases sem quests no banco
-const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
+const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
   1: [
     {
       id: 'f-1-1',
@@ -185,6 +188,29 @@ const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = {
   ]
 }
 
+// Helper para normalizar fallback quests com campos obrigatórios
+const normalizeFallbackQuest = (q: Partial<Quest>): Quest => ({
+  id: q.id || '',
+  order_index: q.order_index || 0,
+  name: q.name || '',
+  description: q.description || '',
+  max_points: q.max_points || 0,
+  deliverable_type: q.deliverable_type || 'file',
+  status: q.status || 'scheduled',
+  duration_minutes: q.duration_minutes || 60,
+  started_at: null,
+  planned_deadline_minutes: null,
+  late_submission_window_minutes: null
+})
+
+const PHASES_QUESTS_FALLBACK: Record<number, Quest[]> = Object.entries(PHASES_QUESTS_FALLBACK_RAW).reduce(
+  (acc, [phase, quests]) => ({
+    ...acc,
+    [phase]: quests.map(normalizeFallbackQuest)
+  }),
+  {}
+)
+
 export default function CurrentQuestTimer({
   phase,
   phaseStartedAt,
@@ -204,29 +230,59 @@ export default function CurrentQuestTimer({
 
   const [quests, setQuests] = useState<Quest[]>([])
   const [loadingQuests, setLoadingQuests] = useState(true)
+  const [actualPhase, setActualPhase] = useState(phase) // Fase real do DB
   const supabase = createClient()
 
+  // 🔄 Sincronizar com event_config.current_phase a cada 30 segundos
+  useEffect(() => {
+    const syncCurrentPhase = async () => {
+      try {
+        const { data: eventConfig } = await supabase
+          .from('event_config')
+          .select('current_phase')
+          .single()
+        
+        if (eventConfig?.current_phase && eventConfig.current_phase !== actualPhase) {
+          console.log(`🔄 [LiveDashboard] Fase mudou: ${actualPhase} → ${eventConfig.current_phase}`)
+          setActualPhase(eventConfig.current_phase)
+        }
+      } catch (err) {
+        console.error('Erro ao sincronizar current_phase:', err)
+      }
+    }
+
+    // Sincronizar imediatamente
+    syncCurrentPhase()
+
+    // Depois a cada 30 segundos
+    const interval = setInterval(syncCurrentPhase, 30000)
+    
+    return () => clearInterval(interval)
+  }, [supabase, actualPhase])
+
   // Carregar quests da fase atual do banco de dados
+  // 🔄 TAMBÉM sincronizar quests a cada 30 segundos
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        // Primeiro, buscar o ID da fase atual
+        // Usar actualPhase ao invés de phase prop
         const { data: phaseData, error: phaseError } = await supabase
           .from('phases')
           .select('id')
-          .eq('order_index', phase)
+          .eq('order_index', actualPhase)
           .single()
 
         if (phaseError || !phaseData) {
           console.error('Erro ao buscar fase:', phaseError)
-          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+          setQuests(PHASES_QUESTS_FALLBACK[actualPhase] || [])
           setLoadingQuests(false)
           return
         }
 
-        console.log(`🔍 Buscando quests para Fase ${phase} (phase_id: ${phaseData.id})`)
+        console.log(`🔍 Buscando quests para Fase ${actualPhase} (phase_id: ${phaseData.id})`)
 
         // Agora buscar quests APENAS dessa fase
+        // 🚨 BUSCAR TODAS AS QUESTS (não filtrar por status)
         const { data, error } = await supabase
           .from('quests')
           .select(`
@@ -237,67 +293,63 @@ export default function CurrentQuestTimer({
             max_points,
             deliverable_type,
             status,
-            duration_minutes
+            duration_minutes,
+            started_at,
+            planned_deadline_minutes,
+            late_submission_window_minutes
           `)
           .eq('phase_id', phaseData.id)
-          .in('status', ['scheduled', 'active'])
           .order('order_index')
 
         if (error) {
-          console.error(`❌ Erro ao buscar quests para Fase ${phase}:`, error)
+          console.error(`❌ Erro ao buscar quests para Fase ${actualPhase}:`, error)
         }
 
         console.log(`📊 Resultado da query - Total de quests: ${data?.length || 0}`, data)
 
         // Fallback data para comparação
-        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[phase]?.length || 0
+        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[actualPhase]?.length || 0
         const hasInsufficientQuests = data && data.length < expectedFallbackQuestCount
 
         if (!error && data && data.length > 0 && !hasInsufficientQuests) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a: any, b: any) => a.order_index - b.order_index)
 
-          // Remapear order_index para ser local da fase (1, 2, 3...)
-          const normalizedQuests = sortedData.map((q: any, idx: number) => ({
-            ...q,
-            order_index: idx + 1
-          }))
-
-          console.log(`✅ Quests carregadas para Fase ${phase}:`, normalizedQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
-          setQuests(normalizedQuests)
+          console.log(`✅ Quests carregadas do DB para Fase ${actualPhase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'})`))
+          setQuests(sortedData)
         } else {
           // Usar fallback se não houver quests no banco para essa fase OU se houver menos quests do que esperado
           if (hasInsufficientQuests) {
-            console.log(`⚠️ Fase ${phase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
+            console.log(`⚠️ Fase ${actualPhase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
           } else {
-            console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
+            console.log(`⚠️ Nenhuma quest encontrada para Fase ${actualPhase} (ou erro na query), usando fallback`)
           }
-          const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
-          // Normalizar fallback também para garantir consistência
-          const normalizedFallback = fallbackQuests.map((q: any, idx: number) => ({
-            ...q,
-            order_index: idx + 1
-          }))
-          console.log(`📋 Fallback quests para Fase ${phase}:`, normalizedFallback.map((q: any) => `[${q.order_index}] ${q.name}`))
-          setQuests(normalizedFallback)
+          const fallbackQuests = PHASES_QUESTS_FALLBACK[actualPhase] || []
+          console.log(`📋 Fallback quests para Fase ${actualPhase}:`, fallbackQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
+          setQuests(fallbackQuests)
         }
       } catch (err) {
         console.error('Erro ao carregar quests:', err)
         // Usar fallback em caso de erro
-        const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
-        const normalizedFallback = fallbackQuests.map((q, idx) => ({
-          ...q,
-          order_index: idx + 1
-        }))
-        setQuests(normalizedFallback)
+        const fallbackQuests = PHASES_QUESTS_FALLBACK[actualPhase] || []
+        setQuests(fallbackQuests)
       } finally {
         setLoadingQuests(false)
       }
     }
 
+    // Buscar quests imediatamente
     setLoadingQuests(true)
     fetchQuests()
-  }, [phase, supabase])
+
+    // 🔄 SINCRONIZAR QUESTS a cada 30 segundos
+    const interval = setInterval(() => {
+      console.log('🔄 [LiveDashboard] Atualizando quests...')
+      fetchQuests()
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [actualPhase, supabase])
 
   const questCount = quests.length
 
@@ -397,40 +449,88 @@ export default function CurrentQuestTimer({
 
   const formatNumber = (num: number) => String(num).padStart(2, '0')
 
-  // Determine which quest is current based on time elapsed
-  // ⚠️ CRÍTICO: Adicionar Z se não existir
-  const ensureZForQuest = phaseStartedAt.endsWith('Z')
-    ? phaseStartedAt
-    : `${phaseStartedAt}Z`
-  const elapsedSeconds = Math.floor(
-    (new Date().getTime() -
-      new Date(ensureZForQuest).getTime()) / 1000
-  )
-
-  // ✅ CORRIGIDO: Calcular qual quest está ativa com base nas durações individuais
+  // 🎯 CORRIGIDO: Detectar quest atual baseado em started_at do DB
+  // Encontrar a última quest que foi iniciada (started_at IS NOT NULL)
+  const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+  
   let currentQuestIndex = 0
-  let timeInCurrentQuest = elapsedSeconds
+  let currentQuest = quests[0]
   let questTimeRemaining = 0
 
-  for (let i = 0; i < quests.length; i++) {
-    const questDurationSeconds = getQuestDurationMs(i) / 1000
-    if (timeInCurrentQuest < questDurationSeconds) {
-      currentQuestIndex = i
-      questTimeRemaining = questDurationSeconds - timeInCurrentQuest
-      break
+  if (activeQuests.length > 0) {
+    // Ordenar por started_at (mais recente = última iniciada)
+    const sortedByStart = [...activeQuests].sort((a, b) => {
+      const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+      const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+      return timeB - timeA
+    })
+    
+    // Quest mais recente = quest atual
+    const latestQuest = sortedByStart[0]
+    currentQuestIndex = quests.findIndex(q => q.id === latestQuest.id)
+    currentQuest = latestQuest
+
+    console.log(`[LiveDashboard] 🔍 Detalhes da quest atual:`, {
+      name: latestQuest.name,
+      started_at: latestQuest.started_at,
+      planned_deadline_minutes: latestQuest.planned_deadline_minutes,
+      duration_minutes: latestQuest.duration_minutes,
+      late_submission_window_minutes: latestQuest.late_submission_window_minutes
+    })
+
+    // Calcular tempo restante dessa quest
+    if (latestQuest.started_at) {
+      // 🚨 FIX: Supabase retorna timestamps com microssegundos e +00:00
+      // Exemplo: '2025-11-04T01:44:00.027019+00:00'
+      // JavaScript Date precisa de 'Z' ou formato ISO limpo
+      let cleanTimestamp = latestQuest.started_at
+      
+      // Substituir +00:00 por Z
+      if (cleanTimestamp.includes('+00:00')) {
+        cleanTimestamp = cleanTimestamp.replace('+00:00', 'Z')
+      }
+      // Se não tem Z nem +, adicionar Z
+      else if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
+        cleanTimestamp = `${cleanTimestamp}Z`
+      }
+      
+      const questStartTime = new Date(cleanTimestamp).getTime()
+      
+      // 🎯 Live Dashboard mostra apenas prazo REGULAR (sem late_submission_window)
+      // A janela de atraso só aparece na página de submit das equipes
+      const questDurationMs = (latestQuest.planned_deadline_minutes || latestQuest.duration_minutes || 60) * 60 * 1000
+      
+      console.log(`[LiveDashboard] 🧮 Cálculo do timer:`, {
+        originalTimestamp: latestQuest.started_at,
+        cleanTimestamp,
+        questStartTime,
+        questDurationMs,
+        planned_deadline_minutes: latestQuest.planned_deadline_minutes,
+        now: Date.now(),
+        elapsed: Date.now() - questStartTime
+      })
+      
+      const elapsed = Date.now() - questStartTime
+      questTimeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
+
+      console.log(`[LiveDashboard] Quest atual: ${currentQuest.name} | Tempo restante: ${Math.floor(questTimeRemaining / 60)}min`)
     }
-    timeInCurrentQuest -= questDurationSeconds
+  } else {
+    // Nenhuma quest iniciada ainda - mostrar primeira quest mas com timer zerado
+    currentQuest = quests[0] || null
+    currentQuestIndex = 0
+    questTimeRemaining = 0
+    console.log('[LiveDashboard] ⚠️ Nenhuma quest iniciada. Mostrando primeira quest.')
   }
 
   // Garantir que currentQuestIndex nunca ultrapassa quests.length - 1
   currentQuestIndex = Math.min(Math.max(0, currentQuestIndex), Math.max(0, quests.length - 1))
 
-  const currentQuest = quests[currentQuestIndex] || quests[0]
-
-  // Debug logging (apenas na primeira renderização após carregar quests)
-  if (quests.length > 0 && Math.random() < 0.05) {
-    const currentQuestDurationSeconds = getQuestDurationMs(currentQuestIndex) / 1000
-    console.log(`[Timer] Fase ${phase}: elapsed=${elapsedSeconds}s, currentQuestDuration=${Math.round(currentQuestDurationSeconds)}s, currentIndex=${currentQuestIndex}, currentQuest=${currentQuest?.name}`)
+  // 🚨 PROTEÇÃO: Se a quest atual não tem started_at, NÃO mostrar timer
+  const questHasStarted = currentQuest && currentQuest.started_at !== null && currentQuest.started_at !== undefined
+  if (!questHasStarted) {
+    questTimeRemaining = 0
+    console.warn(`[LiveDashboard] ⚠️ Quest ${currentQuest?.name} não tem started_at! Timer zerado.`)
   }
 
   const getProgressColor = () => {
@@ -502,23 +602,28 @@ export default function CurrentQuestTimer({
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs md:text-sm font-semibold">Tempo desta Quest</span>
                 <span className="text-xs md:text-sm font-mono">
-                  {Math.floor(questTimeRemaining / 60)}:{formatNumber(Math.floor(questTimeRemaining % 60))}
+                  {questHasStarted 
+                    ? `${Math.floor(questTimeRemaining / 60)}:${formatNumber(Math.floor(questTimeRemaining % 60))}`
+                    : 'Aguardando início...'
+                  }
                 </span>
               </div>
               <div className="w-full bg-[#0A1E47]/20 rounded-full h-2 md:h-3 overflow-hidden">
                 <div
                   className="bg-[#0A1E47] h-full transition-all duration-1000"
                   style={{
-                    width: `${Math.max(0, (questTimeRemaining / (getQuestDurationMs(currentQuestIndex) / 1000)) * 100)}%`
+                    width: questHasStarted 
+                      ? `${Math.max(0, (questTimeRemaining / (getQuestDurationMs(currentQuestIndex) / 1000)) * 100)}%`
+                      : '0%'
                   }}
                 />
               </div>
             </div>
 
-            {/* Points info */}
+            {/* AMF Coins info */}
             <div className="flex justify-between items-center pt-2 border-t border-[#00E5FF]/40">
-              <span className="text-xs md:text-sm">Pontos desta Quest</span>
-              <span className="text-lg md:text-xl font-bold">{currentQuest.max_points} pts</span>
+              <span className="text-xs md:text-sm">🪙 AMF Coins desta Quest</span>
+              <span className="text-lg md:text-xl font-bold">{currentQuest.max_points} AMF Coins</span>
             </div>
           </div>
         </Card>

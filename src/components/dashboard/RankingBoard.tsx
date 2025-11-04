@@ -144,13 +144,13 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
                     </div>
                   </div>
 
-                  {/* Pontos */}
+                  {/* AMF Coins */}
                   <div className="flex-shrink-0 text-right">
                     <div className={`text-2xl md:text-4xl font-black ${getPointsColor(index + 1)}`}>
                       {team.total_points.toFixed(0)}
                     </div>
                     <div className="text-xs md:text-sm text-[#00E5FF]/50 font-medium">
-                      pontos
+                      🪙 AMF Coins
                     </div>
                   </div>
 

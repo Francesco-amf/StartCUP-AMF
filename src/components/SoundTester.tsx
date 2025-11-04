@@ -14,7 +14,7 @@ export default function SoundTester() {
     { id: 'phase-start', name: '▶ Fase Inicia', emoji: '🚀' },
     { id: 'phase-end', name: '◼ Fase Termina', emoji: '⏹' },
     { id: 'power-up', name: '⚡ Power-up', emoji: '✨' },
-    { id: 'points-update', name: '📈 Pontos', emoji: '💰' },
+    { id: 'points-update', name: '📈 AMF Coins', emoji: '🪙' },
     { id: 'notification', name: '🔔 Notificação', emoji: '📢' }
   ]
 

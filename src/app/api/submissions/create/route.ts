@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     // ========================================
     const { data: quest, error: questError } = await supabase
       .from('quests')
-      .select('id, name, deliverable_type, max_points')
+      .select('id, name, deliverable_type, max_points, order_index')
       .eq('id', questId)
       .single()
 
@@ -117,11 +117,24 @@ export async function POST(request: Request) {
     }
 
     // ========================================
-    // PASSO 4: Validar tipo de entrega
+    // PASSO 4: Validar tipo de entrega e bloquear BOSS (apresentação ao vivo)
     // ========================================
-    if (deliverableType !== quest.deliverable_type) {
+    const questDeliverableTypes = Array.isArray(quest.deliverable_type)
+      ? quest.deliverable_type
+      : (quest.deliverable_type ? [quest.deliverable_type] : [])
+
+    // BOSS quest: não aceita submissões digitais
+    if (questDeliverableTypes.includes('presentation')) {
       return NextResponse.json(
-        { error: `Tipo de entrega deve ser ${quest.deliverable_type}` },
+        { error: 'Esta é uma BOSS Quest (apresentação ao vivo). Não é necessária submissão digital.' },
+        { status: 400 }
+      )
+    }
+
+    // Validar se o tipo solicitado é permitido para esta quest
+    if (!questDeliverableTypes.includes(deliverableType)) {
+      return NextResponse.json(
+        { error: `Tipo de entrega inválido. Permitidos: ${questDeliverableTypes.join(', ') || 'nenhum'}` },
         { status: 400 }
       )
     }

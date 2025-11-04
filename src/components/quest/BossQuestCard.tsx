@@ -29,7 +29,20 @@ export default function BossQuestCard({
     if (!isActive || !startedAt) return
 
     const calculateTimeLeft = () => {
-      const start = new Date(startedAt + 'Z')
+      // ✅ CORRIGIR TIMESTAMP: Supabase retorna com +00:00, converter para Z
+      const cleanTimestamp = startedAt.endsWith('Z') 
+        ? startedAt 
+        : startedAt.replace('+00:00', 'Z')
+      
+      const start = new Date(cleanTimestamp)
+      
+      // Validar que a data é válida
+      if (isNaN(start.getTime())) {
+        console.error('[BossQuestCard] Invalid started_at timestamp:', startedAt)
+        setTimeLeft({ minutes: 0, seconds: 0 })
+        return
+      }
+      
       const deadline = new Date(start.getTime() + deadlineMinutes * 60 * 1000)
       const now = new Date()
       const diff = deadline.getTime() - now.getTime()
@@ -65,8 +78,8 @@ export default function BossQuestCard({
       {/* Informações */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 rounded-lg p-3">
-          <p className="text-xs text-[#FF6B6B]/60 mb-1">Pontuação</p>
-          <p className="text-2xl font-bold text-[#FFD700]">{maxPoints} pts</p>
+          <p className="text-xs text-[#FF6B6B]/60 mb-1">🪙 Pontuação</p>
+          <p className="text-2xl font-bold text-[#FFD700]">{maxPoints} AMF Coins</p>
         </div>
         <div className="bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 rounded-lg p-3">
           <p className="text-xs text-[#FF6B6B]/60 mb-1">Duração</p>
@@ -79,7 +92,7 @@ export default function BossQuestCard({
         <div className="bg-[#3A0A0A]/80 border-2 border-[#FF6B6B] rounded-lg p-4 mb-4">
           <p className="text-xs text-[#FF6B6B]/60 mb-2 text-center">⏰ TEMPO RESTANTE</p>
           <div className="text-4xl font-mono font-bold text-[#FF6B6B] text-center">
-            {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            {String(isNaN(timeLeft.minutes) ? 0 : timeLeft.minutes).padStart(2, '0')}:{String(isNaN(timeLeft.seconds) ? 0 : timeLeft.seconds).padStart(2, '0')}
           </div>
         </div>
       )}

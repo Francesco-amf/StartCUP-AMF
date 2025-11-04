@@ -38,7 +38,7 @@ export default function QuestCard({
           <p className="text-xs md:text-sm text-[#00E5FF]/70">{description}</p>
         </div>
         <div className="bg-[#00E5FF]/10 border border-[#00E5FF]/30 rounded-lg p-2 md:p-3 whitespace-nowrap flex-shrink-0">
-          <p className="text-xs md:text-sm text-[#00E5FF]/60 font-semibold">Pontos Máximos</p>
+          <p className="text-xs md:text-sm text-[#00E5FF]/60 font-semibold">🪙 AMF Coins Máximos</p>
           <p className="text-xl md:text-2xl font-bold text-[#00FF88]">{maxPoints}</p>
         </div>
       </div>

@@ -522,7 +522,7 @@ export default function PhaseDetailsCard({ currentQuest, currentPhaseNumber }: P
           <div className="bg-[#0A1E47]/20 backdrop-blur p-2 md:p-3 rounded-lg">
             {phase.maxPoints > 0 && (
               <>
-                <p className="text-white/80 text-xs md:text-sm font-semibold">Pontos Totais da Fase</p>
+                <p className="text-white/80 text-xs md:text-sm font-semibold">🪙 AMF Coins Totais da Fase</p>
                 <p className="text-xl md:text-2xl font-bold text-white">{phase.maxPoints}</p>
               </>
             )}

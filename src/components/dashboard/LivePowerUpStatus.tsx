@@ -131,7 +131,7 @@ export default function LivePowerUpStatus() {
     <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 text-white" role="region" aria-live="polite" aria-label="Active power-ups in current phase">
       <div className="mb-4">
         <h3 className="text-xl font-bold mb-1">⚡ Power-ups Ativados</h3>
-        <p className="text-xs text-purple-200">Fase {currentPhase + 1}</p>
+        <p className="text-xs text-purple-200">Fase {currentPhase}</p>
       </div>
 
       {powerUps.length === 0 ? (

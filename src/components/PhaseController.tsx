@@ -258,7 +258,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
 
             {p.points && (
               <div className="text-xs text-[#FFD700] mb-3">
-                💎 {p.points} pontos totais
+                💎 {p.points} AMF Coins totais
               </div>
             )}
 

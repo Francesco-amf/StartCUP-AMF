@@ -48,8 +48,8 @@ export function useRealtimeRanking() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'penalties' }, fetchRanking)
       .subscribe()
 
-    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo)
-    const pollInterval = setInterval(fetchRanking, 1000)
+    // 🔄 Polling de fallback a cada 5 segundos (backup se WebSocket falhar)
+    const pollInterval = setInterval(fetchRanking, 5000)
 
     // Cleanup
     return () => {
@@ -70,7 +70,6 @@ export function useRealtimePhase() {
   useEffect(() => {
     // Função para buscar fase e quest ativa
     const fetchPhase = async () => {
-      console.log('🔄 [useRealtimePhase] Fetching phase data...', new Date().toLocaleTimeString())
       const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
       const { data, error } = await supabase
         .from('event_config')
@@ -96,15 +95,6 @@ export function useRealtimePhase() {
             // new Date() já faz a conversão automática para local time
             // Usar como ISO string direto para os componentes
             phaseStartTime = rawTimestamp
-
-            const date = new Date(rawTimestamp)
-            const browserTimezone = -new Date().getTimezoneOffset() / 60
-
-            console.log(`📍 Phase ${data.current_phase}:`)
-            console.log(`   ${phaseStartColumn} (raw): ${rawTimestamp}`)
-            console.log(`   Browser timezone: UTC${browserTimezone > 0 ? '+' : ''}${browserTimezone}`)
-            console.log(`   Parsed local: ${date.toLocaleString('pt-BR')}`)
-            console.log(`   phase_duration: ${getPhaseInfo(data.current_phase).duration_minutes} min`)
           }
         }
 
@@ -169,8 +159,8 @@ export function useRealtimePhase() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'quests' }, fetchPhase)
       .subscribe()
 
-    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo para plano free)
-    const pollInterval = setInterval(fetchPhase, 1000)
+    // 🔄 Polling de fallback a cada 5 segundos (backup se WebSocket falhar)
+    const pollInterval = setInterval(fetchPhase, 5000)
 
     // Cleanup
     return () => {
@@ -212,8 +202,8 @@ export function useRealtimeEvaluators() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'evaluators' }, fetchEvaluators)
       .subscribe()
 
-    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo)
-    const pollInterval = setInterval(fetchEvaluators, 1000)
+    // 🔄 Polling de fallback a cada 5 segundos (backup se WebSocket falhar)
+    const pollInterval = setInterval(fetchEvaluators, 5000)
 
     // Cleanup
     return () => {

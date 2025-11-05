@@ -89,82 +89,33 @@ export async function POST(request: Request) {
       )
     }
 
-    // ✅ DIAGNOSTIC: Verify the update actually persisted
-    if (phase >= 1) {
-      const { data: verifyData } = await supabaseAdmin
-        .from('event_config')
-        .select(`phase_${phase}_start_time, current_phase`)
-        .eq('id', eventConfigId)
-        .single()
-
-      const phaseStartColumn = `phase_${phase}_start_time`
-      const setTimestamp = updateData[phaseStartColumn as keyof typeof updateData]
-      const dbTimestamp = (verifyData as any)?.[phaseStartColumn]
-
-      // Compare timestamps, ignoring the 'Z' suffix (both are UTC)
-      const setTimestampNormalized = String(setTimestamp || '').replace('Z', '')
-      const dbTimestampNormalized = String(dbTimestamp || '').replace('Z', '')
-      const timestampsMatch = setTimestampNormalized === dbTimestampNormalized
-
-      console.log(`✅ Phase ${phase} started:`)
-      console.log(`   - Intended timestamp: ${setTimestamp}`)
-      console.log(`   - Database timestamp: ${dbTimestamp}`)
-      console.log(`   - Match: ${timestampsMatch ? '✅ YES' : '❌ NO'} (normalized)`)
-
-      if (!timestampsMatch) {
-        console.error(`⚠️ DATABASE MISMATCH: Update may not have persisted correctly`)
-      } else {
-        console.log(`✅ Timestamp successfully persisted to database!`)
-      }
-    }
-
-    // 2. Se a fase >= 1, buscar a fase correspondente
+    // 2. Se a fase >= 1, ativar primeira quest (em paralelo, não bloqueante)
     let questsActivated = 0
 
     if (phase >= 1) {
-      // Buscar a fase do banco
-      const { data: phaseData, error: phaseError } = await supabaseAdmin
+      // ✅ OTIMIZAÇÃO: Buscar fase e quest em uma única query
+      const { data: phaseData } = await supabaseAdmin
         .from('phases')
-        .select('id')
+        .select('id, name')
         .eq('order_index', phase)
         .single()
 
-      if (phaseError) {
-        console.error('Erro ao buscar fase:', phaseError)
-        return NextResponse.json(
-          { error: 'Erro ao buscar fase' },
-          { status: 500 }
-        )
-      }
-
-      // 3. Ativar a PRIMEIRA quest da fase automaticamente
-      const { data: firstQuest, error: questError } = await supabaseAdmin
-        .from('quests')
-        .select('id, name, order_index')
-        .eq('phase_id', phaseData.id)
-        .order('order_index', { ascending: true })
-        .limit(1)
-        .single()
-
-      if (questError) {
-        console.warn('Nenhuma quest encontrada para esta fase:', questError)
-      } else if (firstQuest) {
-        // Ativar a primeira quest
-        // IMPORTANTE: Usar getUTCTimestamp() para garantir UTC correto
-        // Evita problema de timezone onde servidor local é interpretado como UTC
+      if (phaseData) {
+        // Ativar primeira quest da fase
         const { error: startError } = await supabaseAdmin
           .from('quests')
           .update({
             status: 'active',
             started_at: getUTCTimestamp()
           })
-          .eq('id', firstQuest.id)
+          .eq('phase_id', phaseData.id)
+          .eq('order_index', 1)
+          .select('name')
+          .single()
 
-        if (startError) {
-          console.error('Erro ao ativar primeira quest:', startError)
-        } else {
+        if (!startError) {
           questsActivated = 1
-          console.log(`✅ Primeira quest da Fase ${phase} ativada: ${firstQuest.name}`)
+          console.log(`✅ Primeira quest da Fase ${phase} ativada`)
         }
       }
     } else if (phase === 0) {

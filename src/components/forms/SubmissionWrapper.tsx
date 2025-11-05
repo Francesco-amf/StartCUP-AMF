@@ -23,7 +23,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
     router.refresh()
   }
 
-  // Auto-refresh a cada 30 segundos para detectar mudanças de fase/quest
+  // Auto-refresh a cada 30 segundos (reduzido de 10s - dados já vêm via props de useRealtimePhase)
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh()

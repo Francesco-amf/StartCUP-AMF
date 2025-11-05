@@ -230,59 +230,30 @@ export default function CurrentQuestTimer({
 
   const [quests, setQuests] = useState<Quest[]>([])
   const [loadingQuests, setLoadingQuests] = useState(true)
-  const [actualPhase, setActualPhase] = useState(phase) // Fase real do DB
   const supabase = createClient()
 
-  // 🔄 Sincronizar com event_config.current_phase a cada 30 segundos
-  useEffect(() => {
-    const syncCurrentPhase = async () => {
-      try {
-        const { data: eventConfig } = await supabase
-          .from('event_config')
-          .select('current_phase')
-          .single()
-        
-        if (eventConfig?.current_phase && eventConfig.current_phase !== actualPhase) {
-          console.log(`🔄 [LiveDashboard] Fase mudou: ${actualPhase} → ${eventConfig.current_phase}`)
-          setActualPhase(eventConfig.current_phase)
-        }
-      } catch (err) {
-        console.error('Erro ao sincronizar current_phase:', err)
-      }
-    }
-
-    // Sincronizar imediatamente
-    syncCurrentPhase()
-
-    // Depois a cada 30 segundos
-    const interval = setInterval(syncCurrentPhase, 30000)
-    
-    return () => clearInterval(interval)
-  }, [supabase, actualPhase])
-
-  // Carregar quests da fase atual do banco de dados
-  // 🔄 TAMBÉM sincronizar quests a cada 30 segundos
+  // ✅ Carregar quests da fase atual (SEM polling independente)
+  // Os dados vêm do prop phase que é atualizado por useRealtimePhase (polling 2s)
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        // Usar actualPhase ao invés de phase prop
+        // Usar phase prop (vem de useRealtimePhase que já faz polling 2s)
         const { data: phaseData, error: phaseError } = await supabase
           .from('phases')
           .select('id')
-          .eq('order_index', actualPhase)
+          .eq('order_index', phase)
           .single()
 
         if (phaseError || !phaseData) {
           console.error('Erro ao buscar fase:', phaseError)
-          setQuests(PHASES_QUESTS_FALLBACK[actualPhase] || [])
+          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
           setLoadingQuests(false)
           return
         }
 
-        console.log(`🔍 Buscando quests para Fase ${actualPhase} (phase_id: ${phaseData.id})`)
+        console.log(`🔍 Buscando quests para Fase ${phase} (phase_id: ${phaseData.id})`)
 
-        // Agora buscar quests APENAS dessa fase
-        // 🚨 BUSCAR TODAS AS QUESTS (não filtrar por status)
+        // Buscar quests dessa fase
         const { data, error } = await supabase
           .from('quests')
           .select(`
@@ -302,54 +273,46 @@ export default function CurrentQuestTimer({
           .order('order_index')
 
         if (error) {
-          console.error(`❌ Erro ao buscar quests para Fase ${actualPhase}:`, error)
+          console.error(`❌ Erro ao buscar quests para Fase ${phase}:`, error)
         }
 
         console.log(`📊 Resultado da query - Total de quests: ${data?.length || 0}`, data)
 
         // Fallback data para comparação
-        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[actualPhase]?.length || 0
+        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[phase]?.length || 0
         const hasInsufficientQuests = data && data.length < expectedFallbackQuestCount
 
         if (!error && data && data.length > 0 && !hasInsufficientQuests) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a: any, b: any) => a.order_index - b.order_index)
 
-          console.log(`✅ Quests carregadas do DB para Fase ${actualPhase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'})`))
+          console.log(`✅ Quests carregadas do DB para Fase ${phase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'})`))
           setQuests(sortedData)
         } else {
           // Usar fallback se não houver quests no banco para essa fase OU se houver menos quests do que esperado
           if (hasInsufficientQuests) {
-            console.log(`⚠️ Fase ${actualPhase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
+            console.log(`⚠️ Fase ${phase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
           } else {
-            console.log(`⚠️ Nenhuma quest encontrada para Fase ${actualPhase} (ou erro na query), usando fallback`)
+            console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
           }
-          const fallbackQuests = PHASES_QUESTS_FALLBACK[actualPhase] || []
-          console.log(`📋 Fallback quests para Fase ${actualPhase}:`, fallbackQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
+          const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
+          console.log(`📋 Fallback quests para Fase ${phase}:`, fallbackQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
           setQuests(fallbackQuests)
         }
       } catch (err) {
         console.error('Erro ao carregar quests:', err)
         // Usar fallback em caso de erro
-        const fallbackQuests = PHASES_QUESTS_FALLBACK[actualPhase] || []
+        const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
         setQuests(fallbackQuests)
       } finally {
         setLoadingQuests(false)
       }
     }
 
-    // Buscar quests imediatamente
+    // ✅ Buscar quests apenas quando phase prop mudar (atualizado por useRealtimePhase)
     setLoadingQuests(true)
     fetchQuests()
-
-    // 🔄 SINCRONIZAR QUESTS a cada 30 segundos
-    const interval = setInterval(() => {
-      console.log('🔄 [LiveDashboard] Atualizando quests...')
-      fetchQuests()
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [actualPhase, supabase])
+  }, [phase, supabase]) // Reagir quando phase mudar (vem de useRealtimePhase)
 
   const questCount = quests.length
 

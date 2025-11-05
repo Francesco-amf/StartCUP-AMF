@@ -93,33 +93,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   for (const idx of notSubmittedIndexes) {
     const q = sortedQuests[idx]
     if (!isFullyExpired(q)) { 
-      // ✅ LÓGICA ESPECIAL PARA BOSS (order_index = 4)
-      // BOSS só deve aparecer quando TODAS as 3 quests anteriores foram processadas
-      const isBoss = q.order_index === 4
-      if (isBoss) {
-        // Verificar se as 3 quests anteriores (1, 2, 3) estão todas completas/expiradas
-        let allPreviousProcessed = true
-        for (let i = 0; i < 3; i++) {
-          const prevQuest = sortedQuests[i]
-          if (!prevQuest) continue
-          
-          const wasSubmitted = submittedQuestIds.includes(prevQuest.id)
-          const hasExpired = isFullyExpired(prevQuest)
-          
-          // Quest anterior não foi processada (nem submetida nem expirada)
-          if (!wasSubmitted && !hasExpired) {
-            allPreviousProcessed = false
-            break
-          }
-        }
-        
-        // Se alguma quest anterior ainda não foi processada, não mostrar BOSS ainda
-        if (!allPreviousProcessed) {
-          continue
-        }
-      }
-      
-      // ✅ NOVA LÓGICA: Verificar TODAS as quests anteriores em SEQUÊNCIA
+      // Verificar TODAS as quests anteriores em SEQUÊNCIA
       // Não pode pular nenhuma quest (deve ser sequencial)
       let canShowThisQuest = true
       for (let checkIdx = 0; checkIdx < idx; checkIdx++) {
@@ -151,8 +125,9 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
     }
   }
   
-  // Se TODAS expiraram, não mostre nenhuma quest (evita mostrar expirada)
-  const allExpired = notSubmittedIndexes.length > 0 && currentIndex === -1
+  // Se TODAS as quests não-submetidas expiraram, mostrar mensagem de finalização
+  const allExpired = notSubmittedIndexes.length > 0 && 
+    notSubmittedIndexes.every(idx => isFullyExpired(sortedQuests[idx]))
 
   try {
     console.log('🔎 [SubmissionWrapper] Não-submetidas:', notSubmittedIndexes.map(i => ({ idx: i, name: sortedQuests[i]?.name })))
@@ -173,7 +148,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
     const isBossByType = Array.isArray(quest.deliverable_type) 
       ? quest.deliverable_type.includes('presentation')
       : quest.deliverable_type === 'presentation';
-    const isBossByOrder = quest.order_index === 4; // fallback robusto
+    const isBossByOrder = quest.order_index === 4;
     const isBoss = isBossByType || isBossByOrder;
     
     // Calcular deadlines se quest está ativa
@@ -243,7 +218,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
       isExpired,
       isCompleted: isEvaluated,
       alreadySubmitted,
-      isBoss, // Nova propriedade
+      isBoss,
     };
   })
 
@@ -328,7 +303,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
 
           return (
             <div key={quest.id}>
-              {/* BOSS QUEST - Apresentação Presencial */}
+              {/* BOSS QUEST - Apresentação Presencial (Fases 1-4) */}
               {quest.isBoss ? (
                 <BossQuestCard
                   questName={quest.name}
@@ -344,7 +319,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                   <SubmissionDeadlineStatus questId={quest.id} teamId={team.id} />
                   <h3 className="text-xl font-bold mb-2 text-[#00E5FF]">{quest.name}</h3>
                   <p className="text-[#00E5FF]/70 mb-2">{quest.description}</p>
-                  <p className="text-sm text-[#00E5FF]/60">Pontuação máxima: <span className="font-bold text-[#00FF88]">{quest.max_points} pontos</span></p>
+                  <p className="text-sm text-[#00E5FF]/60">AMF Coins máximos: <span className="font-bold text-[#00FF88]">{quest.max_points} coins</span></p>
                 </div>
               ) : quest.previewOnly ? (
                 /* Sempre bloqueado para submissão, apenas preview */
@@ -355,7 +330,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                   <h3 className="text-xl font-bold mb-2 text-[#FFD700]">{quest.name}</h3>
                   <p className="text-[#FFD700]/70 mb-4">{quest.description}</p>
                   <p className="text-sm text-[#FFD700]/90">
-                    💎 Pontuação máxima: <span className="font-bold">{quest.max_points} pontos</span>
+                    💎 AMF Coins máximos: <span className="font-bold">{quest.max_points} coins</span>
                   </p>
                   <div className="mt-4 bg-[#0A3A5A]/40 border border-[#00E5FF]/50 text-[#00E5FF] px-4 py-3 rounded-lg">
                     ⏳ Esta quest abrirá após a conclusão/fechamento da anterior.
@@ -374,7 +349,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
 
                   {submission?.status === 'evaluated' && (
                     <div className="bg-[#0A3A5A]/40 border border-[#00FF88]/50 text-[#00FF88] px-4 py-3 rounded-lg">
-                      ✅ Avaliada! Pontuação: {submission.final_points} pontos
+                      ✅ Avaliada! AMF Coins: {submission.final_points} coins
                     </div>
                   )}
                 </div>
@@ -386,34 +361,52 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                       ⚠️ ATENÇÃO: Você está na janela de atraso!
                     </p>
                     <p className="text-[#FF6B6B]/80 text-sm mt-1">
-                      Submissões feitas agora receberão penalidade de pontos.
+                      Submissões feitas agora receberão penalidade de AMF Coins.
                     </p>
                   </div>
-                  {quest.deliverable_type?.map(type => (
-                    <SubmissionForm
-                      key={type}
-                      questId={quest.id}
-                      teamId={team.id}
-                      deliverableType={type as 'file' | 'text' | 'url'}
-                      questName={quest.name}
-                      maxPoints={quest.max_points}
-                      onSuccess={handleSuccess}
-                    />
+                  {quest.deliverable_type?.map((type, index) => (
+                    <div key={type}>
+                      <SubmissionForm
+                        questId={quest.id}
+                        teamId={team.id}
+                        deliverableType={type as 'file' | 'text' | 'url'}
+                        questName={quest.name}
+                        maxPoints={quest.max_points}
+                        onSuccess={handleSuccess}
+                      />
+                      {/* Separador entre formulários - só se não for o último */}
+                      {index < quest.deliverable_type.length - 1 && (
+                        <div className="my-6 flex items-center justify-center">
+                          <div className="flex-1 border-t border-[#00E5FF]/20"></div>
+                          <span className="px-4 text-sm font-bold text-[#00E5FF]/60">OU</span>
+                          <div className="flex-1 border-t border-[#00E5FF]/20"></div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
                 /* Quest normal (dentro do prazo) */
                 <div className="space-y-4">
-                  {quest.deliverable_type?.map(type => (
-                    <SubmissionForm
-                      key={type}
-                      questId={quest.id}
-                      teamId={team.id}
-                      deliverableType={type as 'file' | 'text' | 'url'}
-                      questName={quest.name}
-                      maxPoints={quest.max_points}
-                      onSuccess={handleSuccess}
-                    />
+                  {quest.deliverable_type?.map((type, index) => (
+                    <div key={type}>
+                      <SubmissionForm
+                        questId={quest.id}
+                        teamId={team.id}
+                        deliverableType={type as 'file' | 'text' | 'url'}
+                        questName={quest.name}
+                        maxPoints={quest.max_points}
+                        onSuccess={handleSuccess}
+                      />
+                      {/* Separador entre formulários - só se não for o último */}
+                      {index < quest.deliverable_type.length - 1 && (
+                        <div className="my-6 flex items-center justify-center">
+                          <div className="flex-1 border-t border-[#00E5FF]/20"></div>
+                          <span className="px-4 text-sm font-bold text-[#00E5FF]/60">OU</span>
+                          <div className="flex-1 border-t border-[#00E5FF]/20"></div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

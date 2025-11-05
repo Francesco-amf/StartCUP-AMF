@@ -22,11 +22,11 @@ const EVALUATION_CRITERIA = [
 ]
 
 const PHASE_POINTS = [
-  { phase: 'Fase 1: Descoberta', questPoints: 200, bossPoints: '0-100', color: 'blue' },
-  { phase: 'Fase 2: Criação', questPoints: 300, bossPoints: '0-100', color: 'purple' },
-  { phase: 'Fase 3: Estratégia', questPoints: 200, bossPoints: '0-100', color: 'green' },
-  { phase: 'Fase 4: Refinamento', questPoints: 150, bossPoints: '0-100', color: 'yellow' },
-  { phase: 'Fase 5: Pitch Final', questPoints: 150, bossPoints: '0-200', color: 'red' }
+  { phase: 'Fase 1: Descoberta', questPoints: 200, bossPoints: 100, color: 'blue' },
+  { phase: 'Fase 2: Criação', questPoints: 300, bossPoints: 100, color: 'purple' },
+  { phase: 'Fase 3: Estratégia', questPoints: 200, bossPoints: 100, color: 'green' },
+  { phase: 'Fase 4: Refinamento', questPoints: 150, bossPoints: 100, color: 'yellow' },
+  { phase: 'Fase 5: Pitch Final', questPoints: 150, bossPoints: 0, color: 'red' }
 ]
 
 const colorClasses = {
@@ -47,14 +47,15 @@ const progressColors = {
 
 export default function FinalEvaluationGuide() {
   const totalQuestPoints = PHASE_POINTS.reduce((sum, phase) => sum + phase.questPoints, 0)
-  const maxBossPoints = 100 + 100 + 100 + 100 + 200 // Fases 1-5
-  const maxBasePoints = totalQuestPoints + maxBossPoints
-  const maxWithMultiplier = maxBasePoints * 2
+  const maxBossPoints = PHASE_POINTS.reduce((sum, phase) => sum + phase.bossPoints, 0)
+  // Only regular quests get multiplier (up to 2x), Boss battles are base only
+  const maxQuestsWithMultiplier = totalQuestPoints * 2
+  const maxTotalCoins = maxQuestsWithMultiplier + maxBossPoints // 2400 total
 
   return (
     <div>
       <div className="mb-2">
-        <h3 className="text-sm font-semibold text-[#00E5FF] mb-1">🏆 Avaliação Final e Pontuação</h3>
+        <h3 className="text-sm font-semibold text-[#00E5FF] mb-1">🏆 Avaliação Final e AMF Coins</h3>
         <p className="text-xs text-[#00E5FF]/70">
           Entenda como sua solução será avaliada e o potencial máximo de AMF Coins.
         </p>
@@ -77,16 +78,16 @@ export default function FinalEvaluationGuide() {
             <span className="text-lg">⚔️</span>
           </div>
           <p className="text-sm font-bold text-[#00E5FF]">0-{maxBossPoints}</p>
-          <p className="text-xs text-white/70">Pitches de fase + Final</p>
+          <p className="text-xs text-white/70">Pitches (base apenas, sem multiplicador)</p>
         </Card>
 
         <Card className="p-2 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs font-semibold text-[#00E5FF]">Com Multiplicador</p>
-            <span className="text-lg">⚡</span>
+            <p className="text-xs font-semibold text-[#00E5FF]">Máximo Total</p>
+            <span className="text-lg">🏆</span>
           </div>
-          <p className="text-sm font-bold text-[#00E5FF]">até {maxWithMultiplier}</p>
-          <p className="text-xs text-white/70">Base × até 2x</p>
+          <p className="text-sm font-bold text-[#00E5FF]">{maxTotalCoins}</p>
+          <p className="text-xs text-white/70">Quests (×2) + Boss Battles</p>
         </Card>
       </div>
 
@@ -97,21 +98,25 @@ export default function FinalEvaluationGuide() {
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-gray-900 mb-1 text-xs">Multiplicador de AMF Coins (até 2x)</h4>
             <p className="text-xs text-gray-700 mb-2">
-              Ao avaliar cada quest, o avaliador atribui os AMF Coins e pode aplicar um multiplicador de até 2x conforme a qualidade da entrega:
+              <strong>Apenas para Quests Regulares:</strong> O avaliador atribui os AMF Coins base e pode aplicar um multiplicador de até 2x conforme a qualidade da entrega.
             </p>
             <div className="space-y-1">
               <div className="text-xs">
-                <p className="font-semibold text-gray-900 mb-1">Exemplos de aplicação:</p>
+                <p className="font-semibold text-gray-900 mb-1">📝 Quests Regulares (com multiplicador):</p>
                 <ul className="space-y-1 text-gray-700">
                   <li>• Quest de 100 AMF Coins avaliada com 1.0x = <strong>100 AMF Coins</strong></li>
                   <li>• Quest de 100 AMF Coins avaliada com 1.5x = <strong>150 AMF Coins</strong></li>
                   <li>• Quest de 100 AMF Coins avaliada com 2.0x = <strong>200 AMF Coins</strong> (máximo)</li>
-                  <li>• Quest de 50 AMF Coins avaliada com 2.0x = <strong>100 AMF Coins</strong> (máximo)</li>
+                </ul>
+                <p className="font-semibold text-gray-900 mt-2 mb-1">⚔️ Boss Battles / Pitches (SEM multiplicador):</p>
+                <ul className="space-y-1 text-gray-700">
+                  <li>• Boss de 100 AMF Coins = <strong>0 a 100 AMF Coins</strong> (base apenas)</li>
+                  <li>• Não há multiplicador para apresentações/pitches</li>
                 </ul>
               </div>
             </div>
             <p className="text-xs text-gray-600 mt-0.5 italic">
-              O multiplicador reflete a qualidade geral da entrega conforme critério do avaliador
+              O multiplicador reflete a qualidade da entrega conforme critério do avaliador
             </p>
           </div>
         </div>
@@ -165,15 +170,16 @@ export default function FinalEvaluationGuide() {
             <li>• Penalidades reduzem seus AMF Coins totais</li>
             <li>• Plagio resulta em deduções severas (-50 a -100 AMF Coins)</li>
             <li>• Atraso na entrega resulta em perdas (-5 a -20 AMF Coins)</li>
-            <li>• Respeite todas as regras para proteger sua pontuação</li>
+            <li>• Respeite todas as regras para proteger seus AMF Coins</li>
           </ul>
         </div>
 
         <div className="p-2 bg-green-50 border-l-4 border-green-400 rounded">
           <p className="text-xs font-semibold text-green-900 mb-1">🎯 Estratégia para Maximizar AMF Coins</p>
           <ul className="text-xs text-green-800 space-y-1">
-            <li>✓ Complete todas as quests de forma qualitativa para garantir os 🪙 {totalQuestPoints} AMF Coins</li>
-            <li>✓ Dedique tempo aos boss battles (pitches) para ganhar AMF Coins extras</li>
+            <li>✓ Complete todas as quests com qualidade para aproveitar o multiplicador (até 2x)</li>
+            <li>✓ Máximo teórico: <strong>{maxTotalCoins} AMF Coins</strong> (quests com 2x + boss battles perfeitos)</li>
+            <li>✓ Boss battles (pitches) são avaliados com base apenas, sem multiplicador</li>
             <li>✓ Foque em Viabilidade, Inovação e Qualidade da Apresentação</li>
             <li>✓ Use power-ups estrategicamente para recuperar AMF Coins se necessário</li>
           </ul>

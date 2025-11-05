@@ -169,15 +169,60 @@ export default function SubmissionForm({
     }
   }
 
+  // Função auxiliar para gerar título do tipo de entrega
+  const getDeliverableTypeTitle = () => {
+    switch (deliverableType) {
+      case 'file':
+        return '📄 Enviar Arquivo'
+      case 'url':
+        return '🔗 Enviar Link'
+      case 'text':
+        return '📝 Enviar Texto'
+      default:
+        return 'Enviar Entrega'
+    }
+  }
+
+  const getDeliverableTypeDescription = () => {
+    switch (deliverableType) {
+      case 'file':
+        return 'Faça upload de um arquivo (PDF, PPTX, PNG, etc)'
+      case 'url':
+        return 'Cole o link do seu trabalho (Figma, Canva, Google Drive, etc)'
+      case 'text':
+        return 'Digite o texto diretamente aqui'
+      default:
+        return ''
+    }
+  }
+
+  // DEBUG: Log para verificar qual tipo está sendo renderizado
+  console.log(`🎯 [SubmissionForm] Renderizando formulário tipo: "${deliverableType}" para quest: ${questName}`)
+  
+  // DEBUG adicional: verifica cada tipo
+  if (deliverableType === 'file') console.log('  ✅ Vai renderizar campo FILE')
+  if (deliverableType === 'url') console.log('  ✅ Vai renderizar campo URL')
+  if (deliverableType === 'text') console.log('  ✅ Vai renderizar campo TEXT')
+
   return (
     <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/30">
+      {/* Tipo de Entrega - CABEÇALHO DESTACADO */}
+      <div className="mb-4 pb-4 border-b border-[#00E5FF]/30">
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-2xl font-bold text-[#00E5FF]">{getDeliverableTypeTitle()}</h2>
+        </div>
+        <p className="text-sm text-[#00E5FF]/70">
+          {getDeliverableTypeDescription()}
+        </p>
+      </div>
+
       {/* Status de deadline */}
       <SubmissionDeadlineStatus questId={questId} teamId={teamId} />
 
       <div className="mb-6">
         <h3 className="text-xl font-bold text-[#00E5FF] mb-2">{questName}</h3>
         <p className="text-sm text-[#00E5FF]/70">
-          Pontuação máxima: <span className="font-bold text-[#00FF88]">🪙 {maxPoints} AMF Coins</span>
+          AMF Coins máximos: <span className="font-bold text-[#00FF88]">🪙 {maxPoints} AMF Coins</span>
         </p>
       </div>
 
@@ -283,9 +328,17 @@ export default function SubmissionForm({
         <Button
           type="submit"
           disabled={loading || uploadingFile || fileError.length > 0}
-          className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white font-bold py-2 rounded-lg transition-all disabled:opacity-50"
+          className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 text-base"
         >
-          {uploadingFile ? '⏳ Enviando arquivo...' : loading ? '⏳ Enviando...' : '🚀 Enviar Entrega'}
+          {uploadingFile 
+            ? '⏳ Enviando arquivo...' 
+            : loading 
+            ? '⏳ Enviando...' 
+            : deliverableType === 'file' 
+            ? '📄 Enviar Arquivo' 
+            : deliverableType === 'url' 
+            ? '� Enviar Link' 
+            : '📝 Enviar Texto'}
         </Button>
       </form>
     </Card>

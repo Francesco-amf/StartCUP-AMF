@@ -190,7 +190,7 @@ function TeamSubmissionsContent() {
                           className="inline-block"
                         >
                           <Button className="bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold">
-                            📄 Ver PDF
+                            📄 Ver Entrega
                           </Button>
                         </a>
                       ) : (

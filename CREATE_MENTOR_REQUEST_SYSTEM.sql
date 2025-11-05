@@ -257,7 +257,9 @@ CREATE POLICY "Mentors can view requests for them"
   ON mentor_requests FOR SELECT 
   TO authenticated 
   USING (
-    mentor_id = (SELECT id FROM teams WHERE email = auth.jwt()->>'email')
+    mentor_id IN (
+      SELECT id FROM evaluators WHERE email = auth.jwt()->>'email'
+    )
     OR
     EXISTS (
       SELECT 1 FROM teams 
@@ -281,7 +283,9 @@ CREATE POLICY "Mentors can update their requests"
   ON mentor_requests FOR UPDATE 
   TO authenticated 
   USING (
-    mentor_id = (SELECT id FROM teams WHERE email = auth.jwt()->>'email')
+    mentor_id IN (
+      SELECT id FROM evaluators WHERE email = auth.jwt()->>'email'
+    )
     OR
     EXISTS (
       SELECT 1 FROM teams 

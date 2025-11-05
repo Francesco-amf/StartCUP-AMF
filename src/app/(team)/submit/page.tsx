@@ -60,16 +60,35 @@ export default async function SubmitPage() {
     .order('phase_id, order_index')
 
   if (activeQuestsData) {
-    quests = activeQuestsData.map(quest => ({
-      ...quest,
-      deliverable_type: Array.isArray(quest.deliverable_type)
-        ? quest.deliverable_type
-        : (quest.deliverable_type ? [quest.deliverable_type] : [])
-    }));
+    quests = activeQuestsData.map(quest => {
+      let deliverableType = quest.deliverable_type;
+      
+      // Se vier como string JSON, fazer parse
+      if (typeof deliverableType === 'string') {
+        try {
+          deliverableType = JSON.parse(deliverableType);
+        } catch (e) {
+          console.error('❌ Erro ao fazer parse de deliverable_type:', e);
+          deliverableType = [deliverableType];
+        }
+      }
+      
+      // Garantir que é array
+      if (!Array.isArray(deliverableType)) {
+        deliverableType = deliverableType ? [deliverableType] : [];
+      }
+      
+      return {
+        ...quest,
+        deliverable_type: deliverableType
+      };
+    });
+    
     // Debug das quests carregadas
     console.log('🔎 [/submit] Quests carregadas:', quests.map((q: any) => ({
       id: q.id, name: q.name, order: q.order_index, phase: q.phase?.order_index,
-      started_at: q.started_at, planned: q.planned_deadline_minutes, late: q.late_submission_window_minutes
+      started_at: q.started_at, planned: q.planned_deadline_minutes, late: q.late_submission_window_minutes,
+      deliverable_type: q.deliverable_type  // ADICIONAR ESTE DEBUG
     })))
   }
 

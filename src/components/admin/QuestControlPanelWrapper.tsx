@@ -159,7 +159,7 @@ export default function QuestControlPanelWrapper({
                 <div className="flex-1">
                   <p className="font-semibold text-white">{quest.name}</p>
                   <p className="text-xs text-[#00E5FF]/60">
-                    {quest.phase?.name} • {quest.max_points} pontos
+                    {quest.phase?.name} • {quest.max_points} coins
                   </p>
                   {quest.started_at && (
                     <p className="text-xs text-[#00FF88]/60 mt-1">
@@ -198,7 +198,7 @@ export default function QuestControlPanelWrapper({
                 <div className="flex-1">
                   <p className="font-semibold text-white">{quest.name}</p>
                   <p className="text-xs text-[#00E5FF]/60">
-                    {quest.phase?.name} • {quest.max_points} pontos
+                    {quest.phase?.name} • {quest.max_points} coins
                   </p>
                   {quest.auto_start_enabled && (
                     <p className="text-xs text-[#FF9800]/60 mt-1">
@@ -237,7 +237,7 @@ export default function QuestControlPanelWrapper({
                 <div className="flex-1">
                   <p className="font-semibold text-white/70">{quest.name}</p>
                   <p className="text-xs text-[#00E5FF]/40">
-                    {quest.phase?.name} • {quest.max_points} pontos
+                    {quest.phase?.name} • {quest.max_points} coins
                   </p>
                   {quest.ended_at && (
                     <p className="text-xs text-[#FFD700]/40 mt-1">

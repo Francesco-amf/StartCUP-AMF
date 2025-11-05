@@ -9,20 +9,59 @@ export async function POST(request: Request) {
     const submission_id = formData.get('submission_id') as string
     const evaluator_id = formData.get('evaluator_id') as string
     const base_points = parseInt(formData.get('base_points') as string) || 0
-    const bonus_points = parseInt(formData.get('bonus_points') as string) || 0
     const multiplier = parseFloat(formData.get('multiplier') as string) || 1.0
     const comments = formData.get('comments') as string
     const is_update = formData.get('is_update') === 'true'
 
-    // Calcular pontuação final: (base + bonus) * multiplier
-    const calculated_points = Math.round((base_points + bonus_points) * multiplier)
+    // Buscar a submission e quest para validar e detectar Boss
+    const { data: submission, error: submissionError } = await supabase
+      .from('submissions')
+      .select(`
+        *,
+        quest:quest_id(
+          max_points,
+          deliverable_type,
+          order_index
+        )
+      `)
+      .eq('id', submission_id)
+      .single()
 
-    console.log('📝 Received evaluation data:', {
+    console.log('📦 Submission lookup:', { submission, submissionError })
+
+    if (!submission || !submission.quest) {
+      return NextResponse.json(
+        { error: 'Submission não encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Detectar se é Boss (apresentação)
+    const isBoss = 
+      (Array.isArray(submission.quest.deliverable_type) 
+        ? submission.quest.deliverable_type.includes('presentation')
+        : submission.quest.deliverable_type === 'presentation'
+      ) || submission.quest.order_index === 4
+
+    console.log('🎯 Quest type detection:', {
+      deliverable_type: submission.quest.deliverable_type,
+      order_index: submission.quest.order_index,
+      isBoss
+    })
+
+    // Calcular AMF Coins finais
+    // Boss: apenas base (sem multiplicador)
+    // Regular: base * multiplicador
+    const calculated_points = isBoss 
+      ? base_points
+      : Math.round(base_points * multiplier)
+
+    console.log('� Received evaluation data:', {
       submission_id,
       evaluator_id,
       base_points,
-      bonus_points,
       multiplier,
+      isBoss,
       calculated_points,
       comments,
       is_update
@@ -37,31 +76,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Buscar a submission para validar pontuação máxima
-    const { data: submission, error: submissionError } = await supabase
-      .from('submissions')
-      .select('*, quest:quest_id(max_points)')
-      .eq('id', submission_id)
-      .single()
-
-    console.log('📦 Submission lookup:', { submission, submissionError })
-
-    if (!submission) {
-      return NextResponse.json(
-        { error: 'Submission não encontrada' },
-        { status: 404 }
-      )
-    }
-
     const maxPoints = submission.quest?.max_points || 0
     if (base_points > maxPoints) {
       return NextResponse.json(
-        { error: `Pontuação base máxima é ${maxPoints}` },
+        { error: `AMF Coins base máximo é ${maxPoints}` },
         { status: 400 }
       )
     }
 
-    // Inserir ou atualizar avaliação
+    // Inserir ou atualizar avaliação (UPSERT automático)
     let evaluation
     let evalError
 
@@ -98,7 +121,6 @@ export async function POST(request: Request) {
         .update({
           points: calculated_points,
           base_points,
-          bonus_points,
           multiplier,
           comments: comments || null,
           updated_at: new Date().toISOString(),
@@ -112,23 +134,29 @@ export async function POST(request: Request) {
 
       console.log('📝 Update result:', { evaluation, evalError, updatedCount: result.data?.length })
     } else {
-      // Inserir nova avaliação
+      // UPSERT: Inserir nova avaliação ou atualizar se já existir
+      // Usa onConflict para evitar erro de duplicate key
       const result = await supabase
         .from('evaluations')
-        .insert({
+        .upsert({
           submission_id,
           evaluator_id,
           points: calculated_points,
           base_points,
-          bonus_points,
           multiplier,
           comments: comments || null,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'submission_id,evaluator_id',
+          ignoreDuplicates: false // Atualiza se existir
         })
         .select()
         .single()
 
       evaluation = result.data
       evalError = result.error
+      
+      console.log('💾 Upsert result:', { evaluation, evalError })
     }
 
     console.log('✅ Evaluation result:', { evaluation, evalError, is_update })
@@ -149,7 +177,7 @@ export async function POST(request: Request) {
 
     console.log('📊 All evaluations:', allEvaluations)
 
-    // Calcular pontuação média
+    // Calcular AMF Coins médios
     if (allEvaluations && allEvaluations.length > 0) {
       const totalPoints = allEvaluations.reduce((sum: number, e: { points: number | null }) => sum + (e.points || 0), 0)
       const avgPoints = Math.round(totalPoints / allEvaluations.length)
@@ -160,7 +188,7 @@ export async function POST(request: Request) {
         avgPoints
       })
 
-      // Atualizar submission com pontuação final
+      // Atualizar submission com AMF Coins finais
       const { error: updateError } = await supabase
         .from('submissions')
         .update({

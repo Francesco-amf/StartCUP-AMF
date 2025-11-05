@@ -193,16 +193,16 @@ export default function PenaltyAssigner() {
                 {selectedPenaltyType.icon} {selectedPenaltyType.name}
               </p>
               <p className="text-sm text-white/80">
-                Intervalo de deduction: {selectedPenaltyType.minDeduction} - {selectedPenaltyType.maxDeduction} pontos
+                Intervalo de deduction: {selectedPenaltyType.minDeduction} - {selectedPenaltyType.maxDeduction} coins
               </p>
             </div>
           )}
 
-          {/* Dedução de Pontos */}
+          {/* Dedução de AMF Coins */}
           {selectedPenaltyType && (
             <div>
               <label className="block text-[#00E5FF] font-semibold mb-2">
-                Dedução de Pontos: {pointsDeduction} pontos
+                Dedução de AMF Coins: {pointsDeduction} coins
               </label>
               <input
                 type="range"

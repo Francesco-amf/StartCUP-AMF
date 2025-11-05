@@ -46,18 +46,26 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verificar se mentor existe e é avaliador
+    // Verificar se mentor existe na tabela evaluators
     const { data: mentor, error: mentorError } = await supabase
-      .from('teams')
-      .select('id, name')
+      .from('evaluators')
+      .select('id, name, is_online')
       .eq('id', mentorId)
-      .eq('course', 'Avaliação')
+      .eq('role', 'mentor')
       .single()
 
     if (mentorError || !mentor) {
       return NextResponse.json(
         { error: 'Mentor não encontrado ou inválido' },
         { status: 404 }
+      )
+    }
+
+    // Verificar se mentor está online
+    if (!mentor.is_online) {
+      return NextResponse.json(
+        { error: 'Mentor não está disponível no momento' },
+        { status: 400 }
       )
     }
 

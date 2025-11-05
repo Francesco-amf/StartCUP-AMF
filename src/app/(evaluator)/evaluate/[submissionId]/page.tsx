@@ -113,6 +113,61 @@ export default async function EvaluateSubmissionPage({
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Informações da Entrega */}
           <div className="space-y-6">
+            {/* Card de Visualização do Arquivo/URL */}
+            {(submission.file_url || submission.content) && (
+              <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00FF88]/40">
+                <h2 className="text-2xl font-bold mb-4 text-[#00FF88]">📦 Entrega Submetida</h2>
+                
+                {submission.file_url && (
+                  <div className="space-y-3">
+                    <div className="bg-[#0A3A5A]/40 border border-[#00E5FF]/30 rounded-lg p-4">
+                      <p className="text-sm text-[#00E5FF]/70 mb-2">Arquivo/Link</p>
+                      <a 
+                        href={submission.file_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[#00FF88] hover:text-[#00E5FF] underline break-all text-sm font-medium flex items-center gap-2"
+                      >
+                        🔗 {submission.file_url}
+                        <span className="text-xs bg-[#00FF88]/20 px-2 py-1 rounded">Abrir em nova aba</span>
+                      </a>
+                      
+                      {/* Aviso para links externos (YouTube, Figma, etc) */}
+                      {(submission.file_url.includes('youtube.com') || 
+                        submission.file_url.includes('youtu.be') ||
+                        submission.file_url.includes('figma.com') ||
+                        submission.file_url.includes('canva.com')) && (
+                        <p className="text-xs text-[#FFB300] mt-3 bg-[#FFB300]/10 p-2 rounded border border-[#FFB300]/30">
+                          💡 <strong>Dica:</strong> Este link não pode ser exibido aqui por questões de segurança. 
+                          Clique no link acima para abrir em nova aba.
+                        </p>
+                      )}
+                    </div>
+                    
+                    {submission.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                      <div className="mt-4">
+                        <p className="text-sm text-[#00E5FF]/70 mb-2">Preview da Imagem</p>
+                        <img 
+                          src={submission.file_url} 
+                          alt="Preview" 
+                          className="max-w-full h-auto rounded-lg border border-[#00E5FF]/30"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {submission.content && !submission.file_url && (
+                  <div className="bg-[#0A3A5A]/40 border border-[#00E5FF]/30 rounded-lg p-4">
+                    <p className="text-sm text-[#00E5FF]/70 mb-2">Conteúdo de Texto</p>
+                    <div className="text-white whitespace-pre-wrap break-words">
+                      {submission.content}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
+
             <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
               <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📋 Informações</h2>
               <div className="space-y-3">
@@ -130,8 +185,8 @@ export default async function EvaluateSubmissionPage({
                 </div>
 
                 <div className="pt-3 border-t border-[#00E5FF]/20">
-                  <p className="text-sm text-[#00E5FF]/70">Pontuação Máxima</p>
-                  <p className="font-bold text-2xl text-[#00E5FF]">{submission.quest?.max_points} pontos</p>
+                  <p className="text-sm text-[#00E5FF]/70">AMF Coins Máximos</p>
+                  <p className="font-bold text-2xl text-[#00E5FF]">{submission.quest?.max_points} coins</p>
                 </div>
 
                 {submission.quest?.phase && (
@@ -156,7 +211,7 @@ export default async function EvaluateSubmissionPage({
                   <h2 className="text-2xl font-bold mb-4 text-[#00E676]">✅ Já Avaliado</h2>
                   <div className="space-y-2">
                     <p className="text-[#00E676]">
-                      <strong>Pontuação:</strong> {existingEvaluation.points} / {submission.quest?.max_points}
+                      <strong>AMF Coins:</strong> {existingEvaluation.points} / {submission.quest?.max_points}
                     </p>
                     <p className="text-[#00E676]">
                       <strong>Comentário:</strong> {existingEvaluation.comments || 'Nenhum comentário'}
@@ -178,51 +233,38 @@ export default async function EvaluateSubmissionPage({
                     <input type="hidden" name="evaluator_id" value={evaluator?.id} />
                     <input type="hidden" name="is_update" value="true" />
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                        Pontuação Base (0 - {submission.quest?.max_points})
-                      </label>
-                      <input
-                        type="number"
-                        name="base_points"
-                        min="0"
-                        max={submission.quest?.max_points}
-                        defaultValue={existingEvaluation.base_points || 0}
-                        required
-                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#FF9800]">
+                      AMF Coins Base (0 - {submission.quest?.max_points})
+                    </label>
+                    <input
+                      type="number"
+                      name="base_points"
+                      min="0"
+                      max={submission.quest?.max_points}
+                      defaultValue={existingEvaluation.base_points || 0}
+                      required
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                        Pontos Bônus (0 - {submission.quest?.max_points})
-                      </label>
-                      <input
-                        type="number"
-                        name="bonus_points"
-                        min="0"
-                        max={submission.quest?.max_points}
-                        defaultValue={existingEvaluation.bonus_points || 0}
-                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                        Multiplicador (1.0x - 2.0x)
-                      </label>
-                      <input
-                        type="number"
-                        name="multiplier"
-                        min="1"
-                        max="2"
-                        step="0.1"
-                        defaultValue={existingEvaluation.multiplier || 1.0}
-                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#FF9800]">
+                      Multiplicador (1.0x - 2.0x)
+                    </label>
+                    <input
+                      type="number"
+                      name="multiplier"
+                      min="1"
+                      max="2"
+                      step="0.1"
+                      defaultValue={existingEvaluation.multiplier || 1.0}
+                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
+                    />
+                    <p className="text-xs text-[#FF9800]/70 mt-1">
+                      Qualidade da entrega (1.0 = regular, 2.0 = excelente)
+                    </p>
+                  </div>                    <div>
                       <label className="block text-sm font-medium mb-2 text-[#FF9800]">
                         Comentários (opcional)
                       </label>
@@ -250,7 +292,7 @@ export default async function EvaluateSubmissionPage({
 
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
-                      Pontuação Base (0 - {submission.quest?.max_points})
+                      AMF Coins Base (0 - {submission.quest?.max_points})
                     </label>
                     <input
                       type="number"
@@ -262,24 +304,7 @@ export default async function EvaluateSubmissionPage({
                       className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
                     <p className="text-xs text-[#00E5FF]/70 mt-1">
-                      Pontuação base de acordo com o cumprimento da quest
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
-                      Pontos Bônus (0 - {submission.quest?.max_points})
-                    </label>
-                    <input
-                      type="number"
-                      name="bonus_points"
-                      min="0"
-                      max={submission.quest?.max_points}
-                      defaultValue="0"
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
-                    />
-                    <p className="text-xs text-[#00E5FF]/70 mt-1">
-                      Pontos extras por criatividade, inovação, qualidade excepcional
+                      AMF Coins base de acordo com o cumprimento da quest
                     </p>
                   </div>
 
@@ -297,13 +322,13 @@ export default async function EvaluateSubmissionPage({
                       className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
                     />
                     <p className="text-xs text-[#00E5FF]/70 mt-1">
-                      Multiplicador de dificuldade ou destaque
+                      Qualidade da entrega (1.0 = regular, 2.0 = excelente)
                     </p>
                   </div>
 
                   <div className="p-3 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg">
                     <p className="text-sm font-medium text-[#00E5FF]">
-                      💡 Fórmula: (Pontuação Base + Bônus) × Multiplicador
+                      💡 Fórmula: AMF Coins Base × Multiplicador
                     </p>
                   </div>
 

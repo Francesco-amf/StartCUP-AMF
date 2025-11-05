@@ -119,9 +119,25 @@ export async function POST(request: Request) {
     // ========================================
     // PASSO 4: Validar tipo de entrega e bloquear BOSS (apresentação ao vivo)
     // ========================================
-    const questDeliverableTypes = Array.isArray(quest.deliverable_type)
-      ? quest.deliverable_type
-      : (quest.deliverable_type ? [quest.deliverable_type] : [])
+    let questDeliverableTypes = quest.deliverable_type;
+    
+    // Se vier como string JSON, fazer parse
+    if (typeof questDeliverableTypes === 'string') {
+      try {
+        questDeliverableTypes = JSON.parse(questDeliverableTypes);
+      } catch (e) {
+        console.error('❌ Erro ao fazer parse de deliverable_type no backend:', e);
+        questDeliverableTypes = [questDeliverableTypes];
+      }
+    }
+    
+    // Garantir que é array
+    if (!Array.isArray(questDeliverableTypes)) {
+      questDeliverableTypes = questDeliverableTypes ? [questDeliverableTypes] : [];
+    }
+
+    console.log('🔍 [API] Quest deliverable_types:', questDeliverableTypes);
+    console.log('🔍 [API] Tipo solicitado:', deliverableType);
 
     // BOSS quest: não aceita submissões digitais
     if (questDeliverableTypes.includes('presentation')) {
@@ -134,7 +150,7 @@ export async function POST(request: Request) {
     // Validar se o tipo solicitado é permitido para esta quest
     if (!questDeliverableTypes.includes(deliverableType)) {
       return NextResponse.json(
-        { error: `Tipo de entrega inválido. Permitidos: ${questDeliverableTypes.join(', ') || 'nenhum'}` },
+        { error: `Tipo de entrega inválido. Permitidos: ${JSON.stringify(questDeliverableTypes)}` },
         { status: 400 }
       )
     }
@@ -228,7 +244,7 @@ export async function POST(request: Request) {
         team_id: teamId,
         quest_id: questId,
         content: deliverableType === 'text' ? content : null,
-        file_url: fileUrl,
+        file_url: deliverableType === 'url' ? content : fileUrl,  // URL vai para file_url
         status: 'pending',
         submitted_at: new Date().toISOString()
       })

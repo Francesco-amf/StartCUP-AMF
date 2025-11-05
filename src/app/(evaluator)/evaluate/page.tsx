@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import EvaluatorPenaltyAssigner from '@/components/evaluator/EvaluatorPenaltyAssigner'
+import MentorRequestsList from '@/components/evaluator/MentorRequestsList'
 
 export default async function EvaluatorDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -175,6 +176,11 @@ export default async function EvaluatorDashboard() {
             </Card>
           </div>
 
+          {/* Solicitações de Mentoria (se for mentor) */}
+          {evaluator.role === 'mentor' && (
+            <MentorRequestsList mentorId={evaluator.id} />
+          )}
+
           {/* Lista de Entregas */}
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
             <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📋 Entregas para Avaliar</h2>
@@ -229,7 +235,7 @@ export default async function EvaluatorDashboard() {
                             className="inline-block"
                           >
                             <Button className="bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold w-full">
-                              📄 Ver PDF
+                              📄 Ver Entrega
                             </Button>
                           </a>
                         ) : (

@@ -54,7 +54,7 @@ export default function CurrentQuestCard({
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-sm text-[#00E5FF]600 font-semibold">Pontos Máximos</p>
+          <p className="text-sm text-[#00E5FF]600 font-semibold">AMF Coins Máximos</p>
           <p className="text-3xl font-bold text-[#00E5FF]900">{quest.max_points}</p>
         </div>
       </div>

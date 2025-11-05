@@ -16,8 +16,8 @@ function getPhaseInfo(phase: number): { name: string; duration_minutes: number }
   return phases[phase] || { name: 'Fase Desconhecida', duration_minutes: 0 }
 }
 
-// Hook para ranking com auto-refresh
-export function useRealtimeRanking(refreshInterval = 5000) {
+// Hook para ranking com WebSocket Realtime
+export function useRealtimeRanking() {
   const [ranking, setRanking] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -39,20 +39,30 @@ export function useRealtimeRanking(refreshInterval = 5000) {
     // Buscar imediatamente
     fetchRanking()
 
-    // Configurar intervalo de atualização
-    const interval = setInterval(fetchRanking, refreshInterval)
+    // ✅ WebSocket: Escutar mudanças nas tabelas que afetam o ranking
+    const channel = supabase
+      .channel('ranking-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, fetchRanking)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evaluations' }, fetchRanking)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coin_adjustments' }, fetchRanking)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'penalties' }, fetchRanking)
+      .subscribe()
+
+    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo)
+    const pollInterval = setInterval(fetchRanking, 1000)
 
     // Cleanup
     return () => {
-      clearInterval(interval)
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
     }
-  }, [refreshInterval])
+  }, [])
 
   return { ranking, loading }
 }
 
-// Hook para fase com auto-refresh
-export function useRealtimePhase(refreshInterval = 5000) {
+// Hook para fase com WebSocket Realtime
+export function useRealtimePhase() {
   const [phase, setPhase] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -60,6 +70,7 @@ export function useRealtimePhase(refreshInterval = 5000) {
   useEffect(() => {
     // Função para buscar fase e quest ativa
     const fetchPhase = async () => {
+      console.log('🔄 [useRealtimePhase] Fetching phase data...', new Date().toLocaleTimeString())
       const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
       const { data, error } = await supabase
         .from('event_config')
@@ -138,6 +149,11 @@ export function useRealtimePhase(refreshInterval = 5000) {
           // Adicionar quest ativa aos dados da fase
           active_quest: activeQuest
         }
+        console.log('✅ [useRealtimePhase] Phase data updated:', { 
+          current_phase: data.current_phase, 
+          event_status: phaseData.event_status,
+          phase_name: phaseInfo.name
+        })
         setPhase(phaseData)
       }
       setLoading(false)
@@ -146,20 +162,28 @@ export function useRealtimePhase(refreshInterval = 5000) {
     // Buscar imediatamente
     fetchPhase()
 
-    // Configurar intervalo de atualização
-    const interval = setInterval(fetchPhase, refreshInterval)
+    // ✅ WebSocket: Escutar mudanças em event_config e quests
+    const channel = supabase
+      .channel('phase-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, fetchPhase)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quests' }, fetchPhase)
+      .subscribe()
+
+    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo para plano free)
+    const pollInterval = setInterval(fetchPhase, 1000)
 
     // Cleanup
     return () => {
-      clearInterval(interval)
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
     }
-  }, [refreshInterval])
+  }, [])
 
   return { phase, loading }
 }
 
-// Hook para status dos avaliadores com auto-refresh
-export function useRealtimeEvaluators(refreshInterval = 5000) {
+// Hook para status dos avaliadores com WebSocket Realtime
+export function useRealtimeEvaluators() {
   const [evaluators, setEvaluators] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -182,14 +206,21 @@ export function useRealtimeEvaluators(refreshInterval = 5000) {
     // Buscar imediatamente
     fetchEvaluators()
 
-    // Configurar intervalo de atualização
-    const interval = setInterval(fetchEvaluators, refreshInterval)
+    // ✅ WebSocket: Escutar mudanças na tabela evaluators
+    const channel = supabase
+      .channel('evaluators-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evaluators' }, fetchEvaluators)
+      .subscribe()
+
+    // 🔄 Polling de fallback a cada 1 segundo (mais agressivo)
+    const pollInterval = setInterval(fetchEvaluators, 1000)
 
     // Cleanup
     return () => {
-      clearInterval(interval)
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
     }
-  }, [refreshInterval])
+  }, [])
 
   return { evaluators, loading }
 }

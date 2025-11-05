@@ -78,7 +78,7 @@ export default function BossQuestCard({
       {/* Informações */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 rounded-lg p-3">
-          <p className="text-xs text-[#FF6B6B]/60 mb-1">🪙 Pontuação</p>
+          <p className="text-xs text-[#FF6B6B]/60 mb-1">🪙 AMF Coins</p>
           <p className="text-2xl font-bold text-[#FFD700]">{maxPoints} AMF Coins</p>
         </div>
         <div className="bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 rounded-lg p-3">

@@ -15,6 +15,7 @@ import PowerUpActivator from '@/components/PowerUpActivator'
 import MentorRequestButton from '@/components/MentorRequestButton'
 import { Accordion } from '@/components/ui/Accordion'
 import DashboardAutoRefresh from '@/components/dashboard/DashboardAutoRefresh'
+import AMFCoinsHistory from '@/components/team/AMFCoinsHistory'
 
 export default async function TeamDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -117,25 +118,18 @@ export default async function TeamDashboard() {
 
   const currentQuest = currentIndex >= 0 ? sortedQuests[currentIndex] : undefined
 
-  // Aviso no dashboard: se a anterior não-submetida expirou totalmente e avançamos
-  let autoAdvancedNotice: { fromName: string, toName: string } | null = null
-  if (currentIndex > 0) {
-    const prev = sortedQuests[currentIndex - 1]
-    if (!submittedQuestIds.includes(prev.id) && prev.started_at) {
-      const start = new Date((prev.started_at.endsWith('Z') ? prev.started_at : prev.started_at.replace('+00:00','Z')))
-      const planned = typeof prev.planned_deadline_minutes === 'number' ? prev.planned_deadline_minutes : null
-      const late = typeof prev.late_submission_window_minutes === 'number' ? prev.late_submission_window_minutes : 0
-      if (!isNaN(start.getTime()) && planned !== null) {
-        const endMs = start.getTime() + planned * 60_000 + late * 60_000
-        if (Date.now() > endMs + 500 && currentQuest) {
-          autoAdvancedNotice = { fromName: prev.name, toName: currentQuest.name }
-        }
-      }
-    }
-  }
+  // REMOVIDO: autoAdvancedNotice causava confusão quando quests eram auto-iniciadas
+  // A mensagem não agregava valor e confundia equipes após submissões
+  const autoAdvancedNotice: { fromName: string, toName: string } | null = null
 
-  // CORREÇÃO: Definindo tipo para 'sum' e 'submission'
-  const totalPoints = submissions?.reduce((sum: number, submission: { final_points: number | null }) => sum + (submission.final_points || 0), 0) || 0
+  // Buscar pontuação total da view live_ranking (inclui submissions, penalidades e ajustes)
+  const { data: rankingData } = await supabase
+    .from('live_ranking')
+    .select('total_points')
+    .eq('team_id', team?.id)
+    .single()
+
+  const totalPoints = rankingData?.total_points || 0
 
 
   return (
@@ -159,11 +153,7 @@ export default async function TeamDashboard() {
         </div>
 
         <div className="grid gap-2 md:gap-3 p-3">
-          {autoAdvancedNotice && (
-            <div className="bg-[#0A3A5A]/60 border border-[#FF6B6B]/60 text-[#FFB3B3] px-4 py-3 rounded-lg">
-              🚦 Prazo finalizado em "{autoAdvancedNotice.fromName}". Agora você está na próxima quest: <span className="font-bold text-white">{autoAdvancedNotice.toName}</span>.
-            </div>
-          )}
+          {/* REMOVIDO: autoAdvancedNotice - causava confusão após submissões */}
           {/* Fase Atual do Evento */}
           <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-r from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
@@ -197,7 +187,7 @@ export default async function TeamDashboard() {
           <div className="grid gap-1 sm:gap-2 md:gap-4 md:grid-cols-3">
             <Card className="p-1 md:p-2 lg:p-3 bg-gradient-to-br from-[#1B4A7F] via-[#0F3860] to-[#0A1E47] border-l-4 border-[#0077FF]/80">
               <div className="flex items-center justify-between mb-1 sm:mb-2">
-                <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white">Pontuação Total</h3>
+                <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white">Total AMF Coins</h3>
                 <span className="text-lg sm:text-2xl">🏆</span>
               </div>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[#00B3FF]">
@@ -229,6 +219,18 @@ export default async function TeamDashboard() {
           {/* Seções Interativas com Accordion */}
           <Accordion
             items={[
+              {
+                id: 'coins-history',
+                title: 'Histórico de AMF Coins',
+                icon: '🪙',
+                defaultOpen: false,
+                children: (
+                  <AMFCoinsHistory 
+                    teamId={team?.id || ''} 
+                    currentTotalCoins={totalPoints} 
+                  />
+                ),
+              },
               {
                 id: 'quest-details',
                 title: 'Detalhes da Quest Atual',

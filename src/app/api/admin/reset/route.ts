@@ -70,7 +70,33 @@ export async function POST(request: Request) {
       }
     )
 
-    // 1. Deletar penalidades PRIMEIRO (para evitar problemas com foreign keys)
+    // 1. Deletar coin_adjustments PRIMEIRO
+    console.log('🔄 Deletando coin_adjustments...')
+    const { error: coinAdjError, count: coinAdjCount } = await supabaseAdmin
+      .from('coin_adjustments')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (!coinAdjError && coinAdjCount) {
+      console.log('✅ Coin adjustments deletados:', coinAdjCount)
+      results.coin_adjustments_deleted = coinAdjCount
+      totalDeleted += coinAdjCount
+    }
+
+    // 2. Deletar mentor_requests (histórico de mentorias)
+    console.log('🔄 Deletando mentor_requests...')
+    const { error: mentorError, count: mentorCount } = await supabaseAdmin
+      .from('mentor_requests')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (!mentorError && mentorCount) {
+      console.log('✅ Mentor requests deletados:', mentorCount)
+      results.mentor_requests_deleted = mentorCount
+      totalDeleted += mentorCount
+    }
+
+    // 3. Deletar penalidades
     console.log('🔄 Deletando penalties...')
     const { error: penaltyError, count: penaltyCount } = await supabaseAdmin
       .from('penalties')
@@ -83,7 +109,7 @@ export async function POST(request: Request) {
       totalDeleted += penaltyCount
     }
 
-    // 2. Deletar evaluations
+    // 4. Deletar evaluations
     console.log('🔄 Deletando evaluations...')
     const { error: evalError, count: evalCount } = await supabaseAdmin
       .from('evaluations')
@@ -96,7 +122,7 @@ export async function POST(request: Request) {
       totalDeleted += evalCount
     }
 
-    // 3. Deletar submissions
+    // 5. Deletar submissions
     console.log('🔄 Deletando submissions...')
     const { error: submError, count: submCount } = await supabaseAdmin
       .from('submissions')
@@ -109,7 +135,7 @@ export async function POST(request: Request) {
       totalDeleted += submCount
     }
 
-    // 4. Deletar power_ups
+    // 6. Deletar power_ups
     console.log('🔄 Deletando power_ups...')
     const { error: powerupError, count: powerupCount } = await supabaseAdmin
       .from('power_ups')
@@ -122,7 +148,7 @@ export async function POST(request: Request) {
       totalDeleted += powerupCount
     }
 
-    // 5. Deletar equipes de teste (admin, avaliadores fake)
+    // 7. Deletar equipes de teste (admin, avaliadores fake)
     console.log('🔄 Deletando equipes de teste...')
     const { error: teamError, count: teamCount } = await supabaseAdmin
       .from('teams')
@@ -135,7 +161,7 @@ export async function POST(request: Request) {
       totalDeleted += teamCount
     }
 
-    // 6. Resetar event_config (se existir)
+    // 8. Resetar event_config (se existir)
     const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
     const { error: eventError } = await supabaseAdmin
       .from('event_config')
@@ -157,6 +183,21 @@ export async function POST(request: Request) {
     if (!eventError) {
       console.log('✅ Event config resetado')
       results.event_reset = true
+    }
+
+    // 9. Resetar quests (CRÍTICO - limpa started_at para evitar quests expiradas)
+    console.log('🔄 Resetando quests...')
+    const { error: questError, count: questCount } = await supabaseAdmin
+      .from('quests')
+      .update({
+        status: 'scheduled',
+        started_at: null
+      })
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (!questError && questCount) {
+      console.log('✅ Quests resetadas:', questCount)
+      results.quests_reset = questCount
     }
 
     console.log('✅ RESET COMPLETO - Total deletado:', totalDeleted)

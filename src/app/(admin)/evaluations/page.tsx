@@ -106,7 +106,7 @@ export default async function AdminEvaluationsPage() {
                       <th className="text-left p-3 font-semibold">Equipe</th>
                       <th className="text-left p-3 font-semibold">Quest</th>
                       <th className="text-left p-3 font-semibold">Avaliador</th>
-                      <th className="text-center p-3 font-semibold">Pontuação</th>
+                      <th className="text-center p-3 font-semibold">AMF Coins</th>
                       <th className="text-left p-3 font-semibold">Multiplicador</th>
                       <th className="text-left p-3 font-semibold">Data</th>
                     </tr>
@@ -210,7 +210,7 @@ export default async function AdminEvaluationsPage() {
                             {evaluation.submission?.team?.name}
                           </p>
                           <p className="text-gray-600">
-                            {evaluation.submission?.quest?.name} - {evaluation.points} pontos
+                            {evaluation.submission?.quest?.name} - {evaluation.points} coins
                           </p>
                         </div>
                       ))}

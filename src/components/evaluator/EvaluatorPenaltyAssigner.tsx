@@ -150,7 +150,7 @@ export default function EvaluatorPenaltyAssigner() {
           <div className="bg-[#0A1E47]/50 border-l-4 border-[#00E5FF]/60 p-4 rounded">
             <p className="text-[#00E5FF] font-semibold mb-1">ℹ️ Como Usar</p>
             <p className="text-sm text-white/80">
-              Selecione a equipe que cometeu a infração, escolha o tipo de penalidade e ajuste a quantidade de pontos a ser deduzida.
+              Selecione a equipe que cometeu a infração, escolha o tipo de penalidade e ajuste a quantidade de AMF Coins a ser deduzida.
             </p>
           </div>
 
@@ -201,16 +201,16 @@ export default function EvaluatorPenaltyAssigner() {
                 {selectedPenaltyType.icon} {selectedPenaltyType.name}
               </p>
               <p className="text-sm text-white/80">
-                Intervalo recomendado: {selectedPenaltyType.minDeduction} - {selectedPenaltyType.maxDeduction} pontos
+                Intervalo recomendado: {selectedPenaltyType.minDeduction} - {selectedPenaltyType.maxDeduction} coins
               </p>
             </div>
           )}
 
-          {/* Dedução de Pontos */}
+          {/* Dedução de AMF Coins */}
           {selectedPenaltyType && (
             <div>
               <label className="block text-[#00E5FF] font-semibold mb-2">
-                Dedução de Pontos: <span className="text-[#FF3D00]">{pointsDeduction} pontos</span>
+                Dedução de AMF Coins: <span className="text-[#FF3D00]">{pointsDeduction} coins</span>
               </label>
               <input
                 type="range"

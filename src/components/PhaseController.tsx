@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { type Quest, type EventConfig, type PhaseControllerProps } from '@/lib/types'
@@ -12,6 +12,9 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
   const [eventConfig, setEventConfig] = useState<EventConfig | null>(null)
   const [allQuests, setAllQuests] = useState<Quest[]>([])
   const supabase = createClient()
+  const autoAdvancedPhaseRef = useRef<Set<number>>(new Set())
+  const lastPhaseStateRef = useRef<string>('')
+  const zeroTimeQuestDetectionRef = useRef<{ questId: string; detectedAt: number } | null>(null)
 
   // Usa currentPhase do servidor, que é atualizado a cada clique
   // Reflete sempre o estado real do banco de dados
@@ -42,7 +45,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     // Fetch all quests to get their durations
     const { data: questsData, error: questsError } = await supabase
       .from('quests')
-      .select('id, phase_id, planned_deadline_minutes, late_submission_window_minutes, order_index, status');
+      .select('id, phase_id, planned_deadline_minutes, late_submission_window_minutes, order_index, status, name, started_at');
     
     if (questsError) {
       console.error("Error fetching quests:", questsError);
@@ -52,8 +55,6 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
   }, [supabase]);
 
   const handleStartPhase = useCallback(async (phaseId: number) => {
-    console.log(`🎯 handleStartPhase called with phaseId: ${phaseId}`)
-
     if (phaseId === 0 && eventConfig?.event_started) {
       const confirm = window.confirm(
         '⚠️ ATENÇÃO: Isso vai ENCERRAR o evento!\n\n' +
@@ -72,7 +73,6 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       if (!confirm) return
     }
 
-    console.log(`📤 Sending fetch request to /api/admin/start-phase-with-quests with phase: ${phaseId}`)
     setIsLoading(true)
 
     try {
@@ -92,20 +92,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
 
       const data = await response.json()
 
-      console.log(`✅ API Response received:`, {
-        status: response.status,
-        ok: response.ok,
-        data: data
-      })
-
       if (!response.ok) {
-        console.error('API Error Response:', {
-          status: response.status,
-          error: data.error,
-          details: data.details,
-          code: data.code,
-          hint: data.hint
-        })
         throw new Error(
           data.details
             ? `${data.error}: ${data.details}`
@@ -117,15 +104,17 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       const questMessage = data.questsActivated > 0
         ? `\n✨ ${data.questsActivated} quest(s) ativada(s) automaticamente!`
         : ''
-      console.log(`🎉 Success! Showing alert with message:`, data.message)
       alert(`✅ ${data.message}${questMessage}`)
+
+      // 🎵 NOTA: Som é tocado automaticamente pelo CurrentQuestTimer na live-dashboard
+      // quando a primeira quest da fase é ativada. Não tocamos som aqui no admin
+      // porque queremos que o som toque na tela do público (live-dashboard), não no painel admin.
 
       // Refresh component's internal state and then the router
       await fetchEventData(); // Re-fetch data immediately after successful phase change
       router.refresh(); // Tells Next.js to re-render server components
 
     } catch (error) {
-      console.error('Erro:', error)
       alert(`❌ ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setIsLoading(false)
@@ -134,55 +123,113 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
 
   useEffect(() => {
     fetchEventData();
-    const interval = setInterval(fetchEventData, 30000); // Refresh data every 30 seconds
+    const interval = setInterval(fetchEventData, 500); // 500ms - Sincronizado com CurrentQuestTimer para detecção instantânea de expiração de quests!
     return () => clearInterval(interval);
   }, [fetchEventData]);
 
   useEffect(() => {
-    if (!eventConfig || !eventConfig.event_started || activePhase === 0 || activePhase === 5) {
-      return; // Not started, or a preparation/final phase
+    if (!eventConfig || !eventConfig.event_started || activePhase === 0) {
+      return; // Not started, or a preparation phase
     }
+
+    // Nota: Fase 5 agora é suportada para auto-advance (permite game over automático)
 
     // Check for individual quest expiry
     const activeQuest = allQuests.find(q => q.status === 'active' && q.phase_id === activePhase);
 
     if (activeQuest) {
       if (!activeQuest.started_at) {
-        console.log(`Quest ${activeQuest.id} has no started_at time, cannot calculate auto-advance.`);
-        return;
-      }
-      const questStartTime = new Date(activeQuest.started_at + 'Z');
-      
-      // Agora avança apenas quando a LATE WINDOW expirar (prazo regular + 15min)
-      const finalDeadline = new Date(questStartTime.getTime() + 
-        ((activeQuest.planned_deadline_minutes || 0) + (activeQuest.late_submission_window_minutes || 0)) * 60 * 1000
-      );
-      const now = new Date(new Date().toISOString());
+        // Silenciosamente ignora - é normal quests que ainda não iniciaram não terem started_at
+        // Don't return - fall through to phase-level check
+      } else {
+        const questStartTime = new Date(activeQuest.started_at + 'Z');
+        const now = new Date(new Date().toISOString());
 
-      console.log(`Quest ${activeQuest.order_index} Auto-advance check:`);
-      console.log(`  - Quest Start Time: ${questStartTime.toISOString()}`);
-      console.log(`  - Final Deadline (regular + late window): ${finalDeadline.toISOString()}`);
-      console.log(`  - Current Time: ${now.toISOString()}`);
-      console.log(`  - Should advance quest: ${now > finalDeadline}`);
+        // Agora avança apenas quando a LATE WINDOW expirar (prazo regular + 15min)
+        const finalDeadline = new Date(questStartTime.getTime() +
+          ((activeQuest.planned_deadline_minutes || 0) + (activeQuest.late_submission_window_minutes || 0)) * 60 * 1000
+        );
 
-      if (now > finalDeadline) {
-        console.log(`🚀 Late window expired! Auto-advancing quest ${activeQuest.id}!`);
-        fetch('/api/admin/advance-quest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ questId: activeQuest.id }),
-        }).then(response => {
-          if (response.ok) {
-            console.log('Quest auto-advanced successfully.');
-            fetchEventData();
-            router.refresh();
+        // ⚠️ PROTEÇÃO: Se a quest já começou há MUITO tempo (mais de 1 hora),
+        // é provável que esteja com timestamp errado ou em teste acelerado.
+        // Auto-avançar para evitar travamentos.
+        const timeElapsedMinutes = (now.getTime() - questStartTime.getTime()) / 1000 / 60;
+        if (timeElapsedMinutes > 60) {
+          console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} está ativa há ${Math.round(timeElapsedMinutes)}min! Auto-avançando para evitar travamento...`);
+          fetch('/api/admin/advance-quest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questId: activeQuest.id }),
+          }).then(response => {
+            if (response.ok) {
+              fetchEventData();
+              router.refresh();
+            }
+          }).catch((err) => {
+            console.error('Erro ao auto-avançar quest travada:', err);
+          });
+          return;
+        }
+
+        // ⚠️ PROTEÇÃO AGRESSIVA: Se quest já passou muito do deadline,
+        // e ainda não foi auto-avançada, forçar após 5 segundos de detecção
+        if (now > finalDeadline) {
+          console.log(`🔴 [PhaseController] Detectada quest expirada (order_index=${activeQuest.order_index}, time_remaining=${(finalDeadline.getTime() - now.getTime())/1000}s)`);
+          if (zeroTimeQuestDetectionRef.current?.questId !== activeQuest.id) {
+            // Primeira detecção desta quest expirada
+            zeroTimeQuestDetectionRef.current = {
+              questId: activeQuest.id,
+              detectedAt: now.getTime()
+            };
+            console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} expirada! Será auto-avançada em 5s se não avançar...`);
           } else {
-            console.error('Failed to auto-advance quest.', response.status);
+            // Já detectada - verificar se passaram 5 segundos
+            const timeSinceDetection = (now.getTime() - zeroTimeQuestDetectionRef.current.detectedAt) / 1000;
+            if (timeSinceDetection > 5) {
+              console.warn(`⚠️ [PhaseController] FORÇANDO auto-advance de Quest ${activeQuest.order_index} (${Math.round(timeSinceDetection)}s de espera)`);
+              console.log(`📤 Chamando /api/admin/advance-quest com questId: ${activeQuest.id}`);
+              fetch('/api/admin/advance-quest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ questId: activeQuest.id }),
+              }).then(response => {
+                console.log(`📥 Resposta recebida do endpoint: status=${response.status}, ok=${response.ok}`);
+                return response.json().then(data => {
+                  console.log(`📊 Dados da resposta:`, data);
+                  if (response.ok) {
+                    zeroTimeQuestDetectionRef.current = null; // Reset
+                    fetchEventData();
+                    router.refresh();
+                  } else {
+                    console.error(`❌ Erro na resposta: ${data.error}`);
+                  }
+                });
+              }).catch((err) => {
+                console.error('❌ Erro ao forçar auto-advance:', err);
+              });
+              return;
+            }
           }
-        }).catch(error => {
-          console.error('Error during quest auto-advance API call:', error);
-        });
-        return;
+        } else {
+          // Quest não está mais expirada, resetar detecção
+          zeroTimeQuestDetectionRef.current = null;
+        }
+
+        if (now > finalDeadline) {
+          fetch('/api/admin/advance-quest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questId: activeQuest.id }),
+          }).then(response => {
+            if (response.ok) {
+              fetchEventData();
+              router.refresh();
+            }
+          }).catch(() => {
+            // Silently handle error
+          });
+          return;
+        }
       }
     }
 
@@ -192,12 +239,15 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
 
     // CORREÇÃO: Verifique se é UMA STRING antes de usar
     if (typeof phaseStartTimeISO !== 'string' || !phaseStartTimeISO) {
-      console.log(`Phase ${activePhase} start time not found or invalid type, cannot calculate auto-advance.`);
       return;
     }
 
     // Agora é 100% seguro, 'phaseStartTimeISO' é uma string válida
-    const phaseStartTime = new Date(phaseStartTimeISO);
+    // IMPORTANTE: Adicionar 'Z' se não tiver timezone info para garantir UTC
+    const phaseStartTimeStr = phaseStartTimeISO.includes('+') || phaseStartTimeISO.includes('Z')
+      ? phaseStartTimeISO
+      : phaseStartTimeISO + 'Z';
+    const phaseStartTime = new Date(phaseStartTimeStr);
 
     // Calculate total duration for the current phase
     const questsInActivePhase = allQuests.filter(q => q.phase_id === activePhase);
@@ -210,19 +260,59 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       return; // Prevent division by zero or incorrect calc
     }
 
-    const phaseEndTime = new Date(phaseStartTime.getTime() + (totalPhaseDurationMinutes * 60 * 1000));
+    const phaseEndTime = new Date(phaseStartTime.getTime() + totalPhaseDurationMinutes * 60 * 1000);
     const now = new Date(new Date().toISOString());
+    const timeRemaining = (phaseEndTime.getTime() - now.getTime()) / 1000 / 60;
+    const shouldAdvance = now > phaseEndTime;
 
-    console.log(`Phase ${activePhase} Auto-advance check:`);
-    console.log(`  - Phase Start Time: ${phaseStartTime.toISOString()}`);
-    console.log(`  - Total Phase Duration: ${totalPhaseDurationMinutes} minutes`);
-    console.log(`  - Phase End Time: ${phaseEndTime.toISOString()}`);
-    console.log(`  - Current Time: ${now.toISOString()}`);
-    console.log(`  - Should auto-advance phase: ${now > phaseEndTime}`);
+    // Log apenas quando há mudança ou quando está próximo de expirar (últimos 30 segundos)
+    const currentState = `${activePhase}|${timeRemaining.toFixed(1)}|${shouldAdvance}`;
+    if (lastPhaseStateRef.current !== currentState && (Math.abs(timeRemaining) < 1 || shouldAdvance)) {
+      lastPhaseStateRef.current = currentState;
+      console.log(`🎯 [PhaseController] Phase ${activePhase} auto-advance check:
+      - phaseStartTime: ${phaseStartTime.toISOString()}
+      - totalDurationMinutes: ${totalPhaseDurationMinutes}
+      - phaseEndTime: ${phaseEndTime.toISOString()}
+      - now: ${now.toISOString()}
+      - time remaining: ${timeRemaining.toFixed(2)} minutes
+      - should advance: ${shouldAdvance}`);
+    }
 
-    if (now > phaseEndTime && activePhase < phases.length - 1) {
-      console.log(`🚀 Auto-advancing to Phase ${activePhase + 1}!`);
-      handleStartPhase(activePhase + 1); // Automatically start the next phase
+    if (now > phaseEndTime) {
+      // Proteger contra múltiplos auto-advances da mesma fase
+      if (!autoAdvancedPhaseRef.current.has(activePhase)) {
+        autoAdvancedPhaseRef.current.add(activePhase);
+
+        if (activePhase < phases.length - 1) {
+          // Avançar para próxima fase (Fase 1→2, 2→3, etc)
+          console.log(`✅ [PhaseController] ADVANCING Phase ${activePhase} → ${activePhase + 1}`);
+          handleStartPhase(activePhase + 1);
+        } else if (activePhase === phases.length - 1) {
+          // Última fase expirou - chamar advance-quest para disparar game over
+          console.log(`🏁 [PhaseController] ÚLTIMA FASE EXPIROU! Disparando evento de fim (game over)`);
+          const lastQuest = allQuests.find(q =>
+            q.phase_id === activePhase &&
+            q.status === 'active'
+          );
+          if (lastQuest) {
+            fetch('/api/admin/advance-quest', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ questId: lastQuest.id }),
+            }).then(response => {
+              if (response.ok) {
+                fetchEventData();
+                router.refresh();
+              }
+            }).catch((err) => {
+              console.error('Erro ao disparar game over:', err);
+            });
+          }
+        }
+      }
+    } else if (now < phaseEndTime) {
+      // Se a fase NÃO expirou mais, remover do rastreamento (para o caso de regressão manual)
+      autoAdvancedPhaseRef.current.delete(activePhase);
     }
   }, [eventConfig, allQuests, activePhase, handleStartPhase, phases.length]);
 

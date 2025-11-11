@@ -3,7 +3,7 @@
 import { useRealtimeRanking, useRealtimePhase } from '@/lib/hooks/useRealtime'
 import RankingBoard from '@/components/dashboard/RankingBoard'
 import CurrentQuestTimer from '@/components/dashboard/CurrentQuestTimer'
-import PhaseController from '@/components/PhaseController'
+import QuestAutoAdvancer from '@/components/QuestAutoAdvancer'
 import EvaluatorCardsDisplay from '@/components/EvaluatorCardsDisplay'
 import LivePowerUpStatus from '@/components/dashboard/LivePowerUpStatus'
 import LivePenaltiesStatus from '@/components/dashboard/LivePenaltiesStatus'
@@ -18,6 +18,8 @@ export default function LiveDashboard() {
   return (
     <>
       <EventEndCountdownWrapper />
+      {/* 🤖 Background quest auto-advance logic (renders nothing) */}
+      <QuestAutoAdvancer />
     <div className="min-h-screen bg-gradient-to-br from-[#001A4D] via-[#0A1E47] to-[#0047AB]" role="main" aria-label="Live Dashboard - Real-time event tracking">
       {/* Header */}
       <div className="bg-[#001A4D]/50 backdrop-blur-sm border-b-2 border-[#00E5FF]/30 p-4 md:p-6" role="banner">
@@ -55,14 +57,6 @@ export default function LiveDashboard() {
       </div>
 
       <div className="container mx-auto p-4 md:p-6">
-        {/* 🤖 Phase Controller - Auto-advance quests and phases */}
-        {phase && (
-          <PhaseController
-            currentPhase={phase.current_phase || 0}
-            eventStarted={phase.event_started || false}
-          />
-        )}
-
         {/* Audio Authorization Banner */}
         <AudioAuthorizationBanner />
 

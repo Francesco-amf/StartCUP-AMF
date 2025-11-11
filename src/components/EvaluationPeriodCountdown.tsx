@@ -77,8 +77,6 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
           table: 'event_config'
         },
         (payload: any) => {
-          console.log('⏳ [EvaluationPeriod] Event config atualizado:', payload.new)
-          
           if (payload.new.evaluation_period_end_time) {
             setEvaluationPeriodEndTime(payload.new.evaluation_period_end_time)
           }

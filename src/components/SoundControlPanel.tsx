@@ -1,17 +1,50 @@
 'use client'
 
-import { useAudioFiles } from '@/lib/hooks/useAudioFiles'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { Button } from '@/components/ui/button'
 
 export default function SoundControlPanel() {
-  const { soundConfig, setVolume, toggleSounds, play, isClient } = useAudioFiles()
+  const { soundConfig, setVolume, toggleSounds, playFile, isClient } = useSoundSystem()
 
   if (!isClient) return null
 
   const getMuteIcon = () => (soundConfig.enabled ? '🔊' : '🔇')
 
+  // Função para autorizar áudio (necessário devido às políticas de autoplay)
+  const handleAudioAuthorization = () => {
+    // Tocar sequência de sons para autorizar e testar
+    const sounds = [
+      { file: '/sounds/penalty.mp3', delay: 0, volume: 0.3 },
+      { file: '/sounds/ranking-up.mp3', delay: 1000, volume: 0.3 },
+      { file: '/sounds/ranking-down.wav', delay: 2200, volume: 0.3 }
+    ]
+
+    sounds.forEach(({ file, delay, volume }) => {
+      setTimeout(() => {
+        const audio = new Audio(file)
+        audio.volume = volume
+        audio.play().catch((err) => {
+          console.log(`Could not play ${file}:`, err)
+        })
+      }, delay)
+    })
+
+    console.log('✅ Áudio autorizado - reproduzindo sequência de sons')
+  }
+
   return (
     <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+      {/* Authorize Audio Button */}
+      <Button
+        onClick={handleAudioAuthorization}
+        variant="ghost"
+        size="sm"
+        className="text-white hover:bg-white/20 text-xs whitespace-nowrap"
+        title="Autorizar sons do navegador"
+      >
+        🎵 Autorizar
+      </Button>
+
       {/* Mute Button */}
       <Button
         onClick={toggleSounds}
@@ -42,7 +75,7 @@ export default function SoundControlPanel() {
 
       {/* Test Sound Button */}
       <Button
-        onClick={() => play('notification')}
+        onClick={() => playFile('quest-complete')}
         variant="ghost"
         size="sm"
         className="text-white hover:bg-white/20 text-xs"

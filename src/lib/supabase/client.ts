@@ -23,9 +23,9 @@ export function createClient() {
     // Tipos corretos aplicados
     clientInstance.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (event === 'TOKEN_REFRESHED' && session) {
-        console.log('✅ Token auto-refreshed')
+        // Auto-refresh de token ocorreu
       } else if (event === 'USER_UPDATED') {
-        console.log('👤 User updated')
+        // User foi atualizado
       }
       // NÃO logar SIGNED_OUT pois pode impactar outras abas
     })

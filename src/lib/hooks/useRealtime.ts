@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 // Helper para mapear número da fase para nome e duração
 function getPhaseInfo(phase: number): { name: string; duration_minutes: number } {
@@ -21,13 +22,22 @@ export function useRealtimeRanking() {
   const [ranking, setRanking] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const isPageVisibleRef = useRef(true)
 
   useEffect(() => {
+    // Detectar quando a aba está visível ou oculta
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     let isFetching = false
 
     const fetchRanking = async () => {
-      if (isFetching) return
-      
+      // Não fazer fetch se a página não está visível (economiza dados)
+      if (!isPageVisibleRef.current || isFetching) return
+
       isFetching = true
       try {
         const { data, error } = await supabase
@@ -49,12 +59,15 @@ export function useRealtimeRanking() {
     // Buscar imediatamente
     fetchRanking()
 
-    // 🔄 Polling a cada 2 segundos (otimizado para Supabase free tier)
-    const pollInterval = setInterval(fetchRanking, 2000)
+    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
+    // IMPORTANTE: Manter em sync com useRealtimePhase (500ms) para evitar interferência de re-renders
+    // Quando todos polling rodam no mesmo intervalo, evita caos de atualizações assincronas
+    const pollInterval = setInterval(fetchRanking, 500)
 
     // Cleanup
     return () => {
       clearInterval(pollInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [supabase])
 
@@ -66,8 +79,15 @@ export function useRealtimePhase() {
   const [phase, setPhase] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const isPageVisibleRef = useRef(true)
 
   useEffect(() => {
+    // Detectar quando a aba está visível ou oculta
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     let isFetching = false // � Evitar chamadas simultâneas
 
     // �🚀 Usar RPC para buscar tudo em UMA query (otimização)
@@ -124,8 +144,8 @@ export function useRealtimePhase() {
     // Buscar imediatamente
     fetchPhase()
 
-    // 🔄 Polling a cada 2 segundos (otimizado para Supabase free tier)
-    const pollInterval = setInterval(fetchPhase, 2000)
+    // 🔄 Polling sincronizado a cada 500ms (adaptado ao CurrentQuestTimer para resposta instantânea)
+    const pollInterval = setInterval(fetchPhase, 500) // 4x mais rápido! Sincronizado com CurrentQuestTimer (500ms)
 
     // Cleanup
     return () => {
@@ -136,11 +156,79 @@ export function useRealtimePhase() {
   return { phase, loading }
 }
 
+// Hook para penalidades com Polling rápido (som de penalidade)
+export function useRealtimePenalties() {
+  const [penalties, setPenalties] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+  const { play } = useSoundSystem()
+  const previousPenaltyIdsRef = useRef<Set<string>>(new Set())
+  const isFirstRenderRef = useRef(true)
+
+  useEffect(() => {
+    let isFetching = false
+
+    const fetchPenalties = async () => {
+      if (isFetching) return
+
+      isFetching = true
+      try {
+        const { data, error } = await supabase
+          .from('penalties')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          // Detectar penalidades novas e tocar som
+          if (!isFirstRenderRef.current) {
+            data.forEach((penalty: any) => {
+              if (!previousPenaltyIdsRef.current.has(penalty.id)) {
+                play('penalty')
+              }
+            })
+          }
+
+          // Atualizar conjunto de IDs
+          previousPenaltyIdsRef.current = new Set(data.map((p: any) => p.id))
+
+          // Marcar que primeira renderização foi feita
+          if (isFirstRenderRef.current) {
+            isFirstRenderRef.current = false
+          }
+
+          setPenalties(data)
+        }
+      } catch (err) {
+        console.error('[useRealtimePenalties] Error:', err)
+      } finally {
+        setLoading(false)
+        isFetching = false
+      }
+    }
+
+    // Buscar imediatamente
+    fetchPenalties()
+
+    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
+    // IMPORTANTE: Manter em sync com useRealtimePhase e useRealtimeRanking (500ms)
+    const pollInterval = setInterval(fetchPenalties, 500)
+
+    // Cleanup
+    return () => {
+      clearInterval(pollInterval)
+    }
+  }, [supabase, play])
+
+  return { penalties, loading }
+}
+
 // Hook para status dos avaliadores com Polling (WebSocket removido)
 export function useRealtimeEvaluators() {
   const [evaluators, setEvaluators] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const { play } = useSoundSystem()
+  const previousStateRef = useRef<Record<string, boolean>>({})
 
   useEffect(() => {
     let isFetching = false
@@ -157,6 +245,21 @@ export function useRealtimeEvaluators() {
           .order('name', { ascending: true })
 
         if (!error && data) {
+          // Detectar mudanças de online/offline
+          data.forEach((evaluator: any) => {
+            const previousOnlineState = previousStateRef.current[evaluator.id]
+            
+            if (previousOnlineState !== undefined && previousOnlineState !== evaluator.is_online) {
+              if (evaluator.is_online) {
+                play('evaluator-online')
+              } else {
+                play('evaluator-offline')
+              }
+            }
+            
+            previousStateRef.current[evaluator.id] = evaluator.is_online
+          })
+
           setEvaluators(data)
         }
       } catch (err) {
@@ -170,14 +273,15 @@ export function useRealtimeEvaluators() {
     // Buscar imediatamente
     fetchEvaluators()
 
-    // 🔄 Polling a cada 5 segundos (avaliadores não mudam tão rápido)
-    const pollInterval = setInterval(fetchEvaluators, 5000)
+    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
+    // IMPORTANTE: Manter em sync com useRealtimePhase, useRealtimeRanking e useRealtimePenalties (500ms)
+    const pollInterval = setInterval(fetchEvaluators, 500)
 
     // Cleanup
     return () => {
       clearInterval(pollInterval)
     }
-  }, [supabase])
+  }, [supabase, play])
 
   return { evaluators, loading }
 }

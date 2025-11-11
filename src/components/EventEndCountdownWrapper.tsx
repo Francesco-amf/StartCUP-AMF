@@ -44,7 +44,6 @@ export default function EventEndCountdownWrapper() {
           table: 'event_config'
         },
         (payload: any) => {
-          console.log('⏰ [EventCountdown] Evento atualizado:', payload.new)
           setEventEnded(payload.new.event_ended)
           setEventEndTime(payload.new.event_end_time)
           setEvaluationPeriodEndTime(payload.new.evaluation_period_end_time)
@@ -60,7 +59,6 @@ export default function EventEndCountdownWrapper() {
 
   // Handler para quando avaliações terminarem
   const handleEvaluationsComplete = () => {
-    console.log('✅ [EventCountdown] Todas as avaliações completas! Iniciando countdown final...')
     setShowFinalCountdown(true)
   }
 

@@ -6,12 +6,17 @@ import CurrentQuestTimer from '@/components/dashboard/CurrentQuestTimer'
 import EvaluatorCardsDisplay from '@/components/EvaluatorCardsDisplay'
 import LivePowerUpStatus from '@/components/dashboard/LivePowerUpStatus'
 import LivePenaltiesStatus from '@/components/dashboard/LivePenaltiesStatus'
+import AudioAuthorizationBanner from '@/components/dashboard/AudioAuthorizationBanner'
+import QuestDebugPanel from '@/components/dashboard/QuestDebugPanel'
+import EventEndCountdownWrapper from '@/components/EventEndCountdownWrapper'
 
 export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
   const { phase, loading: phaseLoading } = useRealtimePhase()
 
   return (
+    <>
+      <EventEndCountdownWrapper />
     <div className="min-h-screen bg-gradient-to-br from-[#001A4D] via-[#0A1E47] to-[#0047AB]" role="main" aria-label="Live Dashboard - Real-time event tracking">
       {/* Header */}
       <div className="bg-[#001A4D]/50 backdrop-blur-sm border-b-2 border-[#00E5FF]/30 p-4 md:p-6" role="banner">
@@ -49,6 +54,9 @@ export default function LiveDashboard() {
       </div>
 
       <div className="container mx-auto p-4 md:p-6">
+        {/* Audio Authorization Banner */}
+        <AudioAuthorizationBanner />
+
         {/* Timer da Fase e Quest Atual - Topo em destaque */}
         {phase?.event_status === 'running' && phase?.phase_started_at && (
           <div className="mb-6">
@@ -159,7 +167,11 @@ export default function LiveDashboard() {
 
         </div>
       </div>
+
+      {/* 🔍 PAINEL DE DEBUG - Quest Congelada */}
+      <QuestDebugPanel />
     </div>
+    </>
   )
 }
 

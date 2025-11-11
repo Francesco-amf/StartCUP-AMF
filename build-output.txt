@@ -1,0 +1,72 @@
+
+> startcup-amf@0.1.0 build
+> set NODE_NO_WARNINGS=1 && next build --webpack
+
+   ▲ Next.js 16.0.1 (webpack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 7.8s
+   Running TypeScript ...
+   Collecting page data ...
+   Generating static pages (0/28) ...
+⚠️ Erro ao criar AudioContext (tentativa 1/3): ReferenceError: window is not defined
+    at g (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:263)
+    at j.initMasterGain (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2342)
+    at new j (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2235)
+    at j.getInstance (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2304)
+    at 65860 (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:5657)
+    at g (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\webpack-runtime.js:1:135)
+    at 32456 (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\app\live-dashboard\page.js:9:111145)
+    at Object.g [as require] (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\webpack-runtime.js:1:135)
+⚠️ Erro ao criar AudioContext (tentativa 2/3): ReferenceError: window is not defined
+    at g (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:263)
+    at g (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:645)
+    at j.initMasterGain (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2342)
+    at new j (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2235)
+    at j.getInstance (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:2304)
+    at 65860 (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\chunks\851.js:1:5657)
+    at g (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\webpack-runtime.js:1:135)
+    at 32456 (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\app\live-dashboard\page.js:9:111145)
+    at Object.g [as require] (C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\server\webpack-runtime.js:1:135)
+❌ Falha permanente ao criar AudioContext após múltiplas tentativas
+   Generating static pages (7/28) 
+   Generating static pages (14/28) 
+   Generating static pages (21/28) 
+ ✓ Generating static pages (28/28) in 953.6ms
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/admin/advance-quest
+├ ƒ /api/admin/assign-penalty
+├ ƒ /api/admin/quest/deadline
+├ ƒ /api/admin/reset
+├ ƒ /api/admin/start-phase
+├ ƒ /api/admin/start-phase-with-quests
+├ ƒ /api/admin/start-quest
+├ ƒ /api/evaluate
+├ ƒ /api/evaluator/assign-penalty
+├ ƒ /api/evaluator/status
+├ ƒ /api/mentor/calculate-cost
+├ ƒ /api/mentor/request
+├ ƒ /api/power-ups/activate
+├ ƒ /api/submissions/create
+├ ƒ /control-panel
+├ ƒ /dashboard
+├ ƒ /evaluate
+├ ƒ /evaluate/[submissionId]
+├ ○ /evaluate/submissions
+├ ƒ /evaluations
+├ ○ /live-dashboard
+├ ○ /login
+├ ○ /sounds-test
+├ ƒ /submit
+└ ○ /teams
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

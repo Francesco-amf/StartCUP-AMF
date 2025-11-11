@@ -198,6 +198,15 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
                   console.log(`📊 Dados da resposta:`, data);
                   if (response.ok) {
                     zeroTimeQuestDetectionRef.current = null; // Reset
+                    // Broadcast quest update to CurrentQuestTimer for immediate refresh
+                    try {
+                      const channel = new BroadcastChannel('quest-updates');
+                      channel.postMessage({ type: 'questAdvanced', timestamp: Date.now() });
+                      channel.close();
+                      console.log(`📢 [PhaseController] Broadcast enviado para quest-updates`);
+                    } catch (err) {
+                      console.warn(`⚠️ [PhaseController] BroadcastChannel não suportado:`, err);
+                    }
                     fetchEventData();
                     router.refresh();
                   } else {
@@ -222,6 +231,14 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
             body: JSON.stringify({ questId: activeQuest.id }),
           }).then(response => {
             if (response.ok) {
+              // Broadcast quest update to CurrentQuestTimer for immediate refresh
+              try {
+                const channel = new BroadcastChannel('quest-updates');
+                channel.postMessage({ type: 'questAdvanced', timestamp: Date.now() });
+                channel.close();
+              } catch (err) {
+                // BroadcastChannel not available
+              }
               fetchEventData();
               router.refresh();
             }

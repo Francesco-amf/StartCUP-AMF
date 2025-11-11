@@ -1,40 +1,30 @@
 'use client'
 
-import { useAdvancedSounds } from '@/lib/hooks/useAdvancedSounds'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
 export default function SoundTester() {
-  const { play, isClient } = useAdvancedSounds()
+  const { play, isClient } = useSoundSystem()
 
   if (!isClient) return null
 
   const basicSounds = [
     { id: 'quest-complete', name: '✓ Quest Completa', emoji: '🎯' },
-    { id: 'phase-start', name: '▶ Fase Inicia', emoji: '🚀' },
-    { id: 'phase-end', name: '◼ Fase Termina', emoji: '⏹' },
-    { id: 'power-up', name: '⚡ Power-up', emoji: '✨' },
-    { id: 'points-update', name: '📈 AMF Coins', emoji: '🪙' },
-    { id: 'notification', name: '🔔 Notificação', emoji: '📢' }
+    { id: 'quest-start', name: '▶ Quest Inicia', emoji: '🚀' },
+    { id: 'phase-start', name: '▶ Fase Inicia', emoji: '🌟' },
+    { id: 'penalty', name: '⚠ Penalidade', emoji: '⛔' },
+    { id: 'ranking-up', name: '📈 Sobe Ranking', emoji: '⬆️' },
+    { id: 'ranking-down', name: '📉 Desce Ranking', emoji: '⬇️' }
   ]
 
   const advancedSounds = [
-    { id: 'horn', name: '📯 Buzina', emoji: '🎺' },
-    { id: 'fanfare', name: '🎭 Fanfarra', emoji: '🎪' },
-    { id: 'explosion', name: '💥 Explosão', emoji: '🔥' },
-    { id: 'ding', name: '🔔 Ding', emoji: '🛎' },
-    { id: 'error-beep', name: '⚠ Erro Beep', emoji: '❌' },
-    { id: 'laser', name: '⚡ Laser', emoji: '🔫' },
-    { id: 'power-up-gamified', name: '🎮 Power-up Gamer', emoji: '👾' },
-    { id: 'victory', name: '🏆 Vitória', emoji: '👑' },
-    { id: 'countdown', name: '⏱ Countdown', emoji: '⏳' },
-    { id: 'swirl', name: '🌪 Redemoinho', emoji: '🎨' },
-    { id: 'chime', name: '🎵 Chime', emoji: '🔮' },
-    { id: 'buzz', name: '📳 Buzz', emoji: '📲' },
-    { id: 'glitch', name: '🖥 Glitch', emoji: '⚙' },
-    { id: 'whoosh', name: '💨 Whoosh', emoji: '🌪' },
-    { id: 'ascending', name: '📊 Ascendente', emoji: '📈' },
-    { id: 'boss-battle', name: '👹 Boss Battle', emoji: '⚔' }
+    { id: 'coins', name: '🪙 Moedas', emoji: '💰' },
+    { id: 'submission', name: '📤 Submissão', emoji: '✅' },
+    { id: 'event-start', name: '🎬 Evento Inicia', emoji: '🎊' },
+    { id: 'boss-spawn', name: '👹 Boss Aparece', emoji: '⚔️' },
+    { id: 'evaluator-online', name: '🟢 Avaliador Online', emoji: '📡' },
+    { id: 'evaluator-offline', name: '🔴 Avaliador Offline', emoji: '📴' }
   ]
 
   const handlePlay = (soundId: string) => {

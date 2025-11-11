@@ -39,15 +39,6 @@ export default function PhaseTimer({
       const now = new Date().getTime()
       const difference = endTime - now
 
-      console.log(`⏱️ PhaseTimer - ${phaseName}:`)
-      console.log(`   phaseStartedAt (raw): ${phaseStartedAt}`)
-      console.log(`   with Z: ${ensureZFormat}`)
-      console.log(`   startTime (ms): ${startTime}`)
-      console.log(`   endTime (ms): ${endTime}`)
-      console.log(`   now (ms): ${now}`)
-      console.log(`   difference (ms): ${difference}`)
-      console.log(`   difference (mins): ${(difference / 1000 / 60).toFixed(1)}`)
-
       if (difference <= 0) {
         setTimeLeft({
           hours: 0,

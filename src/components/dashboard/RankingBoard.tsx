@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useAudioFiles } from '@/lib/hooks/useAudioFiles'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { usePenalties } from '@/lib/hooks/usePenalties'
 
 interface RankingItem {
@@ -21,21 +21,81 @@ interface RankingBoardProps {
 }
 
 export default function RankingBoard({ ranking }: RankingBoardProps) {
-  const { play } = useAudioFiles()
+  const { play } = useSoundSystem()
   const { getPenalty } = usePenalties()
-  const previousRankingRef = useRef<Record<string, number>>({})
+  const previousRankingRef = useRef<Record<string, { position: number; points: number }>>({})
+  const processingRef = useRef(false) // Evitar duplicação
 
-  // Detectar mudanças de pontos e tocar som
-  useEffect(() => {
-    ranking.forEach((team: any) => {
-      const previousPoints = previousRankingRef.current[team.team_id]
-      if (previousPoints !== undefined && team.total_points > previousPoints) {
-        // Pontos aumentaram!
-        play('points-update')
+  // Função estável para processar ranking usando useCallback
+  const processPenalties = useCallback(() => {
+    if (processingRef.current) {
+      console.log('⏸️ [RankingBoard] Já processando, ignorando...')
+      return
+    }
+
+    processingRef.current = true
+
+    try {
+      console.log('🔄 [RankingBoard] Processando ranking, equipes:', ranking.length)
+      let hasRankingChange = false  // Controlar se houve qualquer mudança de posição
+      let soundsTriggered = 0
+
+      ranking.forEach((team: any, currentPosition: number) => {
+        const previousData = previousRankingRef.current[team.team_id]
+
+        if (previousData !== undefined) {
+          // Detectar mudança de posição no ranking
+          if (previousData.position > currentPosition) {
+            // Subiu no ranking!
+            hasRankingChange = true
+            console.log(`📈 [RankingBoard] Time subiu no ranking: ${team.team_name} (${previousData.position} → ${currentPosition})`)
+            // NÃO tocar som aqui, apenas marcar que houve mudança
+          }
+
+          // Detecta ganho de pontos (INDEPENDENTEMENTE da mudança de posição)
+          if (team.total_points > previousData.points) {
+            const pointsGained = team.total_points - previousData.points
+            soundsTriggered++
+            console.log(`🪙 [RankingBoard #${soundsTriggered}] Time ganhou ${pointsGained} coins: ${team.team_name} (${previousData.points} → ${team.total_points})`)
+            // Coins com prioridade 1 (segunda mais alta, após quest-complete que é 0)
+            play('coins', 1)
+          }
+        }
+
+        // Sempre atualizar posição e pontos
+        previousRankingRef.current[team.team_id] = {
+          position: currentPosition,
+          points: team.total_points
+        }
+      })
+
+      // Tocar ranking-up SÓ UMA VEZ se houve qualquer mudança de posição
+      if (hasRankingChange) {
+        console.log(`🎵 [RankingBoard] Houve mudança de ranking, tocando som UMA VEZ com prioridade 2`)
+        // Ranking-up com prioridade 2 (terceira mais alta, após quest-complete e coins)
+        play('ranking-up', 2)
       }
-      previousRankingRef.current[team.team_id] = team.total_points
-    })
+
+      if (!hasRankingChange && soundsTriggered === 0) {
+        console.log('🔄 [RankingBoard] Sem mudanças de ranking detectadas')
+      }
+    } finally {
+      processingRef.current = false
+    }
   }, [ranking, play])
+
+  // Detectar mudanças apenas do ranking array
+  useEffect(() => {
+    console.log('🔔 [RankingBoard.useEffect] Ranking mudou, aguardando 500ms para processar...')
+    // Delay pequeno (500ms) para garantir que penalty entre na fila ANTES de ranking-up
+    // Isso dá tempo suficiente sem perder o evento de ranking
+    const timer = setTimeout(() => {
+      console.log('⏰ [RankingBoard] Delay de 500ms expirou, processando agora...')
+      processPenalties()
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [ranking, processPenalties])
   const getPositionEmoji = (position: number) => {
     switch (position) {
       case 1: return '🥇'

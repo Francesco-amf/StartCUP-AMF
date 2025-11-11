@@ -1,61 +1,75 @@
 /**
  * Web Audio API Sound Generator
  * Gera sons programaticamente sem necessidade de arquivos de áudio
+ * Agora integrado ao novo sistema de áudio centralizado
  */
 
-type AudioContext = InstanceType<typeof AudioContext>
-
-let audioContext: AudioContext | null = null
-
-function getAudioContext(): AudioContext {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-  }
-  return audioContext
-}
+import { getAudioContext, getAudioDestination } from './audioContext'
 
 interface SoundOptions {
   frequency?: number
   duration?: number
   volume?: number
   type?: OscillatorType
+  masterGain?: GainNode | null
 }
 
 /**
  * Reproduz uma onda simples
+ * Se masterGain for fornecido, conecta a ele (para controle de volume centralizado)
+ * Caso contrário, conecta diretamente ao destino
  */
 function playTone(options: SoundOptions = {}) {
   const {
     frequency = 440,
     duration = 200,
     volume = 0.3,
-    type = 'sine'
+    type = 'sine',
+    masterGain = null
   } = options
 
   try {
     const ctx = getAudioContext()
+    if (!ctx) {
+      console.warn('❌ Web Audio API não disponível')
+      return
+    }
 
     // Resume audio context se necessário (browser requirement)
     if (ctx.state === 'suspended') {
-      ctx.resume()
+      ctx.resume().catch((err) => {
+        console.warn('⚠️ Falha ao retomar contexto de áudio:', err)
+      })
     }
 
     const oscillator = ctx.createOscillator()
     const gainNode = ctx.createGain()
 
-    oscillator.connect(gainNode)
-    gainNode.connect(ctx.destination)
-
     oscillator.type = type
     oscillator.frequency.value = frequency
 
+    // Configurar ganho com envelope de volume
     gainNode.gain.setValueAtTime(volume, ctx.currentTime)
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration / 1000)
+
+    // Conectar ao destino apropriado
+    oscillator.connect(gainNode)
+
+    if (masterGain) {
+      // Usar ganho mestre se fornecido (novo sistema)
+      gainNode.connect(masterGain)
+    } else {
+      // Fallback: conectar diretamente ao destino (compatibilidade)
+      const destination = getAudioDestination()
+      if (destination) {
+        gainNode.connect(destination)
+      }
+    }
 
     oscillator.start(ctx.currentTime)
     oscillator.stop(ctx.currentTime + duration / 1000)
   } catch (error) {
-    console.log('Audio context unavailable:', error)
+    console.error('❌ Erro ao reproduzir tom:', error)
   }
 }
 
@@ -63,65 +77,65 @@ function playTone(options: SoundOptions = {}) {
  * Sequência de tons - Quest Completa
  * Som alegre e celebratório
  */
-export function playQuestComplete() {
-  playTone({ frequency: 659, duration: 150, volume: 0.3, type: 'sine' }) // E5
-  setTimeout(() => playTone({ frequency: 784, duration: 150, volume: 0.3, type: 'sine' }), 150) // G5
-  setTimeout(() => playTone({ frequency: 880, duration: 300, volume: 0.3, type: 'sine' }), 300) // A5
+export function playQuestComplete(masterGain?: GainNode | null) {
+  playTone({ frequency: 659, duration: 150, volume: 0.3, type: 'sine', masterGain }) // E5
+  setTimeout(() => playTone({ frequency: 784, duration: 150, volume: 0.3, type: 'sine', masterGain }), 150) // G5
+  setTimeout(() => playTone({ frequency: 880, duration: 300, volume: 0.3, type: 'sine', masterGain }), 300) // A5
 }
 
 /**
  * Som de Power-up - Suave e mágico
  */
-export function playPowerUp() {
-  playTone({ frequency: 523, duration: 100, volume: 0.3, type: 'sine' }) // C5
-  setTimeout(() => playTone({ frequency: 659, duration: 100, volume: 0.3, type: 'sine' }), 100) // E5
-  setTimeout(() => playTone({ frequency: 784, duration: 200, volume: 0.3, type: 'sine' }), 200) // G5
+export function playPowerUp(masterGain?: GainNode | null) {
+  playTone({ frequency: 523, duration: 100, volume: 0.3, type: 'sine', masterGain }) // C5
+  setTimeout(() => playTone({ frequency: 659, duration: 100, volume: 0.3, type: 'sine', masterGain }), 100) // E5
+  setTimeout(() => playTone({ frequency: 784, duration: 200, volume: 0.3, type: 'sine', masterGain }), 200) // G5
 }
 
 /**
  * Som de início de fase - Épico e solene
  */
-export function playPhaseStart() {
-  playTone({ frequency: 440, duration: 200, volume: 0.3, type: 'sine' }) // A4
-  setTimeout(() => playTone({ frequency: 523, duration: 200, volume: 0.3, type: 'sine' }), 200) // C5
-  setTimeout(() => playTone({ frequency: 587, duration: 300, volume: 0.3, type: 'sine' }), 400) // D5
+export function playPhaseStart(masterGain?: GainNode | null) {
+  playTone({ frequency: 440, duration: 200, volume: 0.3, type: 'sine', masterGain }) // A4
+  setTimeout(() => playTone({ frequency: 523, duration: 200, volume: 0.3, type: 'sine', masterGain }), 200) // C5
+  setTimeout(() => playTone({ frequency: 587, duration: 300, volume: 0.3, type: 'sine', masterGain }), 400) // D5
 }
 
 /**
  * Som de fim de fase - Intrigante
  */
-export function playPhaseEnd() {
-  playTone({ frequency: 587, duration: 150, volume: 0.3, type: 'sine' }) // D5
-  setTimeout(() => playTone({ frequency: 523, duration: 150, volume: 0.3, type: 'sine' }), 150) // C5
-  setTimeout(() => playTone({ frequency: 440, duration: 300, volume: 0.3, type: 'sine' }), 300) // A4
+export function playPhaseEnd(masterGain?: GainNode | null) {
+  playTone({ frequency: 587, duration: 150, volume: 0.3, type: 'sine', masterGain }) // D5
+  setTimeout(() => playTone({ frequency: 523, duration: 150, volume: 0.3, type: 'sine', masterGain }), 150) // C5
+  setTimeout(() => playTone({ frequency: 440, duration: 300, volume: 0.3, type: 'sine', masterGain }), 300) // A4
 }
 
 /**
  * Som de atualização de pontos - Positivo
  */
-export function playPointsUpdate() {
-  playTone({ frequency: 440, duration: 80, volume: 0.25, type: 'sine' }) // A4
-  setTimeout(() => playTone({ frequency: 550, duration: 80, volume: 0.25, type: 'sine' }), 80) // C#5
+export function playPointsUpdate(masterGain?: GainNode | null) {
+  playTone({ frequency: 440, duration: 80, volume: 0.25, type: 'sine', masterGain }) // A4
+  setTimeout(() => playTone({ frequency: 550, duration: 80, volume: 0.25, type: 'sine', masterGain }), 80) // C#5
 }
 
 /**
  * Som de notificação geral - Simples
  */
-export function playNotification() {
-  playTone({ frequency: 880, duration: 100, volume: 0.25, type: 'sine' }) // A5
+export function playNotification(masterGain?: GainNode | null) {
+  playTone({ frequency: 880, duration: 100, volume: 0.25, type: 'sine', masterGain }) // A5
 }
 
 /**
  * Som de aviso/alerta
  */
-export function playAlert() {
-  playTone({ frequency: 659, duration: 100, volume: 0.25, type: 'sine' }) // E5
-  setTimeout(() => playTone({ frequency: 659, duration: 100, volume: 0.25, type: 'sine' }), 150) // E5
+export function playAlert(masterGain?: GainNode | null) {
+  playTone({ frequency: 659, duration: 100, volume: 0.25, type: 'sine', masterGain }) // E5
+  setTimeout(() => playTone({ frequency: 659, duration: 100, volume: 0.25, type: 'sine', masterGain }), 150) // E5
 }
 
 /**
  * Som de erro
  */
-export function playError() {
-  playTone({ frequency: 220, duration: 200, volume: 0.25, type: 'sine' }) // A3
+export function playError(masterGain?: GainNode | null) {
+  playTone({ frequency: 220, duration: 200, volume: 0.25, type: 'sine', masterGain }) // A3
 }

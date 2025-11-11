@@ -1,7 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface BossQuestCardProps {
   questName: string
@@ -24,9 +25,17 @@ export default function BossQuestCard({
     minutes: number
     seconds: number
   }>({ minutes: 0, seconds: 0 })
+  const { play } = useSoundSystem()
+  const previousActiveRef = useRef(false)
 
   useEffect(() => {
     if (!isActive || !startedAt) return
+
+    // Detectar ativação do boss e tocar som
+    if (isActive && !previousActiveRef.current) {
+      play('boss-spawn')
+    }
+    previousActiveRef.current = isActive
 
     const calculateTimeLeft = () => {
       // ✅ CORRIGIR TIMESTAMP: Supabase retorna com +00:00, converter para Z

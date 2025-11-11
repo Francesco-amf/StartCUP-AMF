@@ -1,0 +1,176 @@
+/**
+ * Utilitários de Acessibilidade
+ * Classes CSS para melhorar acessibilidade conforme WCAG 2.1 AA
+ */
+
+/* Screen Reader Only - Oculta visualmente mas mantém acessível */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mostrar sr-only apenas em focus (para skip links) */
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Focus Visible - Ring padrão para todos os elementos focáveis */
+:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+/* Remover outline padrão do navegador (já temos focus-visible) */
+:focus {
+  outline: none;
+}
+
+/* Focus visível em links */
+a:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Focus visível em botões */
+button:focus-visible,
+input[type='button']:focus-visible,
+input[type='submit']:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+/* Focus visível em inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+/* Remover outline apenas para usuários de mouse (não teclado) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Melhorar visibilidade de checkbox/radio */
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible {
+  box-shadow: 0 0 0 3px #00e5ff;
+}
+
+/* Espaçamento adequado para elementos focáveis */
+button,
+a,
+input,
+textarea,
+select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Melhorar contraste para links */
+a {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Remover o underline de links em hover (já tem focus-visible) */
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Melhorar visibilidade de erros em form */
+input[aria-invalid='true'],
+textarea[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+/* Estilos para elementos desabilitados */
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Melhorar visibilidade de ícones SVG */
+svg:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+/* Prefers reduced motion - Respeitar preferência do usuário */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Prefers color scheme - Dark mode */
+@media (prefers-color-scheme: dark) {
+  /* Aumentar contraste em dark mode */
+  body {
+    color: #e0e0e0;
+    background-color: #0a0e27;
+  }
+
+  a {
+    color: #00d4ff;
+  }
+
+  button {
+    background-color: #1e293b;
+    color: #e0e0e0;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: #1e293b;
+    color: #e0e0e0;
+  }
+}
+
+/* Prefers high contrast */
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline-width: 4px;
+    outline-offset: 4px;
+  }
+
+  button,
+  a {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Focus para elementos draggable */
+[draggable='true']:focus-visible {
+  outline: 3px dashed #00e5ff;
+  outline-offset: 2px;
+}

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import SubmissionDeadlineStatus from '@/components/quest/SubmissionDeadlineStatus'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface SubmissionFormProps {
   questId: string
@@ -35,6 +36,7 @@ export default function SubmissionForm({
   const [success, setSuccess] = useState(false)
   const [fileError, setFileError] = useState('')
   const supabase = createClient()
+  const { play } = useSoundSystem()
 
   const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -155,6 +157,9 @@ export default function SubmissionForm({
       const fileInput = document.getElementById('file-input') as HTMLInputElement
       if (fileInput) fileInput.value = ''
 
+      // Tocar som de submissão
+      play('submission')
+
       onSuccess?.()
 
       // Limpar mensagem de sucesso após 5 segundos
@@ -195,14 +200,6 @@ export default function SubmissionForm({
         return ''
     }
   }
-
-  // DEBUG: Log para verificar qual tipo está sendo renderizado
-  console.log(`🎯 [SubmissionForm] Renderizando formulário tipo: "${deliverableType}" para quest: ${questName}`)
-  
-  // DEBUG adicional: verifica cada tipo
-  if (deliverableType === 'file') console.log('  ✅ Vai renderizar campo FILE')
-  if (deliverableType === 'url') console.log('  ✅ Vai renderizar campo URL')
-  if (deliverableType === 'text') console.log('  ✅ Vai renderizar campo TEXT')
 
   return (
     <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/30">

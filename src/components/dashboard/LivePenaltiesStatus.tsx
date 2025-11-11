@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface Penalty {
   id: string
@@ -34,31 +35,37 @@ const PENALTY_NAMES: Record<string, string> = {
 export default function LivePenaltiesStatus() {
   const [penalties, setPenalties] = useState<Penalty[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const { play } = useSoundSystem()
+  const previousPenaltyIdsRef = useRef<Set<string>>(new Set())
+  const isFirstRenderRef = useRef(true)
 
   useEffect(() => {
+    const supabase = createClient()
+
     const fetchPenalties = async () => {
       try {
+        console.log('📡 [LivePenaltiesStatus] Buscando penalidades do banco...')
         // Obter todas as penalidades
         const { data: penaltiesData, error: penaltiesError } = await supabase
           .from('penalties')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(10)
 
         if (penaltiesError) {
-          console.error('Erro ao buscar penalidades:', penaltiesError)
+          console.error('❌ Erro ao buscar penalidades:', penaltiesError)
           setPenalties([])
           setLoading(false)
           return
         }
 
         if (!penaltiesData || penaltiesData.length === 0) {
+          console.log('ℹ️ Nenhuma penalidade encontrada')
           setPenalties([])
           setLoading(false)
           return
         }
 
+        console.log(`✅ ${penaltiesData.length} penalidades encontradas`)
         // Obter nomes das equipes (excluindo equipes fantasma)
         const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
         const { data: teamsData, error: teamsError } = await supabase
@@ -98,11 +105,6 @@ export default function LivePenaltiesStatus() {
 
         // Formatar penalidades
         const formatted = penaltiesData.map((p: any) => {
-          console.log('📌 Penalty data:', {
-            penalty_type: p.penalty_type,
-            points_deduction: p.points_deduction,
-            all_keys: Object.keys(p)
-          })
           return {
             id: p.id,
             team_id: p.team_id,
@@ -116,7 +118,45 @@ export default function LivePenaltiesStatus() {
           }
         })
 
-        console.log('✅ Formatted penalties:', formatted)
+        // IMEDIATAMENTE: Tocar som se houver nova penalidade (antes de atualizar estado)
+        // Isso garante que o som toca na ORDEM CORRETA
+        console.log('🔍 [LivePenaltiesStatus] isFirstRenderRef.current:', isFirstRenderRef.current)
+        console.log('🔍 [LivePenaltiesStatus] previousPenaltyIdsRef.current:', previousPenaltyIdsRef.current)
+        console.log('🔍 [LivePenaltiesStatus] formatted.length:', formatted.length)
+
+        if (!isFirstRenderRef.current) {
+          // Detectar TODAS as penalidades novas
+          const newPenalties: Penalty[] = []
+          formatted.forEach((penalty: Penalty) => {
+            console.log('🔍 [LivePenaltiesStatus] Verificando penalty ID:', penalty.id, 'já conhecida?', previousPenaltyIdsRef.current.has(penalty.id))
+            if (!previousPenaltyIdsRef.current.has(penalty.id)) {
+              newPenalties.push(penalty)
+              console.log('✨ [LivePenaltiesStatus] PENALIDADE NOVA ENCONTRADA:', penalty.team_name, 'ID:', penalty.id)
+            }
+          })
+
+          console.log('📊 [LivePenaltiesStatus] Total de penalidades novas:', newPenalties.length)
+
+          // Tocar som para CADA penalidade nova (em ordem)
+          newPenalties.forEach((penalty: Penalty, index: number) => {
+            console.log(`🔊🔊🔊 [${index + 1}/${newPenalties.length}] PENALIDADE NOVA DETECTADA: ${penalty.team_name} → TOCANDO play('penalty') AGORA!`)
+            console.log('⚠️ ANTES DE CHAMAR play() - tipo:', typeof play, 'isClient:', typeof window !== 'undefined')
+            play('penalty')
+            console.log('✅ DEPOIS DE CHAMAR play()')
+          })
+        } else {
+          console.log('⏭️ [LivePenaltiesStatus] Primeira renderização de penalidades, não tocar som')
+        }
+
+        // Atualizar conjunto de IDs de penalidades
+        previousPenaltyIdsRef.current = new Set(formatted.map((p: Penalty) => p.id))
+
+        // Marcar que a primeira renderização foi feita
+        if (isFirstRenderRef.current) {
+          isFirstRenderRef.current = false
+        }
+
+        // AGORA atualizar estado da UI
         setPenalties(formatted)
       } catch (err) {
         console.error('Erro ao buscar penalidades:', err)
@@ -129,10 +169,10 @@ export default function LivePenaltiesStatus() {
     setLoading(true)
     fetchPenalties()
 
-    // Atualizar a cada 5 segundos
-    const interval = setInterval(fetchPenalties, 5000)
+    // 🔄 Polling cada 1 segundo (muito mais responsivo para detectar penalidades)
+    const interval = setInterval(fetchPenalties, 1000)
     return () => clearInterval(interval)
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return (

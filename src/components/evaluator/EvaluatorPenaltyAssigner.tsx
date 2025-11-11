@@ -75,6 +75,7 @@ export default function EvaluatorPenaltyAssigner() {
         .from('teams')
         .select('id, name, course')
         .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
+        .not('course', 'in', '("Administration","Avaliação")')
         .order('name')
 
       if (data) {

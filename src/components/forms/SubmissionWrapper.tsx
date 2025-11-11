@@ -42,13 +42,6 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   // As quests recebidas já vêm filtradas pela fase atual na página.
   // Apenas garanta a ordem por order_index aqui.
   const sortedQuests = [...quests].sort((a, b) => a.order_index - b.order_index)
-  // Debug: visão geral das quests recebidas
-  try {
-    console.log('🔎 [SubmissionWrapper] Quests recebidas (fase atual):', sortedQuests.map(q => ({
-      id: q.id, name: q.name, order: q.order_index, started_at: q.started_at,
-      planned: q.planned_deadline_minutes, late: q.late_submission_window_minutes
-    })))
-  } catch {}
 
   // Usar "agora" em UTC (como no SubmissionDeadlineStatus) para evitar desvios de fuso
   const nowUtc = new Date(new Date().toISOString())
@@ -130,11 +123,14 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
     notSubmittedIndexes.every(idx => isFullyExpired(sortedQuests[idx]))
 
   try {
-    console.log('🔎 [SubmissionWrapper] Não-submetidas:', notSubmittedIndexes.map(i => ({ idx: i, name: sortedQuests[i]?.name })))
+    const notSubmittedIndexes = sortedQuests
+      .map((q, i) => !submittedQuestIds.includes(q.id) ? i : -1)
+      .filter(i => i !== -1);
+
     if (currentIndex >= 0) {
-      console.log('✅ [SubmissionWrapper] Quest atual selecionada:', { idx: currentIndex, name: sortedQuests[currentIndex]?.name })
+      // Quest selected
     } else {
-      console.log('⚠️ [SubmissionWrapper] Nenhuma quest selecionada (lista vazia?)')
+      // No quest selected
     }
   } catch {}
 

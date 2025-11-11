@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { useAudioFiles } from '@/lib/hooks/useAudioFiles'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface Mentor {
   id: string
@@ -29,7 +29,7 @@ export default function MentorRequestButton({ currentPhase, teamCoins }: MentorR
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const supabase = createClient()
-  const { play } = useAudioFiles()
+  const { play } = useSoundSystem()
 
   // Buscar mentores online e calcular custo ao abrir modal
   useEffect(() => {
@@ -111,7 +111,8 @@ export default function MentorRequestButton({ currentPhase, teamCoins }: MentorR
 
       // Sucesso!
       setSuccess(data.message || 'Solicitação enviada com sucesso!')
-      play('power-up') // Som de sucesso
+      console.log('🎵 [MentorRequestButton] Mentoria comprada com sucesso, tocando som')
+      play('mentor-purchase') // Som de mentoria comprada
       
       // Limpar formulário
       setSelectedMentor(null)

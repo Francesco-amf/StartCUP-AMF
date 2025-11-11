@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 export type AudioFileType =
   | 'success'
@@ -16,13 +16,26 @@ export type AudioFileType =
   | 'phase-end'
   | 'phase-start'
   | 'points-update'
+  | 'event-start'
+  | 'quest-start'
+  | 'quest-complete'
+  | 'submission'
+  | 'evaluated'
+  | 'penalty'
+  | 'ranking-up'
+  | 'ranking-down'
+  | 'coins'
+  | 'evaluator-online'
+  | 'evaluator-offline'
+  | 'boss-spawn'
+  | 'audio-enabled'
 
 interface SoundConfig {
   volume: number
   enabled: boolean
 }
 
-// Mapeamento de sons para arquivos MP3
+// Mapeamento de sons para arquivos MP3/WAV
 // Coloque seus arquivos em /public/sounds/
 const AUDIO_FILES: Record<AudioFileType, string> = {
   'success': '/sounds/success.mp3',
@@ -35,9 +48,22 @@ const AUDIO_FILES: Record<AudioFileType, string> = {
   'level-up': '/sounds/level-up.mp3',
   'click': '/sounds/click.mp3',
   'buzz': '/sounds/buzz.mp3',
-  'phase-end': '/sounds/victory.mp3',
-  'phase-start': '/sounds/notification.mp3',
-  'points-update': '/sounds/click.mp3',
+  'phase-end': '/sounds/phase-end.mp3',
+  'phase-start': '/sounds/phase-start.mp3',
+  'points-update': '/sounds/points-update.mp3',
+  'event-start': '/sounds/event-start.mp3',
+  'quest-start': '/sounds/quest-start.mp3',
+  'quest-complete': '/sounds/quest-complete.mp3',
+  'submission': '/sounds/submission.mp3',
+  'evaluated': '/sounds/evaluated.mp3',
+  'penalty': '/sounds/penalty.mp3',
+  'ranking-up': '/sounds/ranking-up.mp3',
+  'ranking-down': '/sounds/ranking-down.wav',
+  'coins': '/sounds/coins.wav',
+  'evaluator-online': '/sounds/evaluator-online.wav',
+  'evaluator-offline': '/sounds/evaluator-offline.wav',
+  'boss-spawn': '/sounds/boss-spawn.wav',
+  'audio-enabled': '/sounds/event-start.mp3',
 }
 
 // Cache de áudios para evitar recarregar
@@ -55,6 +81,19 @@ const audioCache: Record<AudioFileType, HTMLAudioElement | null> = {
   'phase-end': null,
   'phase-start': null,
   'points-update': null,
+  'event-start': null,
+  'quest-start': null,
+  'quest-complete': null,
+  'submission': null,
+  'evaluated': null,
+  'penalty': null,
+  'ranking-up': null,
+  'ranking-down': null,
+  'coins': null,
+  'evaluator-online': null,
+  'evaluator-offline': null,
+  'boss-spawn': null,
+  'audio-enabled': null,
 }
 
 export function useAudioFiles() {
@@ -64,6 +103,9 @@ export function useAudioFiles() {
   })
 
   const [isClient, setIsClient] = useState(false)
+  const audioAuthorizedRef = useRef(false)
+  const audioQueueRef = useRef<{ type: AudioFileType; delay: number }[]>([])
+  const isPlayingRef = useRef(false)
 
   // Initialize on client side
   useEffect(() => {
@@ -78,6 +120,27 @@ export function useAudioFiles() {
         console.log('Could not load sound config:', error)
       }
     }
+
+    // ✅ AUTORIZAÇÃO SILENCIOSA: Apenas autoriza, sem tocar som
+    const authorizeAudioOnInteraction = () => {
+      if (!audioAuthorizedRef.current) {
+        audioAuthorizedRef.current = true
+        
+        // Criar um contexto de áudio silencioso para autorizar
+        const audio = new Audio()
+        audio.volume = 0.001
+        audio.play().then(() => {
+          audio.pause()
+        }).catch(() => {
+          // Silenciosamente ignora
+        })
+      }
+    }
+
+    // Registrar listeners para múltiplas formas de interação
+    document.addEventListener('click', authorizeAudioOnInteraction, { once: true })
+    document.addEventListener('touchstart', authorizeAudioOnInteraction, { once: true })
+    document.addEventListener('keydown', authorizeAudioOnInteraction, { once: true })
 
     return () => {
       // Cleanup: pausar todos os áudios ao desmontar
@@ -104,14 +167,23 @@ export function useAudioFiles() {
   }, [soundConfig, isClient])
 
   const play = (type: AudioFileType) => {
-    if (!isClient || !soundConfig.enabled) return
+    if (!isClient || !soundConfig.enabled) {
+      return
+    }
+
+    // ✅ FILA DE ÁUDIO: Se já está tocando, adiciona à fila
+    if (isPlayingRef.current) {
+      audioQueueRef.current.push({ type, delay: 800 })
+      return
+    }
 
     try {
       let audio = audioCache[type]
 
       // Se não existe em cache, criar novo
       if (!audio) {
-        audio = new Audio(AUDIO_FILES[type])
+        const filePath = AUDIO_FILES[type]
+        audio = new Audio(filePath)
         audio.volume = soundConfig.volume
         audioCache[type] = audio
       }
@@ -119,11 +191,27 @@ export function useAudioFiles() {
       // Resetar e tocar
       audio.currentTime = 0
       audio.volume = soundConfig.volume
-      audio.play().catch((error) => {
-        console.log(`Could not play audio ${type}:`, error)
-      })
+      isPlayingRef.current = true
+      
+      audio.play()
+        .then(() => {
+          // Aguardar o som terminar + 800ms de pausa
+          setTimeout(() => {
+            isPlayingRef.current = false
+            // Tocar próximo som da fila
+            if (audioQueueRef.current.length > 0) {
+              const next = audioQueueRef.current.shift()
+              if (next) {
+                play(next.type)
+              }
+            }
+          }, (audio.duration || 1) * 1000 + 800)
+        })
+        .catch(() => {
+          isPlayingRef.current = false
+        })
     } catch (error) {
-      console.log(`Could not play audio ${type}:`, error)
+      isPlayingRef.current = false
     }
   }
 

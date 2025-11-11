@@ -1,0 +1,14 @@
+
+> startcup-amf@0.1.0 dev
+> set NODE_NO_WARNINGS=1 && next dev --webpack
+
+ ⚠ Port 3000 is in use by process 42840, using available port 3001 instead.
+   ▲ Next.js 16.0.1 (webpack)
+   - Local:        http://localhost:3001
+   - Network:      http://10.5.0.2:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ⨯ Unable to acquire lock at C:\Users\symbi\Desktop\startcup-amf\startcup-amf\.next\dev\lock, is another instance of next dev running?
+   Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
+[?25h

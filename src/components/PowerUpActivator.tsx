@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useAudioFiles } from '@/lib/hooks/useAudioFiles'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { usePowerUpStatus } from '@/lib/hooks/usePowerUpStatus'
 
 interface PowerUpOption {
@@ -51,7 +51,7 @@ export default function PowerUpActivator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const { play } = useAudioFiles()
+  const { play } = useSoundSystem()
 
   // Use o novo hook que gerencia corretamente o estado dos power-ups por fase
   const { canUse, usedPowerUp, currentPhase } = usePowerUpStatus()
@@ -95,6 +95,7 @@ export default function PowerUpActivator() {
         setSuccess(true)
 
         // Tocar som de power-up ativado
+        console.log('⚡ [PowerUpActivator] Power-up ativado, tocando som')
         play('power-up')
 
         // Limpar mensagem de sucesso após 3 segundos

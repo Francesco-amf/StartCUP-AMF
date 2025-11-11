@@ -280,6 +280,7 @@ export default function CurrentQuestTimer({
   const { play } = useSoundSystem()
   const previousQuestIdRef = useRef<string | null>(null)
   const [isPageVisible, setIsPageVisible] = useState(true)
+  const lastQuestUpdateRef = useRef<number>(0) // Track last update time for cache busting
 
   // 📡 Detectar quando página está visível (para polling adaptativo)
   useEffect(() => {
@@ -292,6 +293,32 @@ export default function CurrentQuestTimer({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
+  // 🔔 Listen for quest updates from PhaseController (via advance-quest endpoint)
+  // When PhaseController calls advance-quest successfully, we force refresh quests immediately
+  // We need fetchQuests in dependencies, but it's defined in the next useEffect
+  // So we'll create a ref to track it
+  const fetchQuestsRef = useRef<(() => Promise<void>) | null>(null)
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('quest-updates')
+
+    const handleMessage = (event: MessageEvent) => {
+      console.log(`📢 [BroadcastChannel] Received message:`, event.data)
+      if (event.data?.type === 'questAdvanced') {
+        console.log(`🔄 [QuestTimer] Forçando atualização imediata de quests após advance...`)
+        if (fetchQuestsRef.current) {
+          fetchQuestsRef.current()
+        }
+      }
+    }
+
+    channel.addEventListener('message', handleMessage)
+    return () => {
+      channel.removeEventListener('message', handleMessage)
+      channel.close()
+    }
+  }, [])
+
   // ✅ Carregar quests da fase atual E FAZER POLLING ADAPTATIVO
   // Necessário porque apenas o phase número não muda quando quests são atualizadas
   // Agora usa polling de 500ms quando ativa e 5s quando inativa
@@ -301,6 +328,9 @@ export default function CurrentQuestTimer({
     const fetchQuests = async () => {
       if (isFetching) return
       isFetching = true
+
+      // Store reference so BroadcastChannel listener can trigger immediate refresh
+      fetchQuestsRef.current = fetchQuests
 
       try {
         // Usar phase prop (vem de useRealtimePhase que já faz polling 2s)

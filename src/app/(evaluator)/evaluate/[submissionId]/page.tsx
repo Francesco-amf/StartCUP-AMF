@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Header from '@/components/Header'
+import EvaluationForm from '@/components/EvaluationForm'
 
 export default async function EvaluateSubmissionPage({
   params,
@@ -228,126 +229,40 @@ export default async function EvaluateSubmissionPage({
                   <p className="text-sm text-[#FF9800] mb-4">
                     Você pode revisar e atualizar sua avaliação abaixo:
                   </p>
-                  <form action="/api/evaluate" method="POST" className="space-y-4">
-                    <input type="hidden" name="submission_id" value={submissionId} />
-                    <input type="hidden" name="evaluator_id" value={evaluator?.id} />
-                    <input type="hidden" name="is_update" value="true" />
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                      AMF Coins Base (0 - {submission.quest?.max_points})
-                    </label>
-                    <input
-                      type="number"
-                      name="base_points"
-                      min="0"
-                      max={submission.quest?.max_points}
-                      defaultValue={existingEvaluation.base_points || 0}
-                      required
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                      Multiplicador (1.0x - 2.0x)
-                    </label>
-                    <input
-                      type="number"
-                      name="multiplier"
-                      min="1"
-                      max="2"
-                      step="0.1"
-                      defaultValue={existingEvaluation.multiplier || 1.0}
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                    />
-                    <p className="text-xs text-[#FF9800]/70 mt-1">
-                      Qualidade da entrega (1.0 = regular, 2.0 = excelente)
-                    </p>
-                  </div>                    <div>
-                      <label className="block text-sm font-medium mb-2 text-[#FF9800]">
-                        Comentários (opcional)
-                      </label>
-                      <textarea
-                        name="comments"
-                        rows={4}
-                        defaultValue={existingEvaluation.comments || ''}
-                        placeholder="Feedback para a equipe..."
-                        className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#FF9800]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#FF9800] focus:outline-none"
-                      />
-                    </div>
-
-                    <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#FF8800] text-[#0A1E47] font-semibold">
-                      Atualizar Avaliação
-                    </Button>
-                  </form>
+                  <EvaluationForm
+                    submissionId={submissionId}
+                    evaluatorId={evaluator?.id || ''}
+                    maxPoints={submission.quest?.max_points || 0}
+                    isUpdate={true}
+                    defaultValues={{
+                      base_points: existingEvaluation.base_points,
+                      multiplier: existingEvaluation.multiplier,
+                      comments: existingEvaluation.comments
+                    }}
+                    buttonText="Atualizar Avaliação"
+                    title="🔄 Reavaliar"
+                    color="orange"
+                  />
                 </Card>
               </div>
             ) : (
               <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
                 <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">⭐ Avaliar</h2>
-                <form action="/api/evaluate" method="POST" className="space-y-4">
-                  <input type="hidden" name="submission_id" value={submissionId} />
-                  <input type="hidden" name="evaluator_id" value={evaluator?.id} />
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
-                      AMF Coins Base (0 - {submission.quest?.max_points})
-                    </label>
-                    <input
-                      type="number"
-                      name="base_points"
-                      min="0"
-                      max={submission.quest?.max_points}
-                      defaultValue="0"
-                      required
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
-                    />
-                    <p className="text-xs text-[#00E5FF]/70 mt-1">
-                      AMF Coins base de acordo com o cumprimento da quest
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
-                      Multiplicador (1.0x - 2.0x)
-                    </label>
-                    <input
-                      type="number"
-                      name="multiplier"
-                      min="1"
-                      max="2"
-                      step="0.1"
-                      defaultValue="1.0"
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
-                    />
-                    <p className="text-xs text-[#00E5FF]/70 mt-1">
-                      Qualidade da entrega (1.0 = regular, 2.0 = excelente)
-                    </p>
-                  </div>
-
+                <div className="space-y-4">
                   <div className="p-3 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg">
                     <p className="text-sm font-medium text-[#00E5FF]">
                       💡 Fórmula: AMF Coins Base × Multiplicador
                     </p>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-[#00E5FF]">
-                      Comentários (opcional)
-                    </label>
-                    <textarea
-                      name="comments"
-                      rows={4}
-                      placeholder="Feedback para a equipe..."
-                      className="w-full px-4 py-2 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg text-white placeholder:text-white/40 focus:ring-2 focus:ring-[#00E5FF] focus:outline-none"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-semibold">
-                    Enviar Avaliação
-                  </Button>
-                </form>
+                  <EvaluationForm
+                    submissionId={submissionId}
+                    evaluatorId={evaluator?.id || ''}
+                    maxPoints={submission.quest?.max_points || 0}
+                    buttonText="Enviar Avaliação"
+                    title="⭐ Avaliar"
+                    color="cyan"
+                  />
+                </div>
               </Card>
             )}
           </div>

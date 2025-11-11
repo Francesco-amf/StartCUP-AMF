@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
+import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface Quest {
   id: string
@@ -56,6 +57,16 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       deliverable_type: 'file',
       status: 'scheduled',
       duration_minutes: 30
+    },
+    {
+      id: 'f-1-4',
+      order_index: 4,
+      name: '🏆 BOSS FASE 1',
+      description: 'Pitch 2min: "Para quem você está resolvendo e por quê?"',
+      max_points: 100,
+      deliverable_type: 'presentation',
+      status: 'scheduled',
+      duration_minutes: 10
     }
   ],
   2: [
@@ -88,6 +99,16 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       deliverable_type: 'url',
       status: 'scheduled',
       duration_minutes: 120
+    },
+    {
+      id: 'f-2-4',
+      order_index: 4,
+      name: '🏆 BOSS FASE 2',
+      description: 'Demo 2min: Protótipo em funcionamento',
+      max_points: 100,
+      deliverable_type: 'presentation',
+      status: 'scheduled',
+      duration_minutes: 10
     }
   ],
   3: [
@@ -120,6 +141,16 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       deliverable_type: 'file',
       status: 'scheduled',
       duration_minutes: 70
+    },
+    {
+      id: 'f-3-4',
+      order_index: 4,
+      name: '🏆 BOSS FASE 3',
+      description: 'Defender modelo de negócio em 3min',
+      max_points: 100,
+      deliverable_type: 'presentation',
+      status: 'scheduled',
+      duration_minutes: 10
     }
   ],
   4: [
@@ -152,6 +183,16 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       deliverable_type: 'file',
       status: 'scheduled',
       duration_minutes: 30
+    },
+    {
+      id: 'f-4-4',
+      order_index: 4,
+      name: '🏆 BOSS FASE 4',
+      description: 'Simulação de pitch com jurado surpresa',
+      max_points: 100,
+      deliverable_type: 'presentation',
+      status: 'scheduled',
+      duration_minutes: 10
     }
   ],
   5: [
@@ -228,14 +269,39 @@ export default function CurrentQuestTimer({
     percentage: 100
   })
 
+
+
+  // 🔄 Estado para tempo da QUEST (atualizado a cada segundo)
+  const [questTimeRemaining, setQuestTimeRemaining] = useState<number>(0)
+
   const [quests, setQuests] = useState<Quest[]>([])
   const [loadingQuests, setLoadingQuests] = useState(true)
   const supabase = createClient()
+  const { play } = useSoundSystem()
+  const previousQuestIdRef = useRef<string | null>(null)
+  const [isPageVisible, setIsPageVisible] = useState(true)
 
-  // ✅ Carregar quests da fase atual (SEM polling independente)
-  // Os dados vêm do prop phase que é atualizado por useRealtimePhase (polling 2s)
+  // 📡 Detectar quando página está visível (para polling adaptativo)
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden)
+      console.log(`👁️ Page visibility changed: ${!document.hidden ? 'VISIBLE' : 'HIDDEN'}`)
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // ✅ Carregar quests da fase atual E FAZER POLLING ADAPTATIVO
+  // Necessário porque apenas o phase número não muda quando quests são atualizadas
+  // Agora usa polling de 500ms quando ativa e 5s quando inativa
+  useEffect(() => {
+    let isFetching = false
+
     const fetchQuests = async () => {
+      if (isFetching) return
+      isFetching = true
+
       try {
         // Usar phase prop (vem de useRealtimePhase que já faz polling 2s)
         const { data: phaseData, error: phaseError } = await supabase
@@ -245,15 +311,22 @@ export default function CurrentQuestTimer({
           .single()
 
         if (phaseError || !phaseData) {
-          console.error('Erro ao buscar fase:', phaseError)
+          console.error('❌ [FetchQuests] Erro ao buscar fase:', {
+            phase,
+            error: phaseError?.message,
+            code: phaseError?.code
+          })
           setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
           setLoadingQuests(false)
+          isFetching = false
           return
         }
 
         console.log(`🔍 Buscando quests para Fase ${phase} (phase_id: ${phaseData.id})`)
 
         // Buscar quests dessa fase
+        // IMPORTANTE: Adicionar timestamp para forçar revalidação de cache (evita dados stale)
+        const cacheBypassParam = `_t=${Date.now()}`
         const { data, error } = await supabase
           .from('quests')
           .select(`
@@ -273,28 +346,30 @@ export default function CurrentQuestTimer({
           .order('order_index')
 
         if (error) {
-          console.error(`❌ Erro ao buscar quests para Fase ${phase}:`, error)
+          console.error(`❌ [FetchQuests] Erro ao buscar quests para Fase ${phase}:`, {
+            error: error.message,
+            code: error.code,
+            hint: error.hint
+          })
+          // Use fallback if query fails
+          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+          setLoadingQuests(false)
+          isFetching = false
+          return
         }
 
-        console.log(`📊 Resultado da query - Total de quests: ${data?.length || 0}`, data)
+        console.log(`📊 [FetchQuests] Resultado da query - Total de quests: ${data?.length || 0}`)
+        console.log(`📊 [FetchQuests] Raw query data:`, JSON.stringify(data, null, 2))
 
-        // Fallback data para comparação
-        const expectedFallbackQuestCount = PHASES_QUESTS_FALLBACK[phase]?.length || 0
-        const hasInsufficientQuests = data && data.length < expectedFallbackQuestCount
-
-        if (!error && data && data.length > 0 && !hasInsufficientQuests) {
+        if (data && data.length > 0) {
           // Ordenar por order_index para garantir ordem correta
           const sortedData = [...data].sort((a: any, b: any) => a.order_index - b.order_index)
 
-          console.log(`✅ Quests carregadas do DB para Fase ${phase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'})`))
+          console.log(`✅ Quests carregadas do DB para Fase ${phase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'}, status: ${q.status})`))
           setQuests(sortedData)
         } else {
-          // Usar fallback se não houver quests no banco para essa fase OU se houver menos quests do que esperado
-          if (hasInsufficientQuests) {
-            console.log(`⚠️ Fase ${phase} tem apenas ${data?.length} quests na DB (esperado ${expectedFallbackQuestCount}), usando fallback`)
-          } else {
-            console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
-          }
+          // Usar fallback APENAS se não houver quests no banco ou erro na query
+          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
           const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
           console.log(`📋 Fallback quests para Fase ${phase}:`, fallbackQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
           setQuests(fallbackQuests)
@@ -306,13 +381,99 @@ export default function CurrentQuestTimer({
         setQuests(fallbackQuests)
       } finally {
         setLoadingQuests(false)
+        isFetching = false
       }
     }
 
-    // ✅ Buscar quests apenas quando phase prop mudar (atualizado por useRealtimePhase)
+    // ✅ Buscar quests imediatamente quando phase mudar
     setLoadingQuests(true)
     fetchQuests()
-  }, [phase, supabase]) // Reagir quando phase mudar (vem de useRealtimePhase)
+
+    // 🔄 ADAPTATIVO: Polling de 500ms quando página ativa, 5s quando inativa
+    // Garante detecção rápida (500ms vs 2s antes) mas economiza recursos quando aba fechada
+    const pollInterval = setInterval(
+      fetchQuests,
+      isPageVisible ? 500 : 5000  // 500ms ativo, 5s inativo
+    )
+
+    console.log(`🔄 [CurrentQuestTimer] Polling iniciado: ${isPageVisible ? '500ms (ATIVO)' : '5s (INATIVO)'}`)
+
+    return () => clearInterval(pollInterval)
+  }, [phase, supabase, isPageVisible]) // Adicionar isPageVisible para reagir a visibility changes
+
+  // 🔊 Detectar mudanças de quest e tocar sons apropriados
+  useEffect(() => {
+    if (quests.length === 0) return
+
+    // Encontrar quest atual (com started_at mais recente)
+    const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+    if (activeQuests.length === 0) return
+
+    const sortedByStart = [...activeQuests].sort((a, b) => {
+      const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+      const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+      return timeB - timeA
+    })
+
+    const currentQuest = sortedByStart[0]
+    const currentQuestId = currentQuest?.id
+
+    // Se a quest mudou OU é a primeira ativação (previousQuestIdRef é null E quest começou há pouco tempo)
+    const isQuestChange = previousQuestIdRef.current !== null && previousQuestIdRef.current !== currentQuestId
+
+    // Verificar se é primeira ativação (previousQuestIdRef nulo) E quest começou há menos de 5 segundos
+    // Se começou há mais de 5s, é provavelmente um reload da página, não tocar som
+    let isFirstActivation = false
+    if (previousQuestIdRef.current === null && currentQuestId !== undefined && currentQuest.started_at) {
+      const questStartTime = new Date(currentQuest.started_at + 'Z')
+      const now = new Date()
+      const secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
+      isFirstActivation = secondsElapsed < 5 // Apenas se começou há menos de 5 segundos
+
+      if (!isFirstActivation) {
+        console.log(`🔇 [CurrentQuestTimer] Quest ${currentQuest.order_index} já está tocando há ${Math.round(secondsElapsed)}s (reload detectado, som não tocará)`)
+      }
+    }
+
+    if (isQuestChange || isFirstActivation) {
+      if (isQuestChange) {
+        console.log(`🔊 [CurrentQuestTimer] Quest mudou! De: ${previousQuestIdRef.current} → Para: ${currentQuestId}`)
+      } else {
+        console.log(`🔊 [CurrentQuestTimer] Primeira quest ativada! ${currentQuestId}`)
+      }
+
+      // Detectar som apropriado para a quest
+      const isFirstQuestOfPhase1 = phase === 1 && currentQuest.order_index === 1
+      const isBoss = currentQuest.order_index === 4 ||
+                     currentQuest.deliverable_type === 'presentation' ||
+                     (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+
+      if (isFirstQuestOfPhase1) {
+        // Som especial para o começo do evento
+        console.log(`🎬 INÍCIO DO EVENTO! Fase 1, Quest 1 ativada!`)
+        console.log('🔊 Tocando som: event-start')
+        play('event-start')
+      } else if (isBoss) {
+        // Som especial para BOSS
+        console.log(`🔥 BOSS DETECTADO! Ordem: ${currentQuest.order_index}, Tipo: ${currentQuest.deliverable_type}`)
+        console.log('🔊 Tocando som: boss-spawn (2x para efeito épico!)')
+        // Reproduzir boss-spawn 2 vezes com pequeno delay entre elas
+        play('boss-spawn')
+        setTimeout(() => {
+          play('boss-spawn')
+        }, 2500) // 2.5 segundos após a primeira, quando a primeira terminar
+      } else {
+        // Som padrão para quest normal
+        console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)
+        play('quest-start')
+      }
+    }
+
+    // Atualizar referência
+    if (currentQuestId) {
+      previousQuestIdRef.current = currentQuestId
+    }
+  }, [quests, play])
 
   const questCount = quests.length
 
@@ -410,15 +571,100 @@ export default function CurrentQuestTimer({
     return () => clearInterval(interval)
   }, [phaseStartedAt, phaseDurationMinutes, phase])
 
-  const formatNumber = (num: number) => String(num).padStart(2, '0')
+
+
+  // 🔄 useEffect para calcular tempo da quest a cada segundo
+  useEffect(() => {
+    const calculateQuestTime = () => {
+      if (quests.length === 0) {
+        setQuestTimeRemaining(0)
+        return
+      }
+
+      // Encontrar quest atual (com started_at mais recente)
+      const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+      if (activeQuests.length === 0) {
+        setQuestTimeRemaining(0)
+        return
+      }
+
+      const sortedByStart = [...activeQuests].sort((a, b) => {
+        const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+        const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+        return timeB - timeA
+      })
+
+      const currentQuest = sortedByStart[0]
+      if (!currentQuest.started_at) {
+        setQuestTimeRemaining(0)
+        return
+      }
+
+      // Limpar timestamp
+      let cleanTimestamp = currentQuest.started_at
+      if (cleanTimestamp.includes('+00:00')) {
+        cleanTimestamp = cleanTimestamp.replace('+00:00', 'Z')
+      } else if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
+        cleanTimestamp = `${cleanTimestamp}Z`
+      }
+
+      const questStartTime = new Date(cleanTimestamp).getTime()
+
+      // 🔧 CORRIGIDO: Usar planned_deadline_minutes com fallback melhorado
+      // Prioridade: planned_deadline_minutes > duration_minutes > 60 (fallback padrão)
+      const questDuration = currentQuest.planned_deadline_minutes ?? currentQuest.duration_minutes ?? 60
+      const questDurationMs = questDuration * 60 * 1000
+
+      const elapsed = Date.now() - questStartTime
+      let timeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
+
+      // ⚠️ DEBUG: Se tempo zerou, logar com detalhes
+      if (timeRemaining === 0 && questDurationMs > 0) {
+        console.warn(`⚠️ [QuestTimer] Quest "${currentQuest.name}" time is zero!`)
+        console.warn(`  - Started at (raw): ${currentQuest.started_at}`)
+        console.warn(`  - cleanTimestamp: ${cleanTimestamp}`)
+        console.warn(`  - questStartTime: ${questStartTime} (${new Date(questStartTime).toISOString()})`)
+        console.warn(`  - Duration: ${questDuration}min = ${questDurationMs}ms`)
+        console.warn(`  - Elapsed: ${elapsed}ms`)
+        console.warn(`  - Now: ${Date.now()} (${new Date(Date.now()).toISOString()})`)
+        console.warn(`  - Deadline (start + duration): ${new Date(questStartTime + questDurationMs).toISOString()}`)
+        console.warn(`  - Time in future? ${questStartTime > Date.now() ? 'YES - FUTURE TIMESTAMP!' : 'No'}`);
+
+        // Se passou mais tempo que o esperado, é porque a quest expirou
+        // Aceitar isso e manter em 0
+        if (elapsed > questDurationMs) {
+          console.log(`✅ Quest expirada (tempo decorrido: ${Math.round(elapsed / 1000)}s)`);
+        }
+      }
+
+      console.log(`⏱️ [QuestTimer] Quest "${currentQuest.name}" duration: ${questDuration}min (planned=${currentQuest.planned_deadline_minutes}, duration=${currentQuest.duration_minutes}, remaining=${Math.round(timeRemaining)}s)`)
+
+      setQuestTimeRemaining(timeRemaining)
+    }
+
+    calculateQuestTime()
+    const interval = setInterval(calculateQuestTime, 1000)
+    return () => clearInterval(interval)
+  }, [quests])
+
+
+    const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // 🎯 CORRIGIDO: Detectar quest atual baseado em started_at do DB
   // Encontrar a última quest que foi iniciada (started_at IS NOT NULL)
   const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
-  
+
+  console.log(`📋 [ActiveQuestFilter] Total quests: ${quests.length}, Active quests: ${activeQuests.length}`)
+  console.log(`📋 [ActiveQuestFilter] Todos os quests com seus started_at:`, quests.map(q => ({
+    id: q.id,
+    order: q.order_index,
+    name: q.name,
+    started_at: q.started_at,
+    status: q.status
+  })))
+
   let currentQuestIndex = 0
   let currentQuest = quests[0]
-  let questTimeRemaining = 0
 
   if (activeQuests.length > 0) {
     // Ordenar por started_at (mais recente = última iniciada)
@@ -433,57 +679,23 @@ export default function CurrentQuestTimer({
     currentQuestIndex = quests.findIndex(q => q.id === latestQuest.id)
     currentQuest = latestQuest
 
-    console.log(`[LiveDashboard] 🔍 Detalhes da quest atual:`, {
+    console.log(`[LiveDashboard] ✅ Quest atual encontrada:`, {
       name: latestQuest.name,
       started_at: latestQuest.started_at,
       planned_deadline_minutes: latestQuest.planned_deadline_minutes,
       duration_minutes: latestQuest.duration_minutes,
       late_submission_window_minutes: latestQuest.late_submission_window_minutes
     })
-
-    // Calcular tempo restante dessa quest
-    if (latestQuest.started_at) {
-      // 🚨 FIX: Supabase retorna timestamps com microssegundos e +00:00
-      // Exemplo: '2025-11-04T01:44:00.027019+00:00'
-      // JavaScript Date precisa de 'Z' ou formato ISO limpo
-      let cleanTimestamp = latestQuest.started_at
-      
-      // Substituir +00:00 por Z
-      if (cleanTimestamp.includes('+00:00')) {
-        cleanTimestamp = cleanTimestamp.replace('+00:00', 'Z')
-      }
-      // Se não tem Z nem +, adicionar Z
-      else if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
-        cleanTimestamp = `${cleanTimestamp}Z`
-      }
-      
-      const questStartTime = new Date(cleanTimestamp).getTime()
-      
-      // 🎯 Live Dashboard mostra apenas prazo REGULAR (sem late_submission_window)
-      // A janela de atraso só aparece na página de submit das equipes
-      const questDurationMs = (latestQuest.planned_deadline_minutes || latestQuest.duration_minutes || 60) * 60 * 1000
-      
-      console.log(`[LiveDashboard] 🧮 Cálculo do timer:`, {
-        originalTimestamp: latestQuest.started_at,
-        cleanTimestamp,
-        questStartTime,
-        questDurationMs,
-        planned_deadline_minutes: latestQuest.planned_deadline_minutes,
-        now: Date.now(),
-        elapsed: Date.now() - questStartTime
-      })
-      
-      const elapsed = Date.now() - questStartTime
-      questTimeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
-
-      console.log(`[LiveDashboard] Quest atual: ${currentQuest.name} | Tempo restante: ${Math.floor(questTimeRemaining / 60)}min`)
-    }
   } else {
-    // Nenhuma quest iniciada ainda - mostrar primeira quest mas com timer zerado
-    currentQuest = quests[0] || null
-    currentQuestIndex = 0
-    questTimeRemaining = 0
     console.log('[LiveDashboard] ⚠️ Nenhuma quest iniciada. Mostrando primeira quest.')
+    console.log('[LiveDashboard] 🔍 Quest details do fallback:', {
+      questId: quests[0]?.id,
+      questName: quests[0]?.name,
+      questStatus: quests[0]?.status,
+      questStartedAt: quests[0]?.started_at,
+      questOrder: quests[0]?.order_index,
+      reason: quests.length === 0 ? 'Nenhuma quest no array' : 'Nenhuma quest com started_at'
+    })
   }
 
   // Garantir que currentQuestIndex nunca ultrapassa quests.length - 1
@@ -492,7 +704,6 @@ export default function CurrentQuestTimer({
   // 🚨 PROTEÇÃO: Se a quest atual não tem started_at, NÃO mostrar timer
   const questHasStarted = currentQuest && currentQuest.started_at !== null && currentQuest.started_at !== undefined
   if (!questHasStarted) {
-    questTimeRemaining = 0
     console.warn(`[LiveDashboard] ⚠️ Quest ${currentQuest?.name} não tem started_at! Timer zerado.`)
   }
 

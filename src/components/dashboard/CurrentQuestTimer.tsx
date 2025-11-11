@@ -204,7 +204,9 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       max_points: 75,
       deliverable_type: 'file',
       status: 'scheduled',
-      duration_minutes: 20
+      duration_minutes: 20,
+      planned_deadline_minutes: 20,
+      late_submission_window_minutes: 15
     },
     {
       id: 'f-5-2',
@@ -214,7 +216,9 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       max_points: 50,
       deliverable_type: 'url',
       status: 'scheduled',
-      duration_minutes: 40
+      duration_minutes: 40,
+      planned_deadline_minutes: 40,
+      late_submission_window_minutes: 15
     },
     {
       id: 'f-5-3',
@@ -224,7 +228,9 @@ const PHASES_QUESTS_FALLBACK_RAW: Record<number, Partial<Quest>[]> = {
       max_points: 25,
       deliverable_type: 'file',
       status: 'scheduled',
-      duration_minutes: 30
+      duration_minutes: 30,
+      planned_deadline_minutes: 30,
+      late_submission_window_minutes: 15
     }
   ]
 }

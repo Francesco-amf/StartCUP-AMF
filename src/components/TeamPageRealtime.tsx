@@ -69,17 +69,18 @@ export default function TeamPageRealtime({
 
         const data = await response.json()
 
-        // Se os dados mudaram, fazer refresh
+        // Se os dados mudaram, apenas logar (não fazer refresh!)
         if (data.snapshot !== lastCheckedRef.current) {
-          console.log(`✅ [TeamPageRealtime] Dados detectados como diferentes! Atualizando página...`)
+          console.log(`✅ [TeamPageRealtime] Dados mudaram (server-side)`)
           console.log(`   - Anterior: ${lastCheckedRef.current?.substring(0, 50)}...`)
           console.log(`   - Novo: ${data.snapshot?.substring(0, 50)}...`)
 
           lastCheckedRef.current = data.snapshot
 
-          // ✅ Usar router.refresh() APENAS quando há mudança
-          // Isso permite que server-component busque dados novos sem flashing
-          router.refresh()
+          // ✅ REMOVIDO: router.refresh() causava full page reload
+          // Agora: useRealtimeRanking (500ms polling) já atualiza live_ranking automaticamente
+          // Não é necessário fazer refresh de página inteira!
+          // Dados atualizados via polling já estão disponíveis
         }
       } catch (error) {
         console.error(`❌ [TeamPageRealtime] Erro ao checar atualizações:`, error)

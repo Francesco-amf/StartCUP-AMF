@@ -29,6 +29,12 @@ const evaluators = [
   { name: 'Pedro Hermes', email: 'pedro.hermes@startcup-amf.com' },
   { name: 'Augusto', email: 'augusto@startcup-amf.com' },
   { name: 'Gustavo Florêncio', email: 'gustavo.florencio@startcup-amf.com' },
+  // 5 novos avaliadores
+  { name: 'Camile Souza Costa', email: 'camile.souza@startcup-amf.com' },
+  { name: 'Isadora Stangherlin', email: 'isadora.stangherlin@startcup-amf.com' },
+  { name: 'Marcelo Diaz', email: 'marcelo.diaz@startcup-amf.com' },
+  { name: 'Bruna Pfuller', email: 'bruna.pfuller@startcup-amf.com' },
+  { name: 'Ana Balim', email: 'ana.balim@startcup-amf.com' },
 ];
 
 async function createEvaluatorRecords() {

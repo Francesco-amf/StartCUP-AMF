@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import SubmissionForm from '@/components/forms/SubmissionForm'
 import BossQuestCard from '@/components/quest/BossQuestCard'
 import SubmissionDeadlineStatus from '@/components/quest/SubmissionDeadlineStatus'
@@ -15,11 +16,13 @@ interface SubmissionWrapperProps {
 }
 
 export default function SubmissionWrapper({ quests, team, submissions, eventConfig }: SubmissionWrapperProps) {
-  const handleSuccess = () => {
-    // ✅ Dados vêm via polling em tempo real, sem necessidade de router.refresh()
+  const [completedQuestId, setCompletedQuestId] = useState<string | null>(null)
+
+  const handleSuccess = (questId: string) => {
+    // ✅ Marca a quest como completa para esconder TODOS os forms de envio
     // Polling (500ms) + BroadcastChannel detectam mudanças automaticamente
-    // Remover router.refresh() previne flashing ao submeter em abas simultâneas
-    console.log('✅ Submissão realizada - Polling detectará mudanças automaticamente')
+    console.log('✅ Submissão realizada para quest:', questId)
+    setCompletedQuestId(questId)
   }
 
   // ✅ REMOVIDO: Auto-refresh a cada 30 segundos
@@ -364,9 +367,10 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                         questName={quest.name}
                         maxPoints={quest.max_points}
                         onSuccess={handleSuccess}
+                        isQuestCompleted={completedQuestId === quest.id}
                       />
-                      {/* Separador entre formulários - só se não for o último */}
-                      {index < quest.deliverable_type.length - 1 && (
+                      {/* Separador entre formulários - só se não for o último e quest não foi completada */}
+                      {index < quest.deliverable_type.length - 1 && completedQuestId !== quest.id && (
                         <div className="my-6 flex items-center justify-center">
                           <div className="flex-1 border-t border-[#00E5FF]/20"></div>
                           <span className="px-4 text-sm font-bold text-[#00E5FF]/60">OU</span>
@@ -388,9 +392,10 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
                         questName={quest.name}
                         maxPoints={quest.max_points}
                         onSuccess={handleSuccess}
+                        isQuestCompleted={completedQuestId === quest.id}
                       />
-                      {/* Separador entre formulários - só se não for o último */}
-                      {index < quest.deliverable_type.length - 1 && (
+                      {/* Separador entre formulários - só se não for o último e quest não foi completada */}
+                      {index < quest.deliverable_type.length - 1 && completedQuestId !== quest.id && (
                         <div className="my-6 flex items-center justify-center">
                           <div className="flex-1 border-t border-[#00E5FF]/20"></div>
                           <span className="px-4 text-sm font-bold text-[#00E5FF]/60">OU</span>

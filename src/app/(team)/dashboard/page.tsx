@@ -15,6 +15,7 @@ import PowerUpActivator from '@/components/PowerUpActivator'
 import MentorRequestButton from '@/components/MentorRequestButton'
 import { Accordion } from '@/components/ui/Accordion'
 import AMFCoinsHistory from '@/components/team/AMFCoinsHistory'
+import TeamDashboardClient from '@/components/TeamDashboardClient'
 import crypto from 'crypto'
 
 // ✅ Server-rendered dynamically on every request
@@ -182,6 +183,13 @@ export default async function TeamDashboard() {
         subtitle={`${team?.name || 'Equipe'} - ${team?.course || 'Curso'}`}
         showLogout={true}
         logoUrl={team?.logo_url}
+      />
+
+      {/* ✅ Componente cliente para monitorar avaliações e tocar som */}
+      <TeamDashboardClient
+        teamId={team?.id || ''}
+        initialSubmissionsCount={submissions?.length || 0}
+        initialEvaluatedCount={submissions?.filter(s => s.status === 'evaluated').length || 0}
       />
 
       <div className="w-screen px-2 py-2">

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import EvaluatorPenaltyAssigner from '@/components/evaluator/EvaluatorPenaltyAssigner'
 import MentorRequestsList from '@/components/evaluator/MentorRequestsList'
+import EvaluatorDashboardClient from '@/components/EvaluatorDashboardClient'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -155,6 +156,9 @@ export default async function EvaluatorDashboard() {
         subtitle={evaluator?.specialty || 'Avaliador Geral'}
         showLogout={true}
       />
+
+      {/* ✅ Componente cliente para tocar som quando nova avaliação é detectada */}
+      <EvaluatorDashboardClient initialPendingCount={pendingForMe?.length || 0} />
 
       <div className="container mx-auto p-6">
         <div className="grid gap-6">

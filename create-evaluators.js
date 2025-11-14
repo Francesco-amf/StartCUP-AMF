@@ -1,7 +1,7 @@
 // ============================================================================
-// SCRIPT: Criar 15 Avaliadores/Mentores via Admin API
+// SCRIPT: Criar 20 Avaliadores/Mentores via Admin API
 // ============================================================================
-// Este script cria 15 avaliadores reais usando a API Admin do Supabase
+// Este script cria 20 avaliadores reais usando a API Admin do Supabase
 // Com credenciais geradas automaticamente
 //
 // COMO USAR:
@@ -33,6 +33,12 @@ const evaluators = [
   { name: 'Pedro Hermes', email: 'pedro.hermes@startcup-amf.com' },
   { name: 'Augusto', email: 'augusto@startcup-amf.com' },
   { name: 'Gustavo Florêncio', email: 'gustavo.florencio@startcup-amf.com' },
+  // 5 novos avaliadores adicionados
+  { name: 'Camile Souza Costa', email: 'camile.souza@startcup-amf.com' },
+  { name: 'Isadora Stangherlin', email: 'isadora.stangherlin@startcup-amf.com' },
+  { name: 'Marcelo Diaz', email: 'marcelo.diaz@startcup-amf.com' },
+  { name: 'Bruna Pfuller', email: 'bruna.pfuller@startcup-amf.com' },
+  { name: 'Ana Balim', email: 'ana.balim@startcup-amf.com' },
 ];
 
 // Remover acentos de um string
@@ -44,14 +50,14 @@ function removeAccents(text) {
 function generatePassword(name) {
   // Remover acentos do nome
   const nameWithoutAccents = removeAccents(name);
-  // Pega primeira letra do primeiro nome + primeira letra do segundo nome + @2024!
+  // Pega primeira letra do primeiro nome + primeira letra do segundo nome + @2025!
   const parts = nameWithoutAccents.split(' ');
   const initials = parts.map(p => p.charAt(0).toUpperCase()).join('');
-  return `${initials}Evaluator@2024!`;
+  return `${initials}Evaluator@2025!`;
 }
 
 async function createEvaluators() {
-  console.log('🚀 Iniciando criação de 15 avaliadores via Admin API...\n');
+  console.log('🚀 Iniciando criação de 20 avaliadores via Admin API...\n');
 
   let successCount = 0;
   let errorCount = 0;
@@ -106,7 +112,7 @@ async function createEvaluators() {
   console.log('='.repeat(70));
 
   // Mostrar credenciais para copiar
-  console.log('\n📋 CREDENCIAIS DOS 15 AVALIADORES:\n');
+  console.log('\n📋 CREDENCIAIS DOS 20 AVALIADORES:\n');
   console.log('| Nome | Email | Senha |');
   console.log('|------|-------|-------|');
 

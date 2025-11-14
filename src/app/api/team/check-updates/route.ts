@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     // Buscar submissions da equipe
     const { data: submissions } = await supabase
       .from('submissions')
-      .select('quest_id, status, final_points, created_at')
+      .select('quest_id, status, final_points, created_at, updated_at')
       .eq('team_id', team.id)
       .order('created_at', { ascending: false })
 
@@ -52,6 +52,18 @@ export async function GET(request: Request) {
       .select('id, status, started_at, order_index, phase_id')
       .order('phase_id, order_index')
 
+    // ✅ Encontrar a submissão com a avaliação MAIS RECENTE (criada ou editada)
+    // Isso detecta tanto NEW evaluations quanto UPDATE/edições de avaliações
+    let lastEvaluatedTime = null
+    if (submissions && submissions.length > 0) {
+      // Buscar submissões com status 'evaluated' e pegar a mais recente (por updated_at ou created_at)
+      const evaluatedSubmissions = submissions.filter(s => s.status === 'evaluated')
+      if (evaluatedSubmissions.length > 0) {
+        // Usar updated_at se existir (para detectar edições), senão usar created_at
+        lastEvaluatedTime = evaluatedSubmissions[0].updated_at || evaluatedSubmissions[0].created_at
+      }
+    }
+
     // Criar um snapshot dos dados que importam para atualização
     const relevantData = {
       currentPhase: eventConfig?.current_phase,
@@ -59,6 +71,8 @@ export async function GET(request: Request) {
       eventEnded: eventConfig?.event_ended,
       // Hash das submissions (para detectar novas submissões)
       submissionsCount: submissions?.length || 0,
+      evaluatedCount: submissions?.filter(s => s.status === 'evaluated').length || 0,
+      lastEvaluatedTime: lastEvaluatedTime,  // ✅ Novo: timestamp da ÚLTIMA avaliação/edição
       lastSubmissionTime: submissions?.[0]?.created_at,
       // Hash das quests (para detectar mudanças de status/timing)
       questsSnapshot: quests?.map(q => `${q.id}:${q.status}:${q.started_at}`).join('|'),
@@ -72,6 +86,8 @@ export async function GET(request: Request) {
       eventStarted: relevantData.eventStarted,
       eventEnded: relevantData.eventEnded,
       submissionsCount: relevantData.submissionsCount,
+      evaluatedCount: relevantData.evaluatedCount,
+      lastEvaluatedTime: relevantData.lastEvaluatedTime,  // ✅ Novo no hash
       lastSubmissionTime: relevantData.lastSubmissionTime,
       questsSnapshot: relevantData.questsSnapshot
     })

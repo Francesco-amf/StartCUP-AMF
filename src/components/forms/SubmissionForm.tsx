@@ -16,7 +16,8 @@ interface SubmissionFormProps {
   deliverableType: 'file' | 'text' | 'url'
   questName: string
   maxPoints: number
-  onSuccess?: () => void
+  onSuccess?: (questId: string) => void
+  isQuestCompleted?: boolean
 }
 
 export default function SubmissionForm({
@@ -26,6 +27,7 @@ export default function SubmissionForm({
   questName,
   maxPoints,
   onSuccess,
+  isQuestCompleted = false,
 }: SubmissionFormProps) {
   const router = useRouter()
   const [content, setContent] = useState('')
@@ -35,6 +37,7 @@ export default function SubmissionForm({
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [fileError, setFileError] = useState('')
+  const [isSubmissionComplete, setIsSubmissionComplete] = useState(false)
   const supabase = createClient()
   const { play } = useSoundSystem()
 
@@ -160,10 +163,13 @@ export default function SubmissionForm({
       // Tocar som de submissão
       play('submission')
 
-      onSuccess?.()
+      onSuccess?.(questId)
 
-      // Limpar mensagem de sucesso após 5 segundos
-      setTimeout(() => setSuccess(false), 5000)
+      // Aguarda som completar (1.5s) e marca como completo (esconde form)
+      setTimeout(() => {
+        console.log('🔄 [SubmissionForm] Entrega completa - escondendo formulário...')
+        setIsSubmissionComplete(true)
+      }, 1500)
 
     } catch (err) {
       console.error('Erro ao enviar entrega:', err)
@@ -199,6 +205,45 @@ export default function SubmissionForm({
       default:
         return ''
     }
+  }
+
+  // Se submissão foi completada ou a quest foi completa pelo wrapper, esconder o form
+  if (isSubmissionComplete || isQuestCompleted) {
+    // Se foi completa por isQuestCompleted (outro form da mesma quest completou)
+    // não renderizar nada (outro form já mostra a mensagem)
+    if (isQuestCompleted && !isSubmissionComplete) {
+      return null
+    }
+
+    // Se foi completa por isSubmissionComplete (este form completou)
+    // renderizar a mensagem de conclusão
+    return (
+      <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/30">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-4xl">✅</span>
+            <h2 className="text-2xl font-bold text-[#00FF88]">Quest Concluída!</h2>
+          </div>
+
+          <p className="text-[#00E5FF] text-lg">
+            Você completou <span className="font-bold text-white">"{questName}"</span> com sucesso.
+          </p>
+
+          <div className="bg-[#0A3A5A]/40 border border-[#00E5FF]/50 text-[#00E5FF] px-4 py-3 rounded-lg">
+            <p className="font-semibold mb-1">📋 Próximo passo:</p>
+            <p className="text-sm">Aguarde o prazo desta quest expirar para acessar a próxima entrega.</p>
+          </div>
+
+          <div className="bg-[#0A1E47]/40 border border-[#FFD700]/50 text-[#FFD700] px-4 py-3 rounded-lg">
+            <p className="text-sm">💡 <strong>Dica:</strong> Use esse tempo para revisar ou se preparar para o próximo desafio!</p>
+          </div>
+
+          <p className="text-[#00E5FF]/70 text-sm mt-4">
+            Você será redirecionado automaticamente quando a próxima quest estiver disponível.
+          </p>
+        </div>
+      </Card>
+    )
   }
 
   return (

@@ -177,6 +177,9 @@ export async function POST(request: Request) {
 
     console.log('📊 All evaluations:', allEvaluations)
 
+    // Variável para armazenar pontos finais
+    let finalPoints = calculated_points
+
     // Calcular AMF Coins médios
     if (allEvaluations && allEvaluations.length > 0) {
       const totalPoints = allEvaluations.reduce((sum: number, e: { points: number | null }) => sum + (e.points || 0), 0)
@@ -191,7 +194,7 @@ export async function POST(request: Request) {
       // ========================================
       // VERIFICAR SE É ATRASADA E SUBTRAIR PENALIDADE
       // ========================================
-      let finalPoints = avgPoints
+      finalPoints = avgPoints
 
       if (submission.is_late && submission.late_penalty_applied) {
         finalPoints = avgPoints - submission.late_penalty_applied
@@ -218,8 +221,15 @@ export async function POST(request: Request) {
       }
     }
 
-    // Redirecionar de volta para a página de avaliações
-    return NextResponse.redirect(new URL('/evaluate', request.url))
+    // ✅ REMOVIDO: Redirect causava page reload
+    // Agora: Retornar sucesso (200) e deixar polling atualizar dados
+    // Cliente (JS) usa useRealtimeRanking para atualização em tempo real
+    return NextResponse.json({
+      success: true,
+      message: 'Avaliação salva com sucesso',
+      submission_id,
+      final_points: finalPoints
+    })
   } catch (error) {
     console.error('Erro no servidor:', error)
     return NextResponse.json(

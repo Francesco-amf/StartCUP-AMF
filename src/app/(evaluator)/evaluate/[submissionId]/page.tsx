@@ -6,6 +6,9 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import EvaluationForm from '@/components/EvaluationForm'
 
+// ✅ IMPORTANTE: force-dynamic permite que router.refresh() revalide dados do servidor
+export const dynamic = 'force-dynamic'
+
 export default async function EvaluateSubmissionPage({
   params,
 }: {

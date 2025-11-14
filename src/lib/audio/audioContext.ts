@@ -165,6 +165,9 @@ export function isAudioAuthorizedByUser(): boolean {
 /**
  * Auto-setup de autorização de áudio na primeira interação do usuário
  * Isso contorna a Autoplay Policy do Chrome automaticamente
+ *
+ * NOVO: Também simula um clique virtual automático após 500ms do carregamento
+ * Isso evita a necessidade de clicar manualmente a cada refresh
  */
 export function setupAutoAudioAuthorization(): void {
   if (typeof window === 'undefined' || interactionListenersAdded) {
@@ -202,8 +205,42 @@ export function setupAutoAudioAuthorization(): void {
     window.removeEventListener('keydown', handleInteraction)
   }
 
-  // Adicionar listeners para qualquer interação
+  // Adicionar listeners para qualquer interação do usuário
   window.addEventListener('click', handleInteraction, { passive: true })
   window.addEventListener('touchstart', handleInteraction, { passive: true })
   window.addEventListener('keydown', handleInteraction, { passive: true })
+
+  // ✨ AUTO-CLICK VIRTUAL ✨
+  // Simula um clique automático após 500ms do carregamento
+  // Isso autoriza áudio sem precisar o usuário clicar manualmente
+  // Especialmente útil para live dashboards com refresh automático
+  setTimeout(() => {
+    if (!isAudioAuthorized) {
+      console.log('⚡ [AUTO-CLICK] Simulando clique virtual para autorizar áudio...')
+
+      // Simular um clique virtual (dispara evento de clique)
+      try {
+        const clickEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        })
+        document.dispatchEvent(clickEvent)
+
+        // Se o clique não funcionou, tentar com touchstart
+        setTimeout(() => {
+          if (!isAudioAuthorized) {
+            const touchEvent = new TouchEvent('touchstart', {
+              bubbles: true,
+              cancelable: true,
+              touches: [] as any
+            })
+            document.dispatchEvent(touchEvent)
+          }
+        }, 100)
+      } catch (err) {
+        console.log('⚠️ [AUTO-CLICK] Simulação de clique falhou:', err)
+      }
+    }
+  }, 500)
 }

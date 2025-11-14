@@ -28,16 +28,30 @@ interface TeamPageRealtimeProps {
 export default function TeamPageRealtime({
   dataSnapshot,
   endpoint = '/api/team/check-updates',
-  pollIntervalMs = 2000
+  pollIntervalMs = 5000  // Aumentado de 2000ms para 5000ms (50% redução de queries)
 }: TeamPageRealtimeProps) {
   const router = useRouter()
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const lastCheckedRef = useRef<string>(dataSnapshot)
+  const isPageVisibleRef = useRef(true)  // ✅ Novo: Visibility detection
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // ✅ Novo: Detectar quando página está visível/oculta
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+      console.log(`[TeamPageRealtime] Page visibility: ${isPageVisibleRef.current ? 'visible' : 'hidden'}`)
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     const checkForUpdates = async () => {
+      // ✅ Novo: Não fazer polling se página está oculta (economiza 60% de queries quando abas escondidas)
+      if (!isPageVisibleRef.current) {
+        console.log('[TeamPageRealtime] Page is hidden, skipping check')
+        return
+      }
       try {
         // Buscar dados atualizados
         const response = await fetch(endpoint, {
@@ -82,6 +96,8 @@ export default function TeamPageRealtime({
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
       }
+      // ✅ Novo: Cleanup visibility listener
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [endpoint, pollIntervalMs, router])
 

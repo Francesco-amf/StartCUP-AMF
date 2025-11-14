@@ -92,8 +92,8 @@ export function useRealtimePhase() {
 
     // �🚀 Usar RPC para buscar tudo em UMA query (otimização)
     const fetchPhase = async () => {
-      if (isFetching) return // 🛡️ Skip se já estiver buscando
-      
+      if (isFetching || !isPageVisibleRef.current) return // Skip se já buscando OU página oculta
+
       isFetching = true
       try {
         const { data, error } = await supabase.rpc('get_current_phase_data')
@@ -243,12 +243,18 @@ export function useRealtimeEvaluators() {
   const supabase = createClient()
   const { play } = useSoundSystem()
   const previousStateRef = useRef<Record<string, boolean>>({})
+  const isPageVisibleRef = useRef(true)
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     let isFetching = false
 
     const fetchEvaluators = async () => {
-      if (isFetching) return
+      if (isFetching || !isPageVisibleRef.current) return
       
       isFetching = true
       try {
@@ -300,6 +306,7 @@ export function useRealtimeEvaluators() {
       if (pollInterval) {
         clearInterval(pollInterval)
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [supabase, play])
 

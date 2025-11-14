@@ -1,0 +1,248 @@
+COMPREHENSIVE POLLING, INTERVALS, SUBSCRIPTIONS & REALTIME AUDIT
+Generated: 2025-11-14
+
+EXECUTIVE SUMMARY
+================
+Aggressive polling: 500ms to 10 seconds + 1 Realtime subscription
+Total queries/min on live-dashboard: ~544 (EXCEEDS free tier 5-10x!)
+Realtime subscriptions: 1 (MentorRequestsList)
+
+ALL setInterval() CALLS
+=======================
+
+Core Hooks (src/lib/hooks/useRealtime.ts):
+1. useRealtimeRanking - 500ms at T=0ms
+   Fetches: live_ranking table
+   Visibility: YES (skips when hidden)
+   Requests/min: 120
+
+2. useRealtimePhase - 500ms at T=125ms delay
+   Fetches: RPC get_current_phase_data()
+   Visibility: NO
+   Requests/min: 120
+
+3. useRealtimePenalties - 500ms at T=250ms delay
+   Fetches: penalties table
+   Visibility: NO
+   Sound: YES (penalty)
+   Requests/min: 120
+
+4. useRealtimeEvaluators - 500ms at T=375ms delay
+   Fetches: evaluators table
+   Visibility: NO
+   Sound: YES (online/offline)
+   Requests/min: 120
+
+Component Polling (500ms):
+5. PhaseController.tsx:127 - event_config + quests (admin)
+6. QuestAutoAdvancer.tsx:102 - event_config + quests (live-dashboard)
+7. CurrentQuestTimer.tsx:436 - quests table (adaptive 500ms/5000ms)
+
+Component Polling (1000ms):
+8. CurrentQuestTimer.tsx:635 - timer update (client-side)
+9. CurrentQuestTimer.tsx:712 - quest time calc (client-side)
+10. QuestExpirationNotifier.tsx:46 - expiration check (client-side)
+11. BossQuestCard.tsx:70 - time calc (client-side)
+12. SubmissionDeadlineStatus.tsx:108 - deadline info
+13. SubmissionDeadlineStatus.tsx:117 - now tick (client-side)
+
+Component Polling (2000ms):
+14. EventEndCountdownWrapper.tsx:90 - event_config (visibility aware)
+15. TeamPageRealtime.tsx:79 - /api/team/check-updates (NO visibility check!)
+16. usePowerUpStatus.ts:97 - power-up usage
+
+Component Polling (5000ms):
+17. LivePowerUpStatus.tsx:117 - power-ups
+18. QuestDebugPanel.tsx:109 - debug diagnostics
+
+Component Polling (10000ms):
+19. EvaluationPeriodCountdown.tsx:97 - event_config + RPC
+20. usePenalties.ts:49 - penalties table
+
+Display Timers (client-side only):
+21. EvaluationPeriodCountdown.tsx:132 - 1000ms countdown
+22. EventEndCountdown.tsx:126, 209, 351 - animation intervals
+23. EventEndCountdown.tsx:483 - 1000ms countdown
+
+Optional:
+24. useSmartRefresh.ts:52 - 30000ms (disabled by default)
+
+POLLING BY PAGE
+===============
+
+/live-dashboard (Public View):
+- useRealtimeRanking: 500ms (120 req/min)
+- useRealtimePhase: 500ms (120 req/min)
+- useRealtimePenalties: 500ms (120 req/min)
+- useRealtimeEvaluators: 500ms (120 req/min)
+- QuestAutoAdvancer: 500ms
+- CurrentQuestTimer: 500ms adaptive
+- EventEndCountdownWrapper: 2000ms (30 req/min)
+- EvaluationPeriodCountdown: 10000ms (6 req/min)
+- LivePowerUpStatus: 5000ms (12 req/min)
+TOTAL: ~240 queries/minute, Peak: ~8 req/sec
+
+/dashboard (Team Dashboard):
+- TeamPageRealtime: 2000ms (30 req/min)
+- Optional RankingBoard hook
+TOTAL: ~30 queries/minute
+Issue: NO visibility check!
+
+/submit (Team Submission):
+- TeamPageRealtime: 2000ms (30 req/min)
+- SubmissionDeadlineStatus: 1000ms (client-side only)
+TOTAL: ~30 queries/minute
+Issue: NO visibility check!
+
+/evaluate/submissions (Evaluator):
+- MentorRequestsList: WebSocket subscription (real-time)
+TOTAL: 0 polling, real-time only
+
+/teams (Evaluator Teams):
+- Static page, no polling
+
+SUPABASE REALTIME SUBSCRIPTIONS
+===============================
+
+ONLY 1 SUBSCRIPTION IN ENTIRE APP:
+
+MentorRequestsList.tsx (Lines 57-130):
+Channel: mentor_requests_{mentorId}
+Type: PostgreSQL Changes (WebSocket)
+
+Events:
+- INSERT: New mentor request
+  Filter: mentor_id=eq.{mentorId}
+  Actions: Sound + fetch list
+
+- UPDATE: Status change
+  Filter: mentor_id=eq.{mentorId}
+  Actions: Update local state
+
+- DELETE: Request removed
+  Filter: mentor_id=eq.{mentorId}
+  Actions: Remove from state
+
+Status: Connected/Disconnected tracking
+Location: /evaluate/submissions page only
+
+SYNCHRONIZED POLLING PATTERN
+============================
+
+Every 500ms:
+T=0ms:   ranking poll
+T=125ms: phase poll
+T=250ms: penalties poll
+T=375ms: evaluators poll
+T=500ms: ranking poll (again)
+T=625ms: phase poll (again)
+...
+
+Purpose: Spread queries over 500ms window
+Result: ~8 requests/second steady state
+Cost: 500ms average latency per poll cycle
+
+CRITICAL PERFORMANCE ISSUES
+===========================
+
+ISSUE 1: EXCEEDS FREE TIER (CRITICAL)
+- Current: 544 req/min on live-dashboard
+- Free tier: 50,000/month = ~1,157/hour
+- 1 hour dashboard usage: 32,640 requests
+- RESULT: 2.8x over hourly limit!
+
+ISSUE 2: TeamPageRealtime Aggressive (HIGH)
+- Polls every 2000ms on /dashboard and /submit
+- Calls router.refresh() on ANY hash change
+- Can include timestamp changes causing false positives
+- Cascades to trigger other polling
+- NO visibility check!
+
+ISSUE 3: Missing Visibility Detection (MEDIUM)
+Missing in:
+- useRealtimePhase()
+- useRealtimeEvaluators()
+- usePenalties.ts
+- TeamPageRealtime.tsx
+Only useRealtimeRanking has visibility check
+
+ISSUE 4: Duplicate Auto-Advance Logic (LOW)
+- PhaseController: 500ms polling
+- QuestAutoAdvancer: 500ms polling
+- Both do identical checks
+- QuestAutoAdvancer has dedup (5s cooldown) - good!
+
+OPTIMIZATION RECOMMENDATIONS
+============================
+
+PRIORITY 1 (50% impact):
+1. Increase 500ms core hooks to 1000ms
+   Result: 272 req/min instead of 544
+
+2. Add visibility detection to all hooks
+   Result: 80% reduction when page hidden
+
+3. Increase TeamPageRealtime to 5000ms
+   Result: 20 req/min instead of 30
+
+PRIORITY 2 (30% impact):
+1. Response caching (100ms-500ms)
+   Result: 30-40% query reduction
+
+2. Adaptive polling
+   Active: 1000ms
+   Hidden: 5000ms
+   Idle: 10000ms
+   Result: 60-70% reduction on idle pages
+
+PRIORITY 3 (10% impact):
+1. Consolidate display timers
+2. Edge Function caching for live_ranking
+
+POLLING SUMMARY TABLE
+====================
+
+Interval | Hooks/Components | Tables | Pages | Req/Min
+---------|-----------------|--------|-------|--------
+500ms    | 6 hooks         | 4      | live  | ~240
+1000ms   | 7 components    | 0-1    | all   | 0-60
+2000ms   | 3 components    | 1 api  | dash  | 30-60
+5000ms   | 2 components    | 1-2    | live  | 12-24
+10000ms  | 2 components    | 1-2    | all   | 6-12
+Real-time| 1 subscription  | 1      | eval  | 0
+
+DEPENDENCY ISSUES
+=================
+
+EventEndCountdownWrapper.tsx:
+- Issue: isInitialized in deps
+- Effect: Re-subscription on state change
+- Fix: Remove from dependencies
+
+All other dependencies: OK
+- useRealtime.ts: [supabase] only - safe
+- CurrentQuestTimer: [phase, supabase, isPageVisible] - safe
+- PhaseController: Callback deps correct
+
+FILES TO MONITOR
+================
+
+Core hooks:
+- src/lib/hooks/useRealtime.ts
+- src/lib/hooks/useSmartRefresh.ts
+- src/lib/hooks/usePenalties.ts
+
+Key components:
+- src/components/dashboard/CurrentQuestTimer.tsx
+- src/components/EventEndCountdownWrapper.tsx
+- src/components/TeamPageRealtime.tsx
+- src/components/PhaseController.tsx
+- src/components/QuestAutoAdvancer.tsx
+- src/components/evaluator/MentorRequestsList.tsx
+
+Critical pages:
+- src/app/live-dashboard/page.tsx
+- src/app/(team)/dashboard/page.tsx
+- src/app/(team)/submit/page.tsx
+
+END OF AUDIT

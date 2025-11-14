@@ -15,6 +15,7 @@ let interactionListenersAdded = false
 /**
  * Obtém ou cria o contexto de áudio compartilhado
  * Implementa retry logic em caso de falha
+ * IMPORTANTE: Só tenta criar após autorização do usuário
  */
 export function getAudioContext(): AudioContextType | null {
   try {
@@ -35,14 +36,20 @@ export function getAudioContext(): AudioContextType | null {
         sharedAudioContext = new AudioContextClass()
         contextCreationAttempts = 0
       } catch (e: any) {
-        // Erro esperado se não autorizado ainda - silenciosamente ignora
-        // Será retomado após primeira interação do usuário
+        // NotAllowedError: AudioContext não pode ser criado ainda (browser policy)
+        // Isto é NORMAL e esperado - será retentado após autorização
+        contextCreationAttempts++
+
+        if (contextCreationAttempts > 1) {
+          // Log apenas uma vez para não poluir console
+          // console.log('⏳ AudioContext creation deferred until user interaction')
+        }
         return null
       }
     }
 
     // Garantir que o contexto não está suspenso
-    if (sharedAudioContext.state === 'suspended') {
+    if (sharedAudioContext && sharedAudioContext.state === 'suspended') {
       sharedAudioContext.resume().catch(() => {
         // Silenciosamente ignora - será retomado após interação
       })

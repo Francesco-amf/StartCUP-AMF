@@ -1,0 +1,163 @@
+// ============================================================================
+// SCRIPT: Recriar 15 Avaliadores (deletar antigos + criar novos com senhas corretas)
+// ============================================================================
+// Este script deleta os avaliadores antigos e recria com senhas SEM ACENTOS
+//
+// COMO USAR:
+// 1. Execute: node recreate-evaluators-clean.js
+// ============================================================================
+
+const { createClient } = require('@supabase/supabase-js');
+
+// Configurar com seu Service Role Key
+const SUPABASE_URL = 'https://scmyfwhhjwlmsoobqjyk.supabase.co';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbXlmd2hoandsbXNvb2JxanlrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTg0NTAwOSwiZXhwIjoyMDc3NDIxMDA5fQ.aSzcF8hbo9j_dJpuQ2joqxa1n4efDCHuEKJHXagkJ3c';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Lista de avaliadores reais
+const evaluators = [
+  { name: 'Natália Santos', email: 'natalia.santos@startcup-amf.com' },
+  { name: 'Eloi Brandt', email: 'eloi.brandt@startcup-amf.com' },
+  { name: 'Wilian Neu', email: 'wilian.neu@startcup-amf.com' },
+  { name: 'Clarissa Miranda', email: 'clarissa.miranda@startcup-amf.com' },
+  { name: 'Aline Rospa', email: 'aline.rospa@startcup-amf.com' },
+  { name: 'Patrícia Dias', email: 'patricia.dias@startcup-amf.com' },
+  { name: 'Rafaela Tagliapietra', email: 'rafaela.tagliapietra@startcup-amf.com' },
+  { name: 'Francesco Santini', email: 'francesco.santini@startcup-amf.com' },
+  { name: 'Douglas Garlet', email: 'douglas.garlet@startcup-amf.com' },
+  { name: 'Kauan Gonçalves', email: 'kauan.goncalves@startcup-amf.com' },
+  { name: 'Ângelo Tissot', email: 'angelo.tissot@startcup-amf.com' },
+  { name: 'Marcelo Medeiros', email: 'marcelo.medeiros@startcup-amf.com' },
+  { name: 'Pedro Hermes', email: 'pedro.hermes@startcup-amf.com' },
+  { name: 'Augusto', email: 'augusto@startcup-amf.com' },
+  { name: 'Gustavo Florêncio', email: 'gustavo.florencio@startcup-amf.com' },
+];
+
+// Remover acentos de um string
+function removeAccents(text) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Gerar senha segura baseada no nome (SEM ACENTOS)
+function generatePassword(name) {
+  // Remover acentos do nome
+  const nameWithoutAccents = removeAccents(name);
+  // Pega primeira letra do primeiro nome + primeira letra do segundo nome + @2024!
+  const parts = nameWithoutAccents.split(' ');
+  const initials = parts.map(p => p.charAt(0).toUpperCase()).join('');
+  return `${initials}Evaluator@2024!`;
+}
+
+async function recreateEvaluators() {
+  console.log('🚀 Iniciando recriação de 15 avaliadores via Admin API...\n');
+
+  // PASSO 1: Deletar avaliadores antigos
+  console.log('🗑️  Deletando avaliadores antigos...\n');
+
+  for (const evaluator of evaluators) {
+    try {
+      // Primeiro, buscar o UUID do usuário pelo email
+      const { data: userData, error: getError } = await supabase.auth.admin.listUsers();
+
+      if (getError) {
+        console.log(`⚠️  Erro ao listar usuários:`, getError.message);
+        continue;
+      }
+
+      const user = userData.users.find(u => u.email === evaluator.email);
+
+      if (!user) {
+        console.log(`⏭️  Usuário não encontrado: ${evaluator.email}`);
+        continue;
+      }
+
+      // Agora deletar usando o UUID
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(
+        user.id,
+        true // Hard delete
+      );
+
+      if (deleteError) {
+        console.log(`⚠️  Erro ao deletar ${evaluator.email}:`, deleteError.message);
+      } else {
+        console.log(`🗑️  Deletado: ${evaluator.email}`);
+      }
+    } catch (err) {
+      console.log(`⚠️  Erro ao deletar ${evaluator.email}:`, err.message);
+    }
+  }
+
+  console.log('\n✅ Deletação concluída!\n');
+  console.log('⏳ Aguardando 2 segundos antes de recriar...\n');
+
+  // Aguardar para garantir que deletou
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // PASSO 2: Criar cada avaliador com senha corrigida
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const evaluator of evaluators) {
+    const password = generatePassword(evaluator.name);
+
+    try {
+      console.log(`⏳ Criando avaliador: ${evaluator.name} (${evaluator.email})...`);
+
+      // Criar usuário via Admin API
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: evaluator.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          role: 'evaluator',
+          full_name: evaluator.name,
+        },
+        app_metadata: {
+          provider: 'email',
+          providers: ['email'],
+          role: 'evaluator',
+        },
+      });
+
+      if (error) {
+        console.log(`❌ Erro ao criar ${evaluator.email}:`, error.message);
+        errorCount++;
+        continue;
+      }
+
+      console.log(`✅ Avaliador criado: ${evaluator.name}`);
+      console.log(`   Email: ${evaluator.email}`);
+      console.log(`   Senha: ${password}\n`);
+
+      successCount++;
+    } catch (err) {
+      console.log(`❌ Erro inesperado para ${evaluator.email}:`, err);
+      errorCount++;
+    }
+  }
+
+  console.log('\n' + '='.repeat(70));
+  console.log('✅ RESUMO:');
+  console.log(`✅ Avaliadores criados com sucesso: ${successCount}`);
+  console.log(`❌ Erros: ${errorCount}`);
+  console.log('='.repeat(70));
+
+  // Mostrar credenciais para copiar
+  console.log('\n📋 CREDENCIAIS DOS 15 AVALIADORES (SEM ACENTOS):\n');
+  console.log('| Nome | Email | Senha |');
+  console.log('|------|-------|-------|');
+
+  for (const evaluator of evaluators) {
+    const password = generatePassword(evaluator.name);
+    console.log(
+      `| ${evaluator.name} | ${evaluator.email} | ${password} |`
+    );
+  }
+
+  console.log('\n🎉 Pronto! Agora tente fazer login como avaliador!');
+  console.log('💡 Dica: Guarde estas credenciais em um lugar seguro (Google Sheets, etc)');
+  console.log('✅ Todas as senhas estão SEM ACENTOS para máxima compatibilidade');
+}
+
+recreateEvaluators();

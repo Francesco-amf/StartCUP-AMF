@@ -2,8 +2,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-
-import { revalidatePath } from 'next/cache'
+// ✅ REMOVIDO: revalidatePath - polling detecta mudanças automaticamente
 
 export async function POST(request: Request) {
   try {
@@ -45,13 +44,13 @@ export async function POST(request: Request) {
     // ========================================
     // PASSO 1: Validar submissão usando função do banco
     // ========================================
-    const { data: validationResult, error: validationError } = await supabase
+    const { data: validationResults, error: validationError } = await supabase
       .rpc('validate_submission_allowed', {
         team_id_param: teamId,
         quest_id_param: questId
       })
 
-    console.log('Validation Result:', validationResult);
+    console.log('Validation Results:', validationResults);
 
     if (validationError) {
       console.error('Erro ao validar submissão:', validationError)
@@ -60,6 +59,13 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // RPC retorna array de objetos, pegar primeiro elemento
+    const validationResult = Array.isArray(validationResults) ? validationResults[0] : validationResults;
+
+    console.log('Validation Result (parsed):', validationResult);
+    console.log('penalty_calculated:', validationResult?.penalty_calculated);
+    console.log('is_allowed:', validationResult?.is_allowed);
 
     if (!validationResult?.is_allowed) {
       return NextResponse.json(
@@ -265,7 +271,14 @@ export async function POST(request: Request) {
     let penaltyApplied = false
     let penaltyAmount = 0
 
+    console.log('Checking penalty application:');
+    console.log('  validationResult?.penalty_calculated:', validationResult?.penalty_calculated);
+    console.log('  is > 0:', validationResult?.penalty_calculated > 0);
+    console.log('  will apply:', validationResult?.penalty_calculated && validationResult.penalty_calculated > 0);
+
     if (validationResult?.penalty_calculated && validationResult.penalty_calculated > 0) {
+      console.log('Applying penalty of:', validationResult.penalty_calculated);
+
       const { error: penaltyError } = await supabase
         .from('penalties')
         .insert({
@@ -276,16 +289,21 @@ export async function POST(request: Request) {
           assigned_by_admin: true
         })
 
-      if (!penaltyError) {
+      if (penaltyError) {
+        console.error('Erro ao inserir penalidade:', penaltyError);
+      } else {
+        console.log('Penalidade inserida com sucesso');
         penaltyApplied = true
         penaltyAmount = validationResult.penalty_calculated
       }
+    } else {
+      console.log('Nenhuma penalidade aplicada (penalty_calculated é 0 ou não foi atrasada)');
     }
 
     // ========================================
     // PASSO 9: Responder com sucesso
     // ========================================
-    revalidatePath('/dashboard')
+    // ✅ REMOVIDO: revalidatePath() - polling detecta mudança automaticamente
 
     return NextResponse.json(
       {

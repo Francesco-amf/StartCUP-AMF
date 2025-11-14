@@ -1,7 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import SubmissionForm from '@/components/forms/SubmissionForm'
 import BossQuestCard from '@/components/quest/BossQuestCard'
 import SubmissionDeadlineStatus from '@/components/quest/SubmissionDeadlineStatus'
@@ -17,20 +15,17 @@ interface SubmissionWrapperProps {
 }
 
 export default function SubmissionWrapper({ quests, team, submissions, eventConfig }: SubmissionWrapperProps) {
-  const router = useRouter()
-
   const handleSuccess = () => {
-    router.refresh()
+    // ✅ Dados vêm via polling em tempo real, sem necessidade de router.refresh()
+    // Polling (500ms) + BroadcastChannel detectam mudanças automaticamente
+    // Remover router.refresh() previne flashing ao submeter em abas simultâneas
+    console.log('✅ Submissão realizada - Polling detectará mudanças automaticamente')
   }
 
-  // Auto-refresh a cada 30 segundos (reduzido de 10s - dados já vêm via props de useRealtimePhase)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      router.refresh()
-    }, 30000) // 30 segundos
-    
-    return () => clearInterval(interval)
-  }, [router])
+  // ✅ REMOVIDO: Auto-refresh a cada 30 segundos
+  // Razão: Dados já vêm via polling em tempo real + hooks useRealtimePhase/useRealtimeRanking
+  // Isso evita múltiplos refreshes que causam piscar (flashing) em abas simultâneas
+  // useEffect(...) // ← Removido intencionalmente
 
   const submittedQuestIds = submissions?.map(s => s.quest_id) || []
   const evaluatedQuestIds = submissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []

@@ -1,10 +1,16 @@
 'use client'
 
+import React from 'react'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { Button } from '@/components/ui/button'
 
 export default function SoundControlPanel() {
-  const { soundConfig, setVolume, toggleSounds, playFile, isClient } = useSoundSystem()
+  const [isClient, setIsClient] = React.useState(false)
+  const { soundConfig, setVolume, toggleSounds, playFile } = useSoundSystem()
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   if (!isClient) return null
 

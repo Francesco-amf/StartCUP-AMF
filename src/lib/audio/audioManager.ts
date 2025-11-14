@@ -25,6 +25,7 @@ export type AudioFileType =
   | 'evaluator-offline'
   | 'evaluator-online'
   | 'event-start'
+  | 'game-over'
   | 'mentor-purchase'
   | 'penalty'
   | 'phase-start'
@@ -35,6 +36,10 @@ export type AudioFileType =
   | 'ranking-up'
   | 'submission'
   | 'submission-evaluated'
+  | 'suspense'
+  | 'suspense1'
+  | 'win'
+  | 'winner-music'
 
 // Mapeamento de sons para arquivos MP3/WAV que existem no /public/sounds
 const AUDIO_FILES: Record<AudioFileType, string> = {
@@ -43,6 +48,7 @@ const AUDIO_FILES: Record<AudioFileType, string> = {
   'evaluator-offline': '/sounds/evaluator-offline.wav',
   'evaluator-online': '/sounds/evaluator-online.wav',
   'event-start': '/sounds/event-start.mp3',
+  'game-over': '/sounds/game-over.mp3',
   'mentor-purchase': '/sounds/mentor-purchase.wav', // Som específico para mentoria comprada
   'penalty': '/sounds/penalty.mp3',
   'phase-start': '/sounds/phase-start.mp3',
@@ -52,7 +58,11 @@ const AUDIO_FILES: Record<AudioFileType, string> = {
   'ranking-down': '/sounds/ranking-down.wav',
   'ranking-up': '/sounds/ranking-up.mp3',
   'submission': '/sounds/submission.mp3',
-  'submission-evaluated': '/sounds/quest-complete.mp3' // Som quando entrega é avaliada
+  'submission-evaluated': '/sounds/quest-complete.mp3', // Som quando entrega é avaliada
+  'suspense': '/sounds/suspense.mp3',
+  'suspense1': '/sounds/suspense1.mp3',
+  'win': '/sounds/win.mp3',
+  'winner-music': '/sounds/winner-music.mp3'
 }
 
 // Volumes específicos por tipo de som (multiplicador do volume geral)
@@ -62,6 +72,7 @@ const AUDIO_VOLUMES: Record<AudioFileType, number> = {
   'evaluator-offline': 0.6,   // Discreto
   'evaluator-online': 0.6,    // Discreto
   'event-start': 1.0,         // Máximo (épico)
+  'game-over': 0.6,           // Game over countdown beeping
   'mentor-purchase': 1.0,     // Máximo (épico/festivo)
   'penalty': 0.95,            // Bem audível (alerta)
   'phase-start': 0.9,         // Alto
@@ -71,7 +82,11 @@ const AUDIO_VOLUMES: Record<AudioFileType, number> = {
   'ranking-down': 0.7,        // Moderado
   'ranking-up': 0.85,         // Alto
   'submission': 0.75,         // Moderado
-  'submission-evaluated': 0.85 // Alto (feedback importante)
+  'submission-evaluated': 0.85, // Alto (feedback importante)
+  'suspense': 0.8,            // Tensão do game over
+  'suspense1': 0.8,           // Alternativa de suspense
+  'win': 1.0,                 // Fanfare de vitória (máximo)
+  'winner-music': 0.7         // Música de fundo da revelação
 }
 
 // Prioridade dos sons (0 = highest priority, 10 = lowest)
@@ -82,6 +97,7 @@ const AUDIO_PRIORITIES: Record<AudioFileType, number> = {
   'evaluator-offline': 8,       // Baixa prioridade (informacional)
   'evaluator-online': 8,        // Baixa prioridade (informacional)
   'event-start': 0,             // MÁXIMA PRIORIDADE (início do evento)
+  'game-over': 0,               // MÁXIMA PRIORIDADE (evento crítico - fim)
   'mentor-purchase': 3,         // Alta prioridade (ação custosa)
   'penalty': 3,                 // Alta prioridade (alerta)
   'phase-start': 0,             // MÁXIMA PRIORIDADE (mudança de fase)
@@ -91,7 +107,11 @@ const AUDIO_PRIORITIES: Record<AudioFileType, number> = {
   'ranking-down': 6,            // Prioridade média-baixa
   'ranking-up': 3,              // Prioridade média-alta (feedback importante)
   'submission': 6,              // Prioridade média-baixa
-  'submission-evaluated': 1     // MUITO ALTA PRIORIDADE (conclusão importante)
+  'submission-evaluated': 1,    // MUITO ALTA PRIORIDADE (conclusão importante)
+  'suspense': 0,                // MÁXIMA PRIORIDADE (evento crítico)
+  'suspense1': 0,               // MÁXIMA PRIORIDADE (evento crítico)
+  'win': 0,                     // MÁXIMA PRIORIDADE (evento crítico)
+  'winner-music': 0             // MÁXIMA PRIORIDADE (evento crítico)
 }
 
 // Interface para sons na fila com prioridade
@@ -123,7 +143,9 @@ class AudioManager {
       this.loadConfigFromStorage()
       this.setupStorageListener()
       this.setupInteractionListener()
-      this.initMasterGain()
+      // ⚠️ NÃO chamar initMasterGain() aqui! AudioContext não pode ser criado antes de user gesture
+      // Será criado na primeira tentativa de reproduzir som
+      // this.initMasterGain()
       // Pré-carregar arquivos de áudio críticos (sem aguardar)
       this.preloadCriticalAudios()
       // Autorizar áudio automaticamente na primeira interação do usuário
@@ -135,7 +157,17 @@ class AudioManager {
    * Pré-carrega arquivos de áudio críticos para garantir disponibilidade
    */
   private preloadCriticalAudios(): void {
-    const criticalAudios: AudioFileType[] = ['penalty', 'phase-start', 'quest-complete']
+    // ✅ FIX #1: Adicionar event-start, boss-spawn e game-over ao pré-carregamento
+    // Estes são sons críticos do jogo que devem estar prontos imediatamente
+    const criticalAudios: AudioFileType[] = [
+      'penalty',
+      'phase-start',
+      'quest-complete',
+      'event-start',      // ← Crítico: Fase 1, Quest 1 (evento começa)
+      'boss-spawn',       // ← Crítico: Sons épicos do jogo
+      'game-over'         // ← Crítico: Fim do evento
+    ]
+    console.log(`⏳ [AudioManager] Iniciando pré-carregamento de ${criticalAudios.length} sons críticos...`)
     criticalAudios.forEach((type) => {
       const filePath = AUDIO_FILES[type]
       if (filePath && !this.audioCache.has(type)) {
@@ -384,12 +416,17 @@ class AudioManager {
       // ⚠️ IMPORTANTE: audio.duration pode ser NaN se não está totalmente carregado
       let duration = isNaN(audio.duration) ? 0 : audio.duration * 1000
 
-      // Fallbacks personalizados por tipo de som
-      let durationFallback = 2500 // Default
+      // ✅ FIX #2: Fallbacks personalizados com durações REAIS dos arquivos MP3/WAV
+      // Baseado em: 145KB @ 128kbps ≈ 9.3s, 296KB WAV ≈ 3.4s, etc
+      let durationFallback = 2500 // Default para sons pequenos
       if (type === 'boss-spawn') {
-        durationFallback = 5000 // Boss-spawn geralmente é mais longo (som épico)
-      } else if (type === 'phase-start' || type === 'event-start') {
-        durationFallback = 10000 // Transições são sons longos
+        durationFallback = 3500 // boss-spawn.wav: ~3.4s
+      } else if (type === 'event-start') {
+        durationFallback = 9500 // event-start.mp3: ~9.3s (som épico do início)
+      } else if (type === 'phase-start') {
+        durationFallback = 10500 // phase-start.mp3: ~10.2s (som épico de transição)
+      } else if (type === 'game-over') {
+        durationFallback = 11500 // game-over.mp3: ~11s (countdown loop)
       }
 
       duration = duration > 0 ? duration : durationFallback
@@ -427,33 +464,63 @@ class AudioManager {
               resolve()
             }
 
+            let playAttempts = 0
+            const MAX_PLAY_ATTEMPTS = 3
+
+            const attemptPlay = async () => {
+              try {
+                playAttempts++
+                console.log(`▶️ Tentativa ${playAttempts}/${MAX_PLAY_ATTEMPTS} de tocar: ${type}`)
+
+                // Resumir AudioContext se suspenso (importante!)
+                const ctx = getAudioContext()
+                if (ctx && ctx.state === 'suspended') {
+                  console.log(`⏸️ AudioContext suspenso, retomando...`)
+                  await ctx.resume()
+                  console.log(`✅ AudioContext retomado`)
+                }
+
+                await audio!.play()
+                console.log(`✅ Som tocando com sucesso: ${type}`)
+              } catch (err: any) {
+                // ✅ FIX #3: Retry automático com backoff exponencial
+                // Tenta novamente com delays crescentes: 100ms, 200ms, 400ms, 800ms
+                const BACKOFF_BASE = 100
+                const shouldRetry = playAttempts < MAX_PLAY_ATTEMPTS
+
+                if (shouldRetry) {
+                  const delayMs = BACKOFF_BASE * Math.pow(2, playAttempts - 1)
+                  console.warn(`⚠️ Falha ao tocar ${type} (${err.name}), retry ${playAttempts} em ${delayMs}ms...`)
+                  setTimeout(attemptPlay, delayMs)
+                } else {
+                  console.warn(`❌ Falha ao tocar ${type} após ${MAX_PLAY_ATTEMPTS} tentativas: ${err.name}`)
+                  resolve()
+                }
+              }
+            }
+
             const handleCanPlay = () => {
               audio!.removeEventListener('canplay', handleCanPlay)
               console.log(`📀 Arquivo pronto (canplay): ${type}, tocando agora...`)
-              audio!.play().catch((err) => {
-                console.warn(`⚠️ Falha ao tocar após canplay: ${type}`, err)
-                resolve()
-              })
+              attemptPlay()
             }
 
             audio!.addEventListener('ended', handleEnd, { once: true })
             audio!.addEventListener('error', handleError, { once: true })
 
             // Timeout como fallback (em caso de arquivo corrompido ou problema)
+            // Aumentado de 3000ms para 5000ms para redes mais lentas
             timeoutHandle = setTimeout(() => {
               console.log(`⏱️ Timeout de áudio: ${type}, resolvendo...`)
               cleanup()
               resolve()
-            }, Math.max(duration + 500, 3000)) // Espera duration + 500ms de margem
+            }, Math.max(duration + 1000, 5000)) // Aumentado de 500ms para 1000ms de margem
 
             // Se já está carregado, tocar imediatamente
             if (audio!.readyState >= 2) {
               // HAVE_CURRENT_DATA ou mais
-              console.log(`▶️ Tocando imediatamente (readyState >= 2): ${type}`)
-              audio!.play().catch((err) => {
-                console.warn(`⚠️ Falha ao reproduzir áudio: ${type}`, err)
-                resolve()
-              })
+              console.log(`▶️ Áudio já carregado (readyState >= 2): ${type}`)
+              attemptPlay()
             } else {
               // Aguardar carregamento
               console.log(`⏳ Aguardando carregamento (readyState: ${audio!.readyState}): ${type}`)

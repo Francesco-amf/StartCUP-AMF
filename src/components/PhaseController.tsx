@@ -110,9 +110,10 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
       // quando a primeira quest da fase é ativada. Não tocamos som aqui no admin
       // porque queremos que o som toque na tela do público (live-dashboard), não no painel admin.
 
-      // Refresh component's internal state and then the router
+      // ✅ FIX: Remover router.refresh() - causa refresh global em TODAS as abas
+      // BroadcastChannel + Polling já detectam mudanças
       await fetchEventData(); // Re-fetch data immediately after successful phase change
-      router.refresh(); // Tells Next.js to re-render server components
+      // Removed: router.refresh() caused unwanted refresh in other tabs
 
     } catch (error) {
       alert(`❌ ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
@@ -135,117 +136,78 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     // Nota: Fase 5 agora é suportada para auto-advance (permite game over automático)
 
     // Check for individual quest expiry
-    const activeQuest = allQuests.find(q => q.status === 'active' && q.phase_id === activePhase);
+    // ✅ FIX: If multiple quests are active (shouldn't happen but handle it), pick the FIRST one by order_index
+    const questsInPhase = allQuests
+      .filter(q => q.phase_id === activePhase && q.status !== 'closed')
+      .sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const activeQuest = questsInPhase[0]; // Get first non-closed quest (should be active or scheduled)
+    console.log(`🎯 [PhaseController] Checking auto-advance: eventConfig=${!!eventConfig}, event_started=${eventConfig?.event_started}, activePhase=${activePhase}, questsInPhase=${questsInPhase.length}, activeQuest=${activeQuest?.order_index || 'none'}, activeQuestStatus=${activeQuest?.status}`);
 
     if (activeQuest) {
       if (!activeQuest.started_at) {
         // Silenciosamente ignora - é normal quests que ainda não iniciaram não terem started_at
         // Don't return - fall through to phase-level check
       } else {
-        const questStartTime = new Date(activeQuest.started_at + 'Z');
+        const questStartTime = new Date(activeQuest.started_at);
         const now = new Date(new Date().toISOString());
 
-        // Agora avança apenas quando a LATE WINDOW expirar (prazo regular + 15min)
-        const finalDeadline = new Date(questStartTime.getTime() +
-          ((activeQuest.planned_deadline_minutes || 0) + (activeQuest.late_submission_window_minutes || 0)) * 60 * 1000
-        );
+        // ✅ FIX: Use ONLY planned_deadline_minutes for auto-advance (same as CurrentQuestTimer)
+        // The late_submission_window is for MANUAL submissions, not for auto-advance timing
+        const plannedDeadlineMs = (activeQuest.planned_deadline_minutes || 0) * 60 * 1000;
+        const finalDeadline = new Date(questStartTime.getTime() + plannedDeadlineMs);
 
-        // ⚠️ PROTEÇÃO: Se a quest já começou há MUITO tempo (mais de 1 hora),
-        // é provável que esteja com timestamp errado ou em teste acelerado.
-        // Auto-avançar para evitar travamentos.
-        const timeElapsedMinutes = (now.getTime() - questStartTime.getTime()) / 1000 / 60;
-        if (timeElapsedMinutes > 60) {
-          console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} está ativa há ${Math.round(timeElapsedMinutes)}min! Auto-avançando para evitar travamento...`);
+        const timeElapsedMs = now.getTime() - questStartTime.getTime();
+        const timeRemainingMs = finalDeadline.getTime() - now.getTime();
+        const timeRemainingSec = Math.round(timeRemainingMs / 1000);
+
+        // Debug log a cada 30 segundos apenas (para não poluir console)
+        const currentState = `${activeQuest.id}|${timeRemainingSec}`;
+        if (lastPhaseStateRef.current !== currentState && (timeRemainingSec < 30 || timeRemainingSec % 30 === 0)) {
+          lastPhaseStateRef.current = currentState;
+          console.log(`🎯 [PhaseController] Quest ${activeQuest.order_index} status:
+            - started: ${questStartTime.toISOString()}
+            - planned: ${activeQuest.planned_deadline_minutes}min
+            - late_window: ${activeQuest.late_submission_window_minutes}min
+            - deadline: ${finalDeadline.toISOString()}
+            - now: ${now.toISOString()}
+            - time_remaining: ${(timeRemainingMs / 1000 / 60).toFixed(2)}min (${timeRemainingSec}s)`);
+        }
+
+        // ✅ RÁPIDO: Se quest passou do deadline final, avançar IMEDIATAMENTE
+        if (now > finalDeadline) {
+          console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} expirada! Avançando AGORA (expirou há ${Math.round(-timeRemainingMs / 1000)}s)`);
+          console.log(`📤 Chamando /api/admin/advance-quest com questId: ${activeQuest.id}`);
+
           fetch('/api/admin/advance-quest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ questId: activeQuest.id }),
           }).then(response => {
-            if (response.ok) {
-              fetchEventData();
-              router.refresh();
-            }
-          }).catch((err) => {
-            console.error('Erro ao auto-avançar quest travada:', err);
-          });
-          return;
-        }
-
-        // ⚠️ PROTEÇÃO AGRESSIVA: Se quest já passou muito do deadline,
-        // e ainda não foi auto-avançada, forçar após 5 segundos de detecção
-        if (now > finalDeadline) {
-          console.log(`🔴 [PhaseController] Detectada quest expirada (order_index=${activeQuest.order_index}, time_remaining=${(finalDeadline.getTime() - now.getTime())/1000}s)`);
-          if (zeroTimeQuestDetectionRef.current?.questId !== activeQuest.id) {
-            // Primeira detecção desta quest expirada
-            zeroTimeQuestDetectionRef.current = {
-              questId: activeQuest.id,
-              detectedAt: now.getTime()
-            };
-            console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} expirada! Será auto-avançada em 5s se não avançar...`);
-          } else {
-            // Já detectada - verificar se passaram 5 segundos
-            const timeSinceDetection = (now.getTime() - zeroTimeQuestDetectionRef.current.detectedAt) / 1000;
-            if (timeSinceDetection > 5) {
-              console.warn(`⚠️ [PhaseController] FORÇANDO auto-advance de Quest ${activeQuest.order_index} (${Math.round(timeSinceDetection)}s de espera)`);
-              console.log(`📤 Chamando /api/admin/advance-quest com questId: ${activeQuest.id}`);
-              fetch('/api/admin/advance-quest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ questId: activeQuest.id }),
-              }).then(response => {
-                console.log(`📥 Resposta recebida do endpoint: status=${response.status}, ok=${response.ok}`);
-                return response.json().then(data => {
-                  console.log(`📊 Dados da resposta:`, data);
-                  if (response.ok) {
-                    zeroTimeQuestDetectionRef.current = null; // Reset
-                    // Broadcast quest update to CurrentQuestTimer for immediate refresh
-                    try {
-                      const channel = new BroadcastChannel('quest-updates');
-                      channel.postMessage({ type: 'questAdvanced', timestamp: Date.now() });
-                      channel.close();
-                      console.log(`📢 [PhaseController] Broadcast enviado para quest-updates`);
-                    } catch (err) {
-                      console.warn(`⚠️ [PhaseController] BroadcastChannel não suportado:`, err);
-                    }
-                    fetchEventData();
-                    router.refresh();
-                  } else {
-                    console.error(`❌ Erro na resposta: ${data.error}`);
-                  }
-                });
-              }).catch((err) => {
-                console.error('❌ Erro ao forçar auto-advance:', err);
-              });
-              return;
-            }
-          }
-        } else {
-          // Quest não está mais expirada, resetar detecção
-          zeroTimeQuestDetectionRef.current = null;
-        }
-
-        if (now > finalDeadline) {
-          fetch('/api/admin/advance-quest', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ questId: activeQuest.id }),
-          }).then(response => {
-            if (response.ok) {
-              // Broadcast quest update to CurrentQuestTimer for immediate refresh
-              try {
-                const channel = new BroadcastChannel('quest-updates');
-                channel.postMessage({ type: 'questAdvanced', timestamp: Date.now() });
-                channel.close();
-              } catch (err) {
-                // BroadcastChannel not available
+            console.log(`📥 Resposta recebida: status=${response.status}, ok=${response.ok}`);
+            return response.json().then(data => {
+              console.log(`📊 Dados da resposta:`, data);
+              if (response.ok) {
+                // Broadcast quest update to CurrentQuestTimer for immediate refresh
+                try {
+                  const channel = new BroadcastChannel('quest-updates');
+                  channel.postMessage({ type: 'questAdvanced', timestamp: Date.now() });
+                  channel.close();
+                  console.log(`📢 [PhaseController] Broadcast enviado para quest-updates`);
+                } catch (err) {
+                  console.warn(`⚠️ [PhaseController] BroadcastChannel não suportado:`, err);
+                }
+                fetchEventData();
+              } else {
+                console.error(`❌ Erro na resposta: ${data.error}`);
               }
-              fetchEventData();
-              router.refresh();
-            }
-          }).catch(() => {
-            // Silently handle error
+            });
+          }).catch((err) => {
+            console.error('❌ Erro ao forçar auto-advance:', err);
           });
           return;
+        } else {
+          // Quest não está expirada, resetar detecção
+          zeroTimeQuestDetectionRef.current = null;
         }
       }
     }
@@ -319,7 +281,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
             }).then(response => {
               if (response.ok) {
                 fetchEventData();
-                router.refresh();
+                // ✅ FIX: Removed router.refresh() - causes refresh in other tabs
               }
             }).catch((err) => {
               console.error('Erro ao disparar game over:', err);

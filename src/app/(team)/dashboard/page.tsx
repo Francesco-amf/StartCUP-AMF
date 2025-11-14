@@ -14,8 +14,12 @@ import TeamLogoUpload from '@/components/TeamLogoUpload'
 import PowerUpActivator from '@/components/PowerUpActivator'
 import MentorRequestButton from '@/components/MentorRequestButton'
 import { Accordion } from '@/components/ui/Accordion'
-import DashboardAutoRefresh from '@/components/dashboard/DashboardAutoRefresh'
 import AMFCoinsHistory from '@/components/team/AMFCoinsHistory'
+import crypto from 'crypto'
+
+// ✅ Server-rendered dynamically on every request
+// ✅ No static generation - always fetch fresh data from Supabase
+export const dynamic = 'force-dynamic'
 
 export default async function TeamDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -25,19 +29,45 @@ export default async function TeamDashboard() {
   if (!user) redirect('/login')
 
   // Buscar informações da equipe
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from('teams')
     .select('*')
     .eq('email', user.email)
     .single()
 
+  if (teamError || !team) {
+    console.error('❌ Erro ao buscar equipe:', teamError)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0A0F1E] via-[#0A1E47] to-[#0A0F1E]">
+        <div className="bg-red-500/20 border border-red-500 rounded-lg p-8 max-w-md text-center">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Equipe não encontrada</h1>
+          <p className="text-red-200 mb-4">
+            Não conseguimos encontrar sua equipe no sistema. Por favor, verifique se:
+          </p>
+          <ul className="text-red-200 text-left mb-4 list-disc list-inside">
+            <li>Você está usando o email correto</li>
+            <li>Sua equipe foi registrada no sistema</li>
+            <li>Entre em contato com os organizadores se o problema persistir</li>
+          </ul>
+          <Link href="/login" className="text-blue-400 hover:text-blue-300">
+            ← Voltar ao login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Buscar configuração do evento
   const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
-  const { data: eventConfig } = await supabase
+  const { data: eventConfig, error: eventError } = await supabase
     .from('event_config')
     .select('*')
     .eq('id', eventConfigId)
     .single()
+
+  if (eventError) {
+    console.error('❌ Erro ao buscar configuração do evento:', eventError)
+  }
 
   const phaseNames = [
     { name: 'Preparação', icon: '⏸️', color: 'gray' },
@@ -53,7 +83,7 @@ export default async function TeamDashboard() {
   // Buscar submissions da equipe
   const { data: submissions } = await supabase
     .from('submissions')
-    .select('quest_id, status, final_points')
+    .select('quest_id, status, final_points, created_at')
     .eq('team_id', team?.id)
 
   // Buscar quests da fase atual diretamente da tabela 'quests' (consistência com /submit)
@@ -131,10 +161,22 @@ export default async function TeamDashboard() {
 
   const totalPoints = rankingData?.total_points || 0
 
+  // ✅ Criar snapshot dos dados para polling em tempo real
+  const dataSnapshot = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      currentPhase: eventConfig?.current_phase,
+      eventStarted: eventConfig?.event_started,
+      eventEnded: eventConfig?.event_ended,
+      submissionsCount: submissions?.length || 0,
+      lastSubmissionTime: submissions?.[0]?.created_at
+    }))
+    .digest('hex')
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0A0F1E] via-[#0A1E47] to-[#0A0F1E]">
-      <DashboardAutoRefresh />
+      {/* ✅ REMOVED: TeamPageRealtime was causing router.refresh() affecting all tabs
+          Server-component is already force-dynamic, fetching fresh data on every request */}
       <Header
         title="🎮 Dashboard da Equipe"
         subtitle={`${team?.name || 'Equipe'} - ${team?.course || 'Curso'}`}

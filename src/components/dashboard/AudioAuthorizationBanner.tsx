@@ -6,7 +6,9 @@ import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 export default function AudioAuthorizationBanner() {
   const [authorized, setAuthorized] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const { isClient: soundSystemClient } = useSoundSystem()
+  // ✅ FIX: Remover isClient do useSoundSystem (não é mais exportado)
+  // O audioManager já valida se está no cliente internamente
+  useSoundSystem()
 
   useEffect(() => {
     setIsClient(true)

@@ -19,11 +19,18 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
   const [status, setStatus] = useState<EvaluationStatus | null>(null)
   const [evaluationPeriodEndTime, setEvaluationPeriodEndTime] = useState<string | null>(null)
   const [allEvaluated, setAllEvaluated] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const supabase = createClient()
 
   // Buscar dados do período de avaliação
   useEffect(() => {
+    let isFetching = false
+
     const fetchEvaluationStatus = async () => {
+      // ✅ FIX: Evitar fetch simultâneos
+      if (isFetching) return
+      isFetching = true
+
       try {
         // Buscar evaluation_period_end_time e flag all_submissions_evaluated
         const { data: config } = await supabase
@@ -31,11 +38,17 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
           .select('evaluation_period_end_time, all_submissions_evaluated')
           .single()
 
+        console.log('📋 [EvaluationPeriodCountdown] Config carregado:', {
+          evaluation_period_end_time: config?.evaluation_period_end_time,
+          all_submissions_evaluated: config?.all_submissions_evaluated
+        })
+
         if (config?.evaluation_period_end_time) {
           setEvaluationPeriodEndTime(config.evaluation_period_end_time)
         }
 
         if (config?.all_submissions_evaluated) {
+          console.log('⏭️ [EvaluationPeriodCountdown] Flag all_submissions_evaluated é TRUE, pulando para final')
           setAllEvaluated(true)
         }
 
@@ -44,19 +57,36 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
           .rpc('check_all_submissions_evaluated')
           .single()
 
+        console.log('📊 [EvaluationPeriodCountdown] RPC result:', result)
+
         if (result) {
           setStatus(result as EvaluationStatus)
-          
+
+          // ✅ FIX: Marcar como inicializado após primeiro fetch bem-sucedido
+          if (!isInitialized) {
+            setIsInitialized(true)
+          }
+
           // Se todas foram avaliadas, chamar callback
           if (result.all_evaluated && !allEvaluated) {
+            console.log('✅ [EvaluationPeriodCountdown] RPC retornou all_evaluated = true')
             setAllEvaluated(true)
             setTimeout(() => {
               onEvaluationsComplete()
             }, 3000) // Aguardar 3 segundos antes de prosseguir
+          } else {
+            console.log('⏳ [EvaluationPeriodCountdown] Aguardando avaliações:', {
+              total: result.total_submissions,
+              evaluated: result.evaluated_submissions,
+              pending: result.pending_submissions,
+              all_evaluated: result.all_evaluated
+            })
           }
         }
       } catch (error) {
-        console.error('Erro ao buscar status de avaliação:', error)
+        console.error('❌ Erro ao buscar status de avaliação:', error)
+      } finally {
+        isFetching = false
       }
     }
 
@@ -66,36 +96,14 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     // Atualizar a cada 10 segundos
     const interval = setInterval(fetchEvaluationStatus, 10000)
 
-    // Realtime: Escutar mudanças no event_config
-    const channel = supabase
-      .channel('evaluation_period_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'event_config'
-        },
-        (payload: any) => {
-          if (payload.new.evaluation_period_end_time) {
-            setEvaluationPeriodEndTime(payload.new.evaluation_period_end_time)
-          }
-          
-          if (payload.new.all_submissions_evaluated && !allEvaluated) {
-            setAllEvaluated(true)
-            setTimeout(() => {
-              onEvaluationsComplete()
-            }, 3000)
-          }
-        }
-      )
-      .subscribe()
+    // ✅ FIX: Remover realtime listener que pode causar flashing
+    // O polling a cada 10 segundos é suficiente para detectar mudanças
+    // Realtime estava causando renderizações prematuras quando dados chegavam em paralelo
 
     return () => {
       clearInterval(interval)
-      supabase.removeChannel(channel)
     }
-  }, [supabase, allEvaluated, onEvaluationsComplete])
+  }, [supabase, allEvaluated, onEvaluationsComplete, isInitialized])
 
   // Atualizar timer a cada segundo
   useEffect(() => {
@@ -124,6 +132,13 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [evaluationPeriodEndTime, allEvaluated, onEvaluationsComplete])
+
+  // ✅ FIX: Não renderizar NADA até estar inicializado
+  // Isso previne que dados stale apareçam brevemente
+  // Se não temos evaluationPeriodEndTime ainda, não renderizar nada
+  if (!isInitialized || !evaluationPeriodEndTime) {
+    return null
+  }
 
   // Se todas as submissões foram avaliadas
   if (allEvaluated) {
@@ -174,8 +189,11 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     )
   }
 
+  // ✅ FIX: Validar que evaluationPeriodEndTime é um timestamp futuro válido
+  const isValidFutureTime = evaluationPeriodEndTime && new Date(evaluationPeriodEndTime).getTime() > Date.now()
+
   // Se período de avaliação está ativo (e há pendências)
-  if (evaluationPeriodEndTime && status && !status.all_evaluated) {
+  if (evaluationPeriodEndTime && status && !status.all_evaluated && isValidFutureTime) {
     const minutes = Math.floor(timeLeft / 60)
     const seconds = timeLeft % 60
     const progressPercentage = status.total_submissions > 0

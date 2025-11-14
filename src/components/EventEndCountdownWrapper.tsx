@@ -1,72 +1,133 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import EventEndCountdown from './EventEndCountdown'
 import EvaluationPeriodCountdown from './EvaluationPeriodCountdown'
 
 export default function EventEndCountdownWrapper() {
+  const pathname = usePathname()
+  const isLiveDashboard = pathname === '/live-dashboard'
+
+  // IMPORTANTE: Game Over só aparece em /live-dashboard
+  // Em outras páginas (dashboard, submit, etc), wrapper retorna null
+  // Isso evita que o countdown apareça em todas as páginas
+  if (!isLiveDashboard) {
+    return null
+  }
+
   const [eventEndTime, setEventEndTime] = useState<string | null>(null)
   const [eventEnded, setEventEnded] = useState(false)
   const [evaluationPeriodEndTime, setEvaluationPeriodEndTime] = useState<string | null>(null)
   const [allSubmissionsEvaluated, setAllSubmissionsEvaluated] = useState(false)
   const [showFinalCountdown, setShowFinalCountdown] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [canRenderChild, setCanRenderChild] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchEventConfig = async () => {
-      const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
-      
-      const { data: eventConfig } = await supabase
-        .from('event_config')
-        .select('event_ended, event_end_time, evaluation_period_end_time, all_submissions_evaluated')
-        .eq('id', eventConfigId)
-        .single()
+    const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
+    let isFetching = false
+    const isPageVisibleRef = { current: true }
 
-      if (eventConfig) {
-        setEventEnded(eventConfig.event_ended)
-        setEventEndTime(eventConfig.event_end_time)
-        setEvaluationPeriodEndTime(eventConfig.evaluation_period_end_time)
-        setAllSubmissionsEvaluated(eventConfig.all_submissions_evaluated || false)
+    // ✅ FIX: Detectar visibilidade da página
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+      console.log('👁️ [EventEndCountdownWrapper] Page visibility:', isPageVisibleRef.current ? 'visible' : 'hidden')
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    const fetchEventConfig = async () => {
+      // ✅ FIX: Evitar fetch simultâneos
+      if (isFetching) return
+      // ✅ FIX: Não fazer fetch se página está oculta
+      if (!isPageVisibleRef.current) return
+      isFetching = true
+
+      try {
+        const { data: eventConfig } = await supabase
+          .from('event_config')
+          .select('event_ended, event_end_time, evaluation_period_end_time, all_submissions_evaluated')
+          .eq('id', eventConfigId)
+          .single()
+
+        if (eventConfig) {
+          console.log('📊 [EventEndCountdownWrapper] Carregado estado do evento:', {
+            event_ended: eventConfig.event_ended,
+            event_end_time: eventConfig.event_end_time,
+            evaluation_period_end_time: eventConfig.evaluation_period_end_time,
+            all_submissions_evaluated: eventConfig.all_submissions_evaluated
+          })
+          setEventEnded(eventConfig.event_ended)
+          setEventEndTime(eventConfig.event_end_time)
+          setEvaluationPeriodEndTime(eventConfig.evaluation_period_end_time)
+          setAllSubmissionsEvaluated(eventConfig.all_submissions_evaluated || false)
+
+          // ✅ FIX: Marcar como inicializado após primeiro fetch
+          if (!isInitialized) {
+            setIsInitialized(true)
+            // ✅ FIX: Delay antes de permitir renderização do child
+            // Isso garante que o child também tenha tempo de fazer seu próprio fetch
+            setTimeout(() => {
+              setCanRenderChild(true)
+            }, 500)
+          }
+        }
+      } finally {
+        isFetching = false
       }
     }
 
+    // Buscar imediatamente
     fetchEventConfig()
 
-    // Realtime: detectar quando evento termina
-    const channel = supabase
-      .channel('event_config_countdown')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'event_config'
-        },
-        (payload: any) => {
-          setEventEnded(payload.new.event_ended)
-          setEventEndTime(payload.new.event_end_time)
-          setEvaluationPeriodEndTime(payload.new.evaluation_period_end_time)
-          setAllSubmissionsEvaluated(payload.new.all_submissions_evaluated || false)
-        }
-      )
-      .subscribe()
+    // ✅ FIX: Usar APENAS polling (desabilitar realtime listener)
+    // Razão: O realtime listener estava causando flashing/refresh quando /submit recarregava
+    // O polling a cada 1 segundo é suficiente para detectar game-over
+    // Game-over não muda frequentemente o bastante para precisar de realtime instantâneo
+    const pollingInterval = setInterval(fetchEventConfig, 1000)
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(pollingInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [supabase])
+  }, [supabase, isInitialized])
 
   // Handler para quando avaliações terminarem
   const handleEvaluationsComplete = () => {
+    console.log('🎯 [EventEndCountdownWrapper] Avaliações completadas, iniciando countdown final')
     setShowFinalCountdown(true)
   }
 
+  // Debug: Log de estado
+  console.log('📊 [EventEndCountdownWrapper] Estado atual:', {
+    isInitialized,
+    canRenderChild,
+    evaluationPeriodEndTime,
+    allSubmissionsEvaluated,
+    showFinalCountdown,
+    eventEnded,
+    eventEndTime
+  })
+
+  // ✅ FIX: Não renderizar NADA enquanto estiver inicializando
+  // Isso previne que dados stale apareçam brevemente
+  if (!isInitialized) {
+    return null
+  }
+
+  // ✅ FIX: Validar que evaluation_period_end_time é um timestamp futuro válido
+  const isValidFutureEvaluationTime = evaluationPeriodEndTime && new Date(evaluationPeriodEndTime).getTime() > Date.now()
+
   // FASE 1: Período de Avaliação
   // Mostra se evaluation_period_end_time está definido E ainda não completou
-  if (evaluationPeriodEndTime && !allSubmissionsEvaluated && !showFinalCountdown) {
+  // ✅ FIX: Só renderizar após delay de sincronização (canRenderChild) E se tempo for válido
+  if (evaluationPeriodEndTime && !allSubmissionsEvaluated && !showFinalCountdown && canRenderChild && isValidFutureEvaluationTime) {
+    console.log('🔵 [EventEndCountdownWrapper] Renderizando FASE 1: Evaluation Period')
     return (
-      <EvaluationPeriodCountdown 
+      <EvaluationPeriodCountdown
         onEvaluationsComplete={handleEvaluationsComplete}
       />
     )
@@ -75,16 +136,21 @@ export default function EventEndCountdownWrapper() {
   // FASE 2: Countdown Final (após avaliações)
   // Mostra se avaliações completaram OU tempo expirou
   if (showFinalCountdown || allSubmissionsEvaluated) {
+    console.log('🟠 [EventEndCountdownWrapper] Renderizando FASE 2: Final Countdown')
     return (
-      <EventEndCountdown 
+      <EventEndCountdown
         eventEndTime={eventEndTime}
-        onEventEnd={() => setEventEnded(true)}
+        onEventEnd={() => {
+          console.log('⏹️ [EventEndCountdownWrapper] Countdown terminou, setando eventEnded = true')
+          setEventEnded(true)
+        }}
       />
     )
   }
 
   // FASE 3: GAME OVER (evento oficialmente terminado)
   if (eventEnded) {
+    console.log('🏁 [EventEndCountdownWrapper] Renderizando FASE 3: GAME OVER')
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-black via-red-950 to-black">
         <div className="text-center space-y-8 animate-fade-in">

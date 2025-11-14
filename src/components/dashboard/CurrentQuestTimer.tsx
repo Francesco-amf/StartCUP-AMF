@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
@@ -304,8 +305,13 @@ export default function CurrentQuestTimer({
   // We need fetchQuests in dependencies, but it's defined in the next useEffect
   // So we'll create a ref to track it
   const fetchQuestsRef = useRef<(() => Promise<void>) | null>(null)
+  const pathname = usePathname()
+  const isLiveDashboard = pathname === '/live-dashboard'
 
   useEffect(() => {
+    // ✅ FIX: Only listen for BroadcastChannel messages if we're in live-dashboard
+    if (!isLiveDashboard) return
+
     const channel = new BroadcastChannel('quest-updates')
 
     const handleMessage = (event: MessageEvent) => {
@@ -323,7 +329,7 @@ export default function CurrentQuestTimer({
       channel.removeEventListener('message', handleMessage)
       channel.close()
     }
-  }, [])
+  }, [isLiveDashboard])
 
   // ✅ Carregar quests da fase atual E FAZER POLLING ADAPTATIVO
   // Necessário porque apenas o phase número não muda quando quests são atualizadas
@@ -461,13 +467,29 @@ export default function CurrentQuestTimer({
     // Se começou há mais de 5s, é provavelmente um reload da página, não tocar som
     let isFirstActivation = false
     if (previousQuestIdRef.current === null && currentQuestId !== undefined && currentQuest.started_at) {
-      const questStartTime = new Date(currentQuest.started_at + 'Z')
+      // ✅ FIX: Parsear timestamp corretamente (pode ter +00:00 ou Z ou nenhum)
+      const cleanStartedAt = currentQuest.started_at.includes('+00:00')
+        ? currentQuest.started_at.replace('+00:00', 'Z')
+        : currentQuest.started_at.endsWith('Z')
+        ? currentQuest.started_at
+        : currentQuest.started_at + 'Z'
+
+      const questStartTime = new Date(cleanStartedAt)
       const now = new Date()
+
+      // ✅ SEGURANÇA: Validar se a data é válida antes de usar
+      if (isNaN(questStartTime.getTime())) {
+        console.warn(`⚠️ [CurrentQuestTimer] Data inválida ao parsear: ${currentQuest.started_at}`)
+        return // Não tocar som se data inválida
+      }
+
       const secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
       isFirstActivation = secondsElapsed < 5 // Apenas se começou há menos de 5 segundos
 
+      console.log(`🔍 [CurrentQuestTimer] Primeira quest detectada: ${currentQuest.order_index} (${secondsElapsed.toFixed(2)}s atrás) - isFirstActivation: ${isFirstActivation}`)
+
       if (!isFirstActivation) {
-        console.log(`🔇 [CurrentQuestTimer] Quest ${currentQuest.order_index} já está tocando há ${Math.round(secondsElapsed)}s (reload detectado, som não tocará)`)
+        console.log(`🔇 [CurrentQuestTimer] Quest ${currentQuest.order_index} começou há ${Math.round(secondsElapsed)}s (reload detectado, som não tocará)`)
       }
     }
 
@@ -480,12 +502,13 @@ export default function CurrentQuestTimer({
 
       // Detectar som apropriado para a quest
       const isFirstQuestOfPhase1 = phase === 1 && currentQuest.order_index === 1
+      const isFirstQuestOfAnyPhase = currentQuest.order_index === 1  // Primera quest de qualquer fase
       const isBoss = currentQuest.order_index === 4 ||
                      currentQuest.deliverable_type === 'presentation' ||
                      (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
 
       if (isFirstQuestOfPhase1) {
-        // Som especial para o começo do evento
+        // Som especial para o começo do evento (Fase 1, Quest 1)
         console.log(`🎬 INÍCIO DO EVENTO! Fase 1, Quest 1 ativada!`)
         console.log('🔊 Tocando som: event-start')
         play('event-start')
@@ -498,6 +521,13 @@ export default function CurrentQuestTimer({
         setTimeout(() => {
           play('boss-spawn')
         }, 2500) // 2.5 segundos após a primeira, quando a primeira terminar
+      } else if (isFirstQuestOfAnyPhase) {
+        // ✅ Som especial para primeira quest de CADA FASE (não importa qual)
+        // Fase 1 Quest 1 já foi tratada acima (event-start)
+        // Fase 2+ Quest 1 deve tocar phase-start
+        console.log(`🌟 MUDANÇA DE FASE DETECTADA! De Fase ${phase - 1 || 0} → Fase ${phase}`)
+        console.log(`📣 Primeira quest da Fase ${phase} iniciada! Tocando som: phase-start`)
+        play('phase-start')
       } else {
         // Som padrão para quest normal
         console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)

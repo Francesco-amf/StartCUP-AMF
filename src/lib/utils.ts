@@ -20,3 +20,13 @@ export function cn(...inputs: ClassValue[]) {
 export function getUTCTimestamp(): string {
   return new Date().toISOString()
 }
+
+/**
+ * Converte timestamp ISO para formato sem timezone (para colunas 'timestamp without time zone')
+ * Exemplo: '2025-11-11T14:10:59.130Z' → '2025-11-11T14:10:59.130'
+ */
+export function getUTCTimestampWithoutTZ(): string {
+  const isoString = new Date().toISOString()
+  // Remove o 'Z' do final para obter timestamp without timezone
+  return isoString.replace('Z', '')
+}

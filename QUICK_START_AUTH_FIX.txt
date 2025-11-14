@@ -1,0 +1,112 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                     AUTH 500 ERROR - QUICK START FIX                            ║
+║                                                                                  ║
+║  Problem: Team login returns 500 error from Supabase Auth                       ║
+║  Cause:   Email domain @startcup.local is invalid for Supabase Auth             ║
+║  Fix:     Change to @startcup-amf.com domain                                    ║
+║  Time:    ~5 minutes                                                            ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+BEFORE YOU START:
+─────────────────
+✓ Have Supabase dashboard access
+✓ Go to: https://supabase.com/dashboard
+✓ Select: StartCup AMF project
+
+STEP 1: CLEANUP OLD USERS (30 seconds)
+──────────────────────────────────
+1. Click: SQL Editor → New Query
+2. Open file: cleanup-old-teams.sql
+3. Copy all content (Ctrl+A, Ctrl+C)
+4. Paste into Supabase SQL Editor
+5. Click: RUN
+6. Verify: Success message appears
+
+STEP 2: CREATE NEW USERS (30 seconds)
+─────────────────────────────────
+1. Click: SQL Editor → New Query
+2. Open file: setup-15-teams-FIXED.sql
+3. Copy all content (Ctrl+A, Ctrl+C)
+4. Paste into Supabase SQL Editor
+5. Click: RUN
+6. Verify: Success message appears
+
+STEP 3: TEST LOGIN (1 minute)
+──────────────────────────
+1. Go to: http://localhost:3000/login
+2. Email:    visionone@startcup-amf.com
+3. Password: VisionOne@2024!
+4. Click: Entrar
+5. Verify: Dashboard loads (no 500 error!)
+
+WHAT CHANGED:
+─────────────
+❌ OLD:  visionone@startcup.local      (INVALID - causes 500)
+✅ NEW:  visionone@startcup-amf.com    (VALID - works!)
+
+NEW CREDENTIALS TABLE:
+─────────────────────
+
+VisionOne                 | visionone@startcup-amf.com         | VisionOne@2024!
+Código Sentencial (CS)    | codigosentencial@startcup-amf.com  | CodigoSentencial@2024!
+Smartcampus               | smartcampus@startcup-amf.com       | Smartcampus@2024!
+Geração F                 | geracaof@startcup-amf.com          | GeracaoF@2024!
+SparkUp                   | sparkup@startcup-amf.com           | SparkUp@2024!
+Mistos.com                | mistoscom@startcup-amf.com         | Mistos.com@2024!
+Cogniverse                | cogniverse@startcup-amf.com        | Cogniverse@2024!
+Os Notáveis               | osnotaveis@startcup-amf.com        | OsNotaveis@2024!
+Turistando                | turistando@startcup-amf.com        | Turistando@2024!
+S.Y.M.                    | sym@startcup-amf.com               | S.Y.M.@2024!
+Gastroproject             | gastroproject@startcup-amf.com     | Gastroproject@2024!
+MOVA                      | mova@startcup-amf.com              | MOVA@2024!
+Áurea Forma               | aureaforma@startcup-amf.com        | AureaForma@2024!
+Lumus                     | lumus@startcup-amf.com             | Lumus@2024!
+Mosaico                   | mosaico@startcup-amf.com           | Mosaico@2024!
+
+VERIFY CHANGES (SQL Query):
+──────────────────────────
+
+-- Old users should be gone:
+SELECT COUNT(*) FROM auth.users WHERE email LIKE '%@startcup.local';
+→ Should return: 0
+
+-- New users should exist:
+SELECT COUNT(*) FROM auth.users WHERE email LIKE '%@startcup-amf.com';
+→ Should return: 15
+
+TROUBLESHOOTING:
+────────────────
+
+Still getting 500 error?
+→ Clear browser cache (Ctrl+Shift+Delete)
+→ Try incognito/private window
+→ Wait 2-3 seconds after running scripts
+
+Email or password incorrect?
+→ Verify exact email: visionone@startcup-amf.com
+→ Password is case-sensitive: VisionOne@2024!
+
+Can't find files?
+→ They're in your project root: startcup-amf/
+→ Look for: cleanup-old-teams.sql and setup-15-teams-FIXED.sql
+
+Need more details?
+→ Read: AUTH_500_ERROR_FIX.md (technical explanation)
+→ Read: IMPLEMENTATION_INSTRUCTIONS.md (detailed steps)
+→ Read: AUTH_500_ERROR_DIAGNOSIS_SUMMARY.txt (complete overview)
+
+ROOT CAUSE (TL;DR):
+──────────────────
+Supabase Auth doesn't accept .local domains (special-use TLD).
+Auth validation fails → 500 error during login.
+Changing to .com (standard TLD) fixes it completely.
+
+STATUS: ✅ READY TO IMPLEMENT
+TIME:   ⏱ ~5 minutes
+FILES:  📁 5 files provided (SQL + documentation)
+
+═════════════════════════════════════════════════════════════════════════════════
+
+NEXT ACTION: Run cleanup-old-teams.sql, then setup-15-teams-FIXED.sql
+
+═════════════════════════════════════════════════════════════════════════════════

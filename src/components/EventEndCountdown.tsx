@@ -19,6 +19,12 @@ const supabase = createClient()
 
 type EventPhase = 'countdown' | 'gameOver' | 'suspense' | 'winner'
 
+// Variáveis globais para garantir apenas uma instância de cada áudio
+let globalCountdownAudio: HTMLAudioElement | null = null
+let globalSuspenseAudio: HTMLAudioElement | null = null
+let globalWinnerMusicAudio: HTMLAudioElement | null = null
+let globalWinSoundAudio: HTMLAudioElement | null = null
+
 export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEndCountdownProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [currentPhase, setCurrentPhase] = useState<EventPhase>('countdown')
@@ -30,7 +36,7 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   const SUSPENSE_DURATION = 15 // Duração em segundos (ajustável) - aumentado para transição épica
   const { playFile } = useSoundSystem()
 
-  // Referência para os áudios
+  // Referência para os áudios (agora apenas refs, o controle real está em variáveis globais)
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null)
   const suspenseAudioRef = useRef<HTMLAudioElement | null>(null)
   const winnerMusicRef = useRef<HTMLAudioElement | null>(null)
@@ -45,43 +51,56 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   const manuallyAdvancedRef = useRef(false)
 
   // Tocar som de countdown (usa game-over.mp3 como beep do countdown)
+  // IMPORTANTE: Usa variável global para garantir apenas UMA instância
   const playCountdownSound = useCallback((second: number) => {
     console.log(`⏰ [EventEndCountdown] Tocando beep do countdown: ${second}s`)
 
     try {
-      // Se o áudio nunca foi iniciado, criar e iniciar
-      if (!audioStartedRef.current) {
-        console.log(`⏰ Iniciando som contínuo do countdown no segundo 10`)
-        audioStartedRef.current = true
-
-        const audio = new Audio('/sounds/game-over.mp3')
-        audio.preload = 'auto'
-        audio.volume = 0.6 // Volume para countdown
-        audio.loop = true // Loop contínuo
-        countdownAudioRef.current = audio
-
-        // Tentar tocar imediatamente
-        const playPromise = audio.play()
-        if (playPromise !== undefined) {
-          playPromise.catch(err => {
-            console.warn(`⚠️ Arquivo game-over.mp3 não disponível para countdown:`, err)
-          })
-        }
-      }
-      // Se já está tocando, deixar continuar sem fazer nada
-      else if (countdownAudioRef.current && !countdownAudioRef.current.paused) {
+      // Se o áudio global já existe e está tocando, não fazer nada
+      if (globalCountdownAudio && !globalCountdownAudio.paused) {
         console.log(`⏰ Som já tocando continuamente, ignorando chamada para segundo ${second}s`)
         return
       }
+
+      // Se não existe, criar apenas uma vez
+      if (!globalCountdownAudio) {
+        console.log(`⏰ Iniciando som contínuo do countdown no segundo ${second}s`)
+
+        globalCountdownAudio = new Audio('/sounds/game-over.mp3')
+        globalCountdownAudio.preload = 'auto'
+        globalCountdownAudio.volume = 0.6 // Volume para countdown
+        globalCountdownAudio.loop = true // Loop contínuo
+
+        // Tentar tocar imediatamente
+        const playPromise = globalCountdownAudio.play()
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn(`⚠️ Arquivo game-over.mp3 não disponível para countdown:`, err)
+            // Se falhar, limpar global
+            globalCountdownAudio = null
+          })
+        }
+        audioStartedRef.current = true
+      }
     } catch (error) {
-      console.log('❌ Erro ao reproduzir som de countdown')
+      console.log('❌ Erro ao reproduzir som de countdown:', error)
+      globalCountdownAudio = null
+      audioStartedRef.current = false
     }
   }, [])
 
   // Tocar som de suspense em loop (para Game Over) com fade in
+  // IMPORTANTE: Usa variável global para garantir apenas UMA instância
   const playSuspenseLoopSound = useCallback(() => {
-    if (suspenseStartedRef.current) {
+    // Se já está tocando, não fazer nada
+    if (globalSuspenseAudio && !globalSuspenseAudio.paused) {
       console.log(`🎭 Som de suspense em loop já está tocando`)
+      return
+    }
+
+    // Se já tentou iniciar, não tentar novamente
+    if (suspenseStartedRef.current) {
+      console.log(`🎭 Som de suspense já foi tentado, ignorando`)
       return
     }
 
@@ -89,29 +108,36 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       console.log(`🎭 Iniciando som de suspense em loop com fade in`)
       suspenseStartedRef.current = true
 
-      const audio = new Audio('/sounds/suspense.mp3')
-      audio.volume = 0 // Começar com volume 0
-      audio.loop = true // Som em loop
-      suspenseAudioRef.current = audio
+      // Se não existe, criar apenas uma vez
+      if (!globalSuspenseAudio) {
+        globalSuspenseAudio = new Audio('/sounds/suspense.mp3')
+        globalSuspenseAudio.volume = 0 // Começar com volume 0
+        globalSuspenseAudio.loop = true // Som em loop
+        suspenseAudioRef.current = globalSuspenseAudio
 
-      audio.play().catch(err => {
-        console.warn(`⚠️ Arquivo suspense.mp3 não disponível:`, err)
-      })
+        globalSuspenseAudio.play().catch(err => {
+          console.warn(`⚠️ Arquivo suspense.mp3 não disponível:`, err)
+          globalSuspenseAudio = null
+          suspenseStartedRef.current = false
+        })
 
-      // Fade in de 2 segundos (0 a 0.8)
-      let currentVolume = 0
-      const fadeInInterval = setInterval(() => {
-        currentVolume += 0.4 / 20 // 0.8 volume em 2 segundos (20 steps de 100ms)
-        if (currentVolume >= 0.8) {
-          currentVolume = 0.8
-          clearInterval(fadeInInterval)
-        }
-        if (audio) {
-          audio.volume = currentVolume
-        }
-      }, 100)
+        // Fade in de 2 segundos (0 a 0.8)
+        let currentVolume = 0
+        const fadeInInterval = setInterval(() => {
+          currentVolume += 0.4 / 20 // 0.8 volume em 2 segundos (20 steps de 100ms)
+          if (currentVolume >= 0.8) {
+            currentVolume = 0.8
+            clearInterval(fadeInInterval)
+          }
+          if (globalSuspenseAudio) {
+            globalSuspenseAudio.volume = currentVolume
+          }
+        }, 100)
+      }
     } catch (error) {
-      console.log('❌ Erro ao reproduzir som de suspense em loop')
+      console.log('❌ Erro ao reproduzir som de suspense em loop:', error)
+      globalSuspenseAudio = null
+      suspenseStartedRef.current = false
     }
   }, [])
 
@@ -140,9 +166,17 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   }, [])
 
   // Tocar música de vencedor com fade in gradual (7.5 segundos até o máximo)
+  // IMPORTANTE: Usa variável global para garantir apenas UMA instância
   const playWinnerMusic = useCallback(() => {
-    if (winnerMusicStartedRef.current) {
+    // Se já está tocando, não fazer nada
+    if (globalWinnerMusicAudio && !globalWinnerMusicAudio.paused) {
       console.log(`🏆 Música de vencedor já está tocando`)
+      return
+    }
+
+    // Se já tentou iniciar, não tentar novamente
+    if (winnerMusicStartedRef.current) {
+      console.log(`🏆 Música de vencedor já foi tentada, ignorando`)
       return
     }
 
@@ -150,53 +184,67 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       console.log(`🏆 Iniciando música de vencedor com fade in`)
       winnerMusicStartedRef.current = true
 
-      const audio = new Audio('/sounds/winner-music.mp3')
-      audio.volume = 0 // Começar com volume 0
-      audio.loop = true // Loop contínuo enquanto a tela estiver visível
-      winnerMusicRef.current = audio
+      // Se não existe, criar apenas uma vez
+      if (!globalWinnerMusicAudio) {
+        globalWinnerMusicAudio = new Audio('/sounds/winner-music.mp3')
+        globalWinnerMusicAudio.volume = 0 // Começar com volume 0
+        globalWinnerMusicAudio.loop = true // Loop contínuo enquanto a tela estiver visível
+        winnerMusicRef.current = globalWinnerMusicAudio
 
-      audio.play().catch(err => {
-        console.warn(`⚠️ Arquivo winner-music.mp3 não disponível:`, err)
-      })
+        globalWinnerMusicAudio.play().catch(err => {
+          console.warn(`⚠️ Arquivo winner-music.mp3 não disponível:`, err)
+          globalWinnerMusicAudio = null
+          winnerMusicStartedRef.current = false
+        })
 
-      // Fade in super gradual e suave de 0 para 0.7 em 12.5 segundos (sincronizado com revelação do nome)
-      // Usando curva easing para um fade in mais natural e dissoluto
-      let currentVolume = 0
-      const targetVolume = 0.7
-      const fadeInDuration = 12500 // 12.5 segundos
-      const fadeInSteps = 250 // 250 steps de 50ms cada (ultra suave)
-      const volumeIncrement = targetVolume / fadeInSteps
+        // Fade in super gradual e suave de 0 para 0.7 em 12.5 segundos (sincronizado com revelação do nome)
+        // Usando curva easing para um fade in mais natural e dissoluto
+        let currentVolume = 0
+        const targetVolume = 0.7
+        const fadeInDuration = 12500 // 12.5 segundos
+        const fadeInSteps = 250 // 250 steps de 50ms cada (ultra suave)
 
-      console.log(`🎵 Iniciando fade in ultra gradual da música em 12.5 segundos`)
-      let stepCount = 0
-      const fadeInInterval = setInterval(() => {
-        stepCount++
-        // Usar easing ease-in-out para um fade mais natural
-        const progress = stepCount / fadeInSteps
-        const easeProgress = progress < 0.5
-          ? 2 * progress * progress
-          : -1 + (4 - 2 * progress) * progress
+        console.log(`🎵 Iniciando fade in ultra gradual da música em 12.5 segundos`)
+        let stepCount = 0
+        const fadeInInterval = setInterval(() => {
+          stepCount++
+          // Usar easing ease-in-out para um fade mais natural
+          const progress = stepCount / fadeInSteps
+          const easeProgress = progress < 0.5
+            ? 2 * progress * progress
+            : -1 + (4 - 2 * progress) * progress
 
-        currentVolume = targetVolume * easeProgress
+          currentVolume = targetVolume * easeProgress
 
-        if (stepCount >= fadeInSteps) {
-          currentVolume = targetVolume
-          clearInterval(fadeInInterval)
-          console.log(`🎵 Música alcançou volume máximo (0.7)`)
-        }
-        if (audio) {
-          audio.volume = Math.min(currentVolume, targetVolume)
-        }
-      }, 50)
+          if (stepCount >= fadeInSteps) {
+            currentVolume = targetVolume
+            clearInterval(fadeInInterval)
+            console.log(`🎵 Música alcançou volume máximo (0.7)`)
+          }
+          if (globalWinnerMusicAudio) {
+            globalWinnerMusicAudio.volume = Math.min(currentVolume, targetVolume)
+          }
+        }, 50)
+      }
     } catch (error) {
-      console.log('❌ Erro ao reproduzir música de vencedor')
+      console.log('❌ Erro ao reproduzir música de vencedor:', error)
+      globalWinnerMusicAudio = null
+      winnerMusicStartedRef.current = false
     }
   }, [])
 
   // Tocar som de vitória quando o nome da equipe aparecer
+  // IMPORTANTE: Usa variável global para garantir apenas UMA instância
   const playWinSound = useCallback(() => {
+    // Se já foi tocado, não tocar novamente
     if (winSoundPlayedRef.current) {
       console.log(`🎊 Som de vitória já foi tocado`)
+      return
+    }
+
+    // Se já existe e está tocando, não criar outro
+    if (globalWinSoundAudio && !globalWinSoundAudio.paused) {
+      console.log(`🎊 Som de vitória já está tocando`)
       return
     }
 
@@ -204,16 +252,21 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       console.log(`🎊 Tocando som de vitória (win.mp3) com volume bem alto`)
       winSoundPlayedRef.current = true
 
-      const audio = new Audio('/sounds/win.mp3')
-      audio.volume = 1.0 // Volume máximo
-      audio.loop = false // Tocar uma única vez
-      winSoundRef.current = audio
+      // Se não existe, criar apenas uma vez
+      if (!globalWinSoundAudio) {
+        globalWinSoundAudio = new Audio('/sounds/win.mp3')
+        globalWinSoundAudio.volume = 1.0 // Volume máximo
+        globalWinSoundAudio.loop = false // Tocar uma única vez
+        winSoundRef.current = globalWinSoundAudio
 
-      audio.play().catch(err => {
-        console.warn(`⚠️ Arquivo win.mp3 não disponível:`, err)
-      })
+        globalWinSoundAudio.play().catch(err => {
+          console.warn(`⚠️ Arquivo win.mp3 não disponível:`, err)
+          globalWinSoundAudio = null
+        })
+      }
     } catch (error) {
-      console.log('❌ Erro ao reproduzir som de vitória')
+      console.log('❌ Erro ao reproduzir som de vitória:', error)
+      globalWinSoundAudio = null
     }
   }, [])
 
@@ -253,24 +306,26 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       setCurrentPhase('gameOver')
 
       // Para o som do countdown - aumenta volume e desabilita loop
-      if (countdownAudioRef.current && !countdownAudioRef.current.paused) {
-        countdownAudioRef.current.volume = 0.7
-        countdownAudioRef.current.loop = false
+      // Usar variável global em vez de ref
+      if (globalCountdownAudio && !globalCountdownAudio.paused) {
+        globalCountdownAudio.volume = 0.7
+        globalCountdownAudio.loop = false
       }
 
       // Buscar o vencedor
       fetchWinner()
     }
-  }, [currentPhase, timeLeft])
+  }, [currentPhase, timeLeft, fetchWinner])
 
   // Função para avançar manualmente para Suspense (SEM timer automático)
   const advanceToSuspense = useCallback(() => {
     console.log(`🎭 Avançando manualmente para Suspense`)
     // Parar som de suspense em loop do Game Over
-    if (suspenseAudioRef.current) {
-      suspenseAudioRef.current.pause()
-      suspenseAudioRef.current.currentTime = 0
-      suspenseAudioRef.current.src = ''
+    // Usar variável global em vez de ref
+    if (globalSuspenseAudio) {
+      globalSuspenseAudio.pause()
+      globalSuspenseAudio.currentTime = 0
+      globalSuspenseAudio.src = ''
     }
     suspenseStartedRef.current = false
     setCurrentPhase('suspense')
@@ -290,18 +345,19 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   useEffect(() => {
     if (currentPhase === 'suspense') {
       // Parar som de suspense em loop do Game Over com fade out
-      if (suspenseAudioRef.current) {
-        let fadeOutVolume = suspenseAudioRef.current.volume || 0.8
+      // Usar variável global em vez de ref
+      if (globalSuspenseAudio) {
+        let fadeOutVolume = globalSuspenseAudio.volume || 0.8
         const fadeOutInterval = setInterval(() => {
           fadeOutVolume -= 0.8 / 10 // Fade out em 1 segundo (10 steps de 100ms)
           if (fadeOutVolume <= 0) {
             fadeOutVolume = 0
-            suspenseAudioRef.current?.pause()
-            suspenseAudioRef.current = null
+            globalSuspenseAudio?.pause()
+            globalSuspenseAudio = null
             clearInterval(fadeOutInterval)
           }
-          if (suspenseAudioRef.current) {
-            suspenseAudioRef.current.volume = fadeOutVolume
+          if (globalSuspenseAudio) {
+            globalSuspenseAudio.volume = fadeOutVolume
           }
         }, 100)
       }
@@ -317,10 +373,11 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   useEffect(() => {
     if (currentPhase === 'suspense' && suspenseCountdown > 0) {
       // Aplicar fade out durante os últimos 4 segundos
-      if (suspenseCountdown <= 4 && suspenseAudioRef.current) {
+      // Usar variável global em vez de ref
+      if (suspenseCountdown <= 4 && globalSuspenseAudio) {
         // Calcular volume: de 0.8 em 4s para 0 em 0s
         const volumePercentage = suspenseCountdown / 4
-        suspenseAudioRef.current.volume = 0.8 * volumePercentage
+        globalSuspenseAudio.volume = 0.8 * volumePercentage
         console.log(`🔊 Fade out: ${suspenseCountdown}s - Volume: ${(0.8 * volumePercentage).toFixed(2)}`)
       }
 
@@ -340,10 +397,11 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       setWinnerRevealStage('hidden') // Começar revelação oculta
 
       // Parar som de suspense se ainda estiver tocando
-      if (suspenseAudioRef.current && !suspenseAudioRef.current.paused) {
-        suspenseAudioRef.current.pause()
-        suspenseAudioRef.current.currentTime = 0
-        suspenseAudioRef.current.src = ''
+      // Usar variável global em vez de ref
+      if (globalSuspenseAudio && !globalSuspenseAudio.paused) {
+        globalSuspenseAudio.pause()
+        globalSuspenseAudio.currentTime = 0
+        globalSuspenseAudio.src = ''
       }
 
       // Iniciar música de vencedor

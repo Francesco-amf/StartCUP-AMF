@@ -6,6 +6,9 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import EvaluatorPenaltyAssigner from '@/components/evaluator/EvaluatorPenaltyAssigner'
 import MentorRequestsList from '@/components/evaluator/MentorRequestsList'
+import crypto from 'crypto'
+
+export const dynamic = 'force-dynamic'
 
 export default async function EvaluatorDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -133,8 +136,20 @@ export default async function EvaluatorDashboard() {
 
   console.log('✅ My evaluations:', myEvaluations)
 
+  // ✅ Criar snapshot dos dados para polling em tempo real
+  const dataSnapshot = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      pendingCount: pendingForMe?.length || 0,
+      evaluatedCount: evaluatedIds?.length || 0,
+      lastSubmissionTime: submissions?.[0]?.submitted_at
+    }))
+    .digest('hex')
+
   return (
     <div className="min-h-screen gradient-startcup">
+      {/* ✅ REMOVED: TeamPageRealtime was causing router.refresh() affecting all tabs
+          Server-component is already force-dynamic, fetching fresh data on every request */}
       <Header
         title={`Bem-vindo, ${evaluator?.name || 'Avaliador'}! ⭐`}
         subtitle={evaluator?.specialty || 'Avaliador Geral'}

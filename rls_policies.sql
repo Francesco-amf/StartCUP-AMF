@@ -7,10 +7,10 @@ CREATE OR REPLACE FUNCTION get_my_email() RETURNS TEXT AS $$
   SELECT current_setting('request.jwt.claims', true)::jsonb ->> 'email';
 $$ LANGUAGE sql STABLE;
 
--- Helper function to get the team_id of the current user
-CREATE OR REPLACE FUNCTION get_my_team_id() RETURNS UUID AS $$
-  SELECT id FROM public.teams WHERE email = get_my_email();
-$$ LANGUAGE sql STABLE;
+-- ⚠️ DEPRECATED: get_my_team_id() was causing infinite recursion in RLS policies
+-- It queried the teams table, which triggered RLS policies that called this function again
+-- Solution: Use inline subqueries with LIMIT 1 and email-based lookups instead
+-- See updated policies for teams and submissions tables
 
 -- Helper function to get a value from the user's JWT claims
 CREATE OR REPLACE FUNCTION get_my_claim(claim TEXT) RETURNS TEXT AS $$
@@ -93,7 +93,14 @@ USING (get_my_claim('role') IN ('admin', 'evaluator'));
 CREATE POLICY "Allow teams to read their own submissions" ON submissions
 FOR SELECT
 TO authenticated
-USING (team_id = get_my_team_id());
+USING (
+  team_id = (
+    SELECT id FROM public.teams
+    WHERE email = current_setting('request.jwt.claims', true)::jsonb->>'email'
+    LIMIT 1
+  )
+  OR get_my_claim('role') IN ('admin', 'evaluator')
+);
 
 CREATE POLICY "Allow anon read access to submissions" ON submissions
 FOR SELECT
@@ -103,7 +110,13 @@ USING (true);
 CREATE POLICY "Allow teams to create submissions" ON submissions
 FOR INSERT
 TO authenticated
-WITH CHECK (team_id = get_my_team_id());
+WITH CHECK (
+  team_id = (
+    SELECT id FROM public.teams
+    WHERE email = current_setting('request.jwt.claims', true)::jsonb->>'email'
+    LIMIT 1
+  )
+);
 
 CREATE POLICY "Allow evaluators to update submissions" ON submissions
 FOR UPDATE
@@ -139,12 +152,14 @@ WITH CHECK (get_my_claim('role') = 'admin');
 CREATE POLICY "Allow admin to update all teams" ON teams
 FOR UPDATE
 TO authenticated
-USING (get_my_claim('role') = 'admin');
+USING (get_my_claim('role') = 'admin')
+WITH CHECK (get_my_claim('role') = 'admin');
 
 CREATE POLICY "Allow teams to update their own team" ON teams
 FOR UPDATE
 TO authenticated
-USING (id = get_my_team_id());
+USING (email = current_setting('request.jwt.claims', true)::jsonb->>'email')
+WITH CHECK (email = current_setting('request.jwt.claims', true)::jsonb->>'email');
 
 CREATE POLICY "Allow admin to delete teams" ON teams
 FOR DELETE

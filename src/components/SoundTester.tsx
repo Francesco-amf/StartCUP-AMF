@@ -1,11 +1,17 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
 export default function SoundTester() {
-  const { play, isClient } = useSoundSystem()
+  const [isClient, setIsClient] = useState(false)
+  const { play } = useSoundSystem()
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   if (!isClient) return null
 

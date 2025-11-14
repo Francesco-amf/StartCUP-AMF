@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     }
 
     // Atualizar quest para status 'active'
-    // IMPORTANTE: Usar getUTCTimestamp() para garantir UTC correto
-    // Evita problema de timezone onde servidor local é interpretado como UTC
+    // IMPORTANTE: Usar getUTCTimestamp() para timestamp com timezone
+    // A coluna started_at é 'timestamp with time zone'
     const { data: updatedQuest, error: updateError } = await supabaseAdmin
       .from('quests')
       .update({

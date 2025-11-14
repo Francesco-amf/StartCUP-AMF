@@ -3,6 +3,11 @@ import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import SubmissionWrapper from '@/components/forms/SubmissionWrapper'
 import Header from '@/components/Header'
+import crypto from 'crypto'
+
+// ✅ Server-rendered dynamically on every request
+// ✅ No static generation - always fetch fresh data from Supabase
+export const dynamic = 'force-dynamic'
 
 export default async function SubmitPage() {
   const supabase = await createServerSupabaseClient()
@@ -60,24 +65,51 @@ export default async function SubmitPage() {
     .order('phase_id, order_index')
 
   if (activeQuestsData) {
-    quests = activeQuestsData.map(quest => {
-      let deliverableType = quest.deliverable_type;
-      
-      // Se vier como string JSON, fazer parse
-      if (typeof deliverableType === 'string') {
-        try {
-          deliverableType = JSON.parse(deliverableType);
-        } catch (e) {
-          console.error('❌ Erro ao fazer parse de deliverable_type:', e);
-          deliverableType = [deliverableType];
+    // ✅ Função helper para normalizar deliverableType de forma segura
+    const normalizeDeliverableType = (value: any): string[] => {
+      try {
+        // Se já é array, validar e retornar
+        if (Array.isArray(value)) {
+          const filtered = value.filter(v => typeof v === 'string' && v.length > 0);
+          return filtered.length > 0 ? filtered : ['file']; // Fallback padrão
         }
+
+        // Se é string, processar
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+
+          // Se parece ser JSON, tentar parsear com try/catch
+          if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                const filtered = parsed.filter(v => typeof v === 'string' && v.length > 0);
+                return filtered.length > 0 ? filtered : ['file'];
+              }
+              return [String(parsed)];
+            } catch (parseError) {
+              // JSON parse falhou - tratar como string simples
+              console.warn('⚠️ JSON parse falhou para deliverableType:', { original: value, trimmed });
+              return trimmed.length > 0 ? [trimmed] : ['file'];
+            }
+          } else {
+            // É string simples
+            return trimmed.length > 0 ? [trimmed] : ['file'];
+          }
+        }
+
+        // Fallback para outros tipos
+        return value ? [String(value)] : ['file'];
+      } catch (error) {
+        // Último fallback - nunca deixar falhar
+        console.error('❌ Erro crítico ao normalizar deliverableType:', error, { value });
+        return ['file'];
       }
-      
-      // Garantir que é array
-      if (!Array.isArray(deliverableType)) {
-        deliverableType = deliverableType ? [deliverableType] : [];
-      }
-      
+    };
+
+    quests = activeQuestsData.map(quest => {
+      const deliverableType = normalizeDeliverableType(quest.deliverable_type);
+
       return {
         ...quest,
         deliverable_type: deliverableType
@@ -95,7 +127,7 @@ export default async function SubmitPage() {
   // Buscar submissions já feitas pela equipe
   const { data: submissions, error: submissionsError } = await supabase
     .from('submissions')
-    .select('quest_id, status, final_points')
+    .select('quest_id, status, final_points, created_at')
     .eq('team_id', team.id)
 
   console.log('📦 Team submissions:', {
@@ -130,8 +162,22 @@ export default async function SubmitPage() {
     isCompleted: evaluatedQuestIds.includes(quest.id), // Já foi entregue e avaliada
   }))
 
+  // ✅ Criar snapshot dos dados para polling em tempo real
+  const dataSnapshot = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      currentPhase: eventConfig?.current_phase,
+      eventStarted: eventConfig?.event_started,
+      eventEnded: eventConfig?.event_ended,
+      submissionsCount: submissions?.length || 0,
+      lastSubmissionTime: submissions?.[0]?.created_at
+    }))
+    .digest('hex')
+
   return (
     <div className="min-h-screen gradient-startcup">
+      {/* ✅ REMOVED: TeamPageRealtime was causing router.refresh() affecting all tabs
+          Server-component is already force-dynamic, fetching fresh data on every request */}
       <Header
         title="📝 Submeter Entregas"
         subtitle={`${team.name} - ${team.course}`}

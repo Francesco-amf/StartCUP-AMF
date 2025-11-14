@@ -103,7 +103,9 @@ export default function SubmissionDeadlineStatus({ questId }: SubmissionDeadline
     }
 
     fetchDeadlineInfo()
-    const interval = setInterval(fetchDeadlineInfo, 10_000)
+    // Sync polling with other components (500ms in QuestAutoAdvancer + 1s in PhaseController)
+    // Using 1s to avoid excessive queries while staying responsive to deadline changes
+    const interval = setInterval(fetchDeadlineInfo, 1_000)
     return () => {
       mounted = false
       clearInterval(interval)

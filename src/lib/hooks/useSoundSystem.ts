@@ -32,12 +32,9 @@ export function useSoundSystem() {
     volume: 0.7,
     enabled: true
   })
-  const [isClient, setIsClient] = useState(false)
 
   // Inicializar no lado do cliente
   useEffect(() => {
-    setIsClient(true)
-
     // Sincronizar com estado atual do manager
     setSoundConfig(audioManager.getConfig())
 
@@ -83,7 +80,7 @@ export function useSoundSystem() {
    * Agora com suporte a prioridade
    */
   const play = (type: AudioFileType, priority?: number) => {
-    console.log('📞 [useSoundSystem.play] Chamado com tipo:', type, 'prioridade:', priority, 'isClient:', isClient)
+    console.log('📞 [useSoundSystem.play] Chamado com tipo:', type, 'prioridade:', priority)
 
     // Para penalty especificamente, usar fallback synthesized
     if (type === 'penalty') {
@@ -180,7 +177,6 @@ export function useSoundSystem() {
 
     // Estado
     soundConfig,
-    isClient,
     getState
   }
 }

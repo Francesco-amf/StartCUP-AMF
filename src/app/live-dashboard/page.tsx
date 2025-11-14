@@ -8,7 +8,6 @@ import EvaluatorCardsDisplay from '@/components/EvaluatorCardsDisplay'
 import LivePowerUpStatus from '@/components/dashboard/LivePowerUpStatus'
 import LivePenaltiesStatus from '@/components/dashboard/LivePenaltiesStatus'
 import AudioAuthorizationBanner from '@/components/dashboard/AudioAuthorizationBanner'
-import QuestDebugPanel from '@/components/dashboard/QuestDebugPanel'
 import EventEndCountdownWrapper from '@/components/EventEndCountdownWrapper'
 
 export default function LiveDashboard() {
@@ -170,9 +169,6 @@ export default function LiveDashboard() {
 
         </div>
       </div>
-
-      {/* 🔍 PAINEL DE DEBUG - Quest Congelada */}
-      <QuestDebugPanel />
     </div>
     </>
   )

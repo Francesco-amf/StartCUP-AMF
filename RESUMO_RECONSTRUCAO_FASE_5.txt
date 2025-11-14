@@ -1,0 +1,161 @@
+================================================================================
+  🚀 RECONSTRUÇÃO COMPLETA DA FASE 5 - RESUMO EXECUTIVO
+================================================================================
+
+PROBLEMA IDENTIFICADO:
+─────────────────────
+❌ Fase 5 foi criada com estrutura incorreta
+❌ Quests tinham tipos de dados errados
+❌ Faltava a Quest 5.4 (BOSS Final) com 200 pontos
+❌ Evaluation period não acionava corretamente
+❌ Game over não aparecia
+
+ANÁLISE REALIZADA:
+──────────────────
+✅ Estudou Fases 1-4 em detalhes
+✅ Identificou padrão: 4 quests por fase (3 digitais + 1 BOSS)
+✅ Descobriu que Fase 5 é diferente: Quest 4 vale 200 pts, não 100
+✅ Mapeou fluxo completo: Phase 5 → Evaluation → Countdown → Game Over → Winner
+
+SOLUÇÃO IMPLEMENTADA:
+─────────────────────
+1️⃣  SCRIPT SQL: RECONSTRUIR_FASE_5_COMPLETA.sql
+    ├─ Deleta Fase 5 antiga
+    ├─ Recria com estrutura correta
+    ├─ Cria 4 quests alinhados
+    └─ Valida integridade
+
+2️⃣  ESTRUTURA CORRETA:
+    Quest 5.1: 100 pts, Documento (arquivo)
+    Quest 5.2: 100 pts, Slides (arquivo)
+    Quest 5.3: 100 pts, Vídeo (arquivo)
+    Quest 5.4: 200 pts, BOSS Apresentação ← CRÍTICO!
+    ────────────────────────────
+    Total:    500 pts
+
+3️⃣  CÓDIGO JAVASCRIPT:
+    ✅ EventEndCountdownWrapper com polling fallback (1 sec)
+    ✅ EvaluationPeriodCountdown com logging detalhado
+    ✅ Suporte completo a Evaluation Period + Game Over flow
+
+4️⃣  BANCO DE DADOS:
+    ✅ RPC check_all_submissions_evaluated() corrigido
+    ✅ Fase 5 com 500 pontos totais
+    ✅ event_config com evaluation_period_end_time
+
+FLUXO ESPERADO (60 minutos):
+───────────────────────────
+
+[00:00-00:20] Quest 5.1 ativa (20 minutos)
+[00:20-00:35] Quest 5.2 ativa (15 minutos)
+[00:35-00:50] Quest 5.3 ativa (15 minutos)
+[00:50-01:00] Quest 5.4 BOSS ativa (10 minutos)
+
+[01:00] Quest 5.4 fecha
+  └─> evaluation_period_end_time setado
+      event_end_time setado
+
+[01:00-01:30] EVALUATION PERIOD (30 seg - TESTE)
+  Fundo: 🟦 AZUL/ROXO
+  Mostra: "AVALIAÇÕES FINAIS EM ANDAMENTO"
+  Timer: Contando pra baixo 00:30
+  Barra de progresso de submissões
+
+[01:30-02:00] COUNTDOWN FINAL (30 seg - TESTE)
+  Fundo: 🟥 VERMELHO
+  Mostra: "O evento terminará em..."
+  Timer: Contando pra baixo 00:30
+
+[02:00+] GAME OVER
+  Fundo: ⬛ PRETO/VERMELHO
+  Mostra: "GAME OVER" (efeito glitch)
+  Botão: "▶️ REVELAR VENCEDOR"
+  Audio: beeping + suspense music
+
+[02:00+] SUSPENSE (15 seg)
+  Mostra: "O VENCEDOR DO JOGO É..."
+  Timer: 15 segundos contando
+  Audio: suspense.mp3 fade out + winner-music.mp3 fade in
+
+[02:15+] WINNER (Indefinido)
+  Mostra: Nome do vencedor
+  Mostra: Pontos totais
+  Audio: winner-music.mp3 looping
+  Efeito: Confetti caindo
+
+CHECKLIST DE IMPLEMENTAÇÃO:
+──────────────────────────
+☐ 1. Copiar RECONSTRUIR_FASE_5_COMPLETA.sql
+☐ 2. Executar em Supabase SQL Editor
+☐ 3. Resetar event_config:
+     UPDATE event_config SET
+       event_ended = false,
+       event_end_time = NULL,
+       evaluation_period_end_time = NULL,
+       all_submissions_evaluated = false,
+       current_phase = 0;
+☐ 4. Desabilitar trigger automático:
+     ALTER TABLE event_config DISABLE TRIGGER start_evaluation_period_trigger;
+☐ 5. Testar RPC:
+     SELECT * FROM check_all_submissions_evaluated();
+     (all_evaluated deve ser FALSE!)
+☐ 6. Build local:
+     npm run build
+☐ 7. Testar sequência completa
+
+VALIDAÇÃO:
+──────────
+Verificar após reconstrução:
+
+✅ SELECT COUNT(*) FROM phases WHERE order_index = 5;
+   → Deve retornar: 1
+
+✅ SELECT COUNT(*) FROM quests WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5);
+   → Deve retornar: 4
+
+✅ SELECT SUM(max_points) FROM quests WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5);
+   → Deve retornar: 500
+
+✅ SELECT array_to_string(deliverable_type, ',') FROM quests WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5) ORDER BY order_index;
+   → Deve retornar:
+     file
+     file
+     file
+     presentation ← CRÍTICO!
+
+FILES CRIADOS/MODIFICADOS:
+────────────────────────
+📝 RECONSTRUIR_FASE_5_COMPLETA.sql
+   → SQL para reconstruir Fase 5 do zero
+
+📝 MASTER_PLAN_FASE_5_RECONSTRUCAO.md
+   → Plano detalhado com timeline e validações
+
+📝 RESUMO_RECONSTRUCAO_FASE_5.txt
+   → Este arquivo (resumo executivo)
+
+📄 src/components/EventEndCountdownWrapper.tsx
+   → Updated: Polling fallback (1 sec) para garantir detection
+
+📄 src/components/EvaluationPeriodCountdown.tsx
+   → Updated: Logging extensivo para debug
+
+PRÓXIMOS PASSOS:
+────────────────
+1. Execute o script SQL (RECONSTRUIR_FASE_5_COMPLETA.sql)
+2. Resetar event_config
+3. npm run build
+4. Testar Control Panel → Start Phase 5
+5. Aguarde 60 minutos (ou acelere em modo teste)
+6. Verifique toda a sequência: Evaluation → Countdown → Game Over → Winner
+
+STATUS FINAL:
+─────────────
+🟢 Análise: Completa
+🟢 SQL Script: Pronto
+🟢 React Components: Atualizados
+🟢 Plano: Detalhado
+
+🔴 PRÓXIMO: Executar SQL script no Supabase
+
+================================================================================

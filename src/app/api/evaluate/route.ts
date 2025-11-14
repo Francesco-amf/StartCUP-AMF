@@ -188,16 +188,30 @@ export async function POST(request: Request) {
         avgPoints
       })
 
+      // ========================================
+      // VERIFICAR SE É ATRASADA E SUBTRAIR PENALIDADE
+      // ========================================
+      let finalPoints = avgPoints
+
+      if (submission.is_late && submission.late_penalty_applied) {
+        finalPoints = avgPoints - submission.late_penalty_applied
+        console.log('⚠️  Late submission detected:', {
+          avgPoints,
+          late_penalty_applied: submission.late_penalty_applied,
+          finalPoints
+        })
+      }
+
       // Atualizar submission com AMF Coins finais
       const { error: updateError } = await supabase
         .from('submissions')
         .update({
-          final_points: avgPoints,
+          final_points: finalPoints,
           status: 'evaluated',
         })
         .eq('id', submission_id)
 
-      console.log('✏️ Updated submission:', { avgPoints, updateError })
+      console.log('✏️ Updated submission:', { avgPoints, finalPoints, is_late: submission.is_late, late_penalty: submission.late_penalty_applied, updateError })
 
       if (updateError) {
         console.error('❌ Error updating submission:', updateError)

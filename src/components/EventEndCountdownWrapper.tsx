@@ -85,9 +85,9 @@ export default function EventEndCountdownWrapper() {
 
     // ✅ FIX: Usar APENAS polling (desabilitar realtime listener)
     // Razão: O realtime listener estava causando flashing/refresh quando /submit recarregava
-    // O polling a cada 1 segundo é suficiente para detectar game-over
-    // Game-over não muda frequentemente o bastante para precisar de realtime instantâneo
-    const pollingInterval = setInterval(fetchEventConfig, 1000)
+    // Aumentado de 1000ms para 2000ms (game-over raramente muda)
+    // Reduz queries de 60/min → 30/min (50% menos)
+    const pollingInterval = setInterval(fetchEventConfig, 2000)
 
     return () => {
       clearInterval(pollingInterval)

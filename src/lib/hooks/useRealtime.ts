@@ -59,9 +59,9 @@ export function useRealtimeRanking() {
     // Buscar imediatamente
     fetchRanking()
 
-    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
-    // IMPORTANTE: Manter em sync com useRealtimePhase (500ms) para evitar interferência de re-renders
-    // Quando todos polling rodam no mesmo intervalo, evita caos de atualizações assincronas
+    // 🔄 Polling staggered a cada 500ms com delay de 0ms (primeiro hook)
+    // IMPORTANTE: Cada hook começa em tempo diferente para evitar polling storms
+    // T=0ms: useRealtimeRanking
     const pollInterval = setInterval(fetchRanking, 500)
 
     // Cleanup
@@ -144,12 +144,20 @@ export function useRealtimePhase() {
     // Buscar imediatamente
     fetchPhase()
 
-    // 🔄 Polling sincronizado a cada 500ms (adaptado ao CurrentQuestTimer para resposta instantânea)
-    const pollInterval = setInterval(fetchPhase, 500) // 4x mais rápido! Sincronizado com CurrentQuestTimer (500ms)
+    // 🔄 Polling staggered a cada 500ms com delay de 125ms (segundo hook)
+    // IMPORTANTE: Cada hook começa em tempo diferente para evitar polling storms
+    // T=125ms: useRealtimePhase
+    let pollInterval: NodeJS.Timeout
+    const timeoutId = setTimeout(() => {
+      pollInterval = setInterval(fetchPhase, 500)
+    }, 125)
 
     // Cleanup
     return () => {
-      clearInterval(pollInterval)
+      clearTimeout(timeoutId)
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
     }
   }, [supabase])
 
@@ -209,13 +217,19 @@ export function useRealtimePenalties() {
     // Buscar imediatamente
     fetchPenalties()
 
-    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
-    // IMPORTANTE: Manter em sync com useRealtimePhase e useRealtimeRanking (500ms)
-    const pollInterval = setInterval(fetchPenalties, 500)
+    // 🔄 Polling staggered a cada 500ms com delay de 250ms (terceiro hook)
+    // T=250ms: useRealtimePenalties
+    let pollInterval: NodeJS.Timeout
+    const timeoutId = setTimeout(() => {
+      pollInterval = setInterval(fetchPenalties, 500)
+    }, 250)
 
     // Cleanup
     return () => {
-      clearInterval(pollInterval)
+      clearTimeout(timeoutId)
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
     }
   }, [supabase, play])
 
@@ -273,13 +287,19 @@ export function useRealtimeEvaluators() {
     // Buscar imediatamente
     fetchEvaluators()
 
-    // 🔄 Polling sincronizado a cada 500ms (padrão de toda dashboard)
-    // IMPORTANTE: Manter em sync com useRealtimePhase, useRealtimeRanking e useRealtimePenalties (500ms)
-    const pollInterval = setInterval(fetchEvaluators, 500)
+    // 🔄 Polling staggered a cada 500ms com delay de 375ms (quarto hook)
+    // T=375ms: useRealtimeEvaluators
+    let pollInterval: NodeJS.Timeout
+    const timeoutId = setTimeout(() => {
+      pollInterval = setInterval(fetchEvaluators, 500)
+    }, 375)
 
     // Cleanup
     return () => {
-      clearInterval(pollInterval)
+      clearTimeout(timeoutId)
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
     }
   }, [supabase, play])
 

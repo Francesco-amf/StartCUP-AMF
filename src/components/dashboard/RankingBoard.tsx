@@ -86,15 +86,11 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
 
   // Detectar mudanças apenas do ranking array
   useEffect(() => {
-    console.log('🔔 [RankingBoard.useEffect] Ranking mudou, aguardando 500ms para processar...')
-    // Delay pequeno (500ms) para garantir que penalty entre na fila ANTES de ranking-up
-    // Isso dá tempo suficiente sem perder o evento de ranking
-    const timer = setTimeout(() => {
-      console.log('⏰ [RankingBoard] Delay de 500ms expirou, processando agora...')
-      processPenalties()
-    }, 500)
-
-    return () => clearTimeout(timer)
+    console.log('🔔 [RankingBoard.useEffect] Ranking mudou, processando imediatamente...')
+    // ✅ Remover delay de 500ms: processar imediatamente
+    // Sons são queue em useSoundSystem, não há risk de ordering issues
+    // Melhor responsividade e menos fila de audio
+    processPenalties()
   }, [ranking, processPenalties])
   const getPositionEmoji = (position: number) => {
     switch (position) {

@@ -169,9 +169,9 @@ export default function LivePenaltiesStatus() {
     setLoading(true)
     fetchPenalties()
 
-    // 🔄 Polling cada 1 segundo (muito mais responsivo para detectar penalidades)
-    const interval = setInterval(fetchPenalties, 1000)
-    return () => clearInterval(interval)
+    // 🔄 Polling removido - useRealtimePenalties já faz isso a cada 500ms
+    // Não é necessário duplicar o polling aqui
+    return () => {}
   }, [])
 
   if (loading) {

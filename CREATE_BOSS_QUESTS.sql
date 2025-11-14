@@ -129,36 +129,11 @@ FROM phases p
 WHERE p.order_index = 4
 ON CONFLICT DO NOTHING;
 
--- FASE 5: BOSS FINAL - "Apresentação oficial para os jurados" (200 pts)
+-- FASE 5: NÃO TEM BOSS (apenas 3 quests)
 -- ========================================
-INSERT INTO quests (
-  phase_id,
-  name,
-  description,
-  deliverable_type,
-  status,
-  max_points,
-  order_index,
-  planned_deadline_minutes,
-  late_submission_window_minutes,
-  allow_late_submissions,
-  duration_minutes
-)
-SELECT
-  p.id,
-  '🔥 BOSS FINAL - Pitch Oficial',
-  'Apresentação oficial de 5 minutos para banca de jurados: O pitch definitivo. Mostre tudo que construíram durante a maratona.',
-  ARRAY['presentation']::text[],
-  'scheduled',
-  200,
-  4,
-  10,
-  0,
-  false,
-  10
-FROM phases p
-WHERE p.order_index = 5
-ON CONFLICT DO NOTHING;
+-- Phase 5 não tem boss (apresentação). Apenas 3 quests digitais.
+-- Isso foi deliberadamente removido conforme decisão de design.
+-- Se quiser adicionar quest em Fase 5, use INSERT direto.
 
 -- ========================================
 -- VERIFICAR CRIAÇÃO
@@ -178,8 +153,8 @@ ORDER BY p.order_index;
 -- ========================================
 -- RESUMO
 -- ========================================
-SELECT 
+SELECT
   '✅ BOSS Quests criadas com sucesso!' as status,
   'Fase 1-4: 100 pontos cada (10 min)' as boss_normais,
-  'Fase 5: 200 pontos (BOSS FINAL, 10 min)' as boss_final,
+  'Fase 5: SEM BOSS (apenas 3 quests digitais)' as nota_fase_5,
   'deliverable_type = presentation (sem submissão digital)' as tipo;

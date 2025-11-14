@@ -28,20 +28,21 @@ Fluxo: Fase N → (4 quests) → Fase N+1
 ### ⚠️ Fase 5 É Diferente (THE KEY!)
 
 ```
-Fase 5 tem a MESMA estrutura de 4 quests, MAS:
+Fase 5 tem APENAS 3 QUESTS (SEM BOSS):
 
-Quest 1-3: Ainda 100 pts cada (mesmo padrão)
+Quest 1-3: 100 pts cada (mesmos tipos de entrega digital)
+├─ Tipo: ['file'] (documentos, slides, vídeos)
+├─ Pontos: 100 cada
+├─ Duração: 20-15 minutos cada
+└─ Scoring: submissions + evaluations tables
 
-Quest 4 (BOSS FINAL): 200 PONTOS ← DOBRADOS!
-├─ Tipo: ['presentation']
-├─ Pontos: 200 (não 100!)
-├─ Duração: 10 minutos
-├─ Scoring: boss_battles table
-└─ CRITICO: Quando Quest 5.4 fecha → evaluation_period inicia
+⛔ REMOVED: Quest 4 (BOSS FINAL) - NÃO EXISTE
+└─ Não há 200 pontos, não há apresentação obrigatória
+└─ Decisão: Fase 5 é apenas quests digitais
 
-TOTAL: 500 pontos (vs 400 das outras fases)
+TOTAL: 300 pontos (vs 400 das outras fases)
 
-Fluxo: Fase 5 → (4 quests) → evaluation_period → game_over → winner
+Fluxo: Fase 5 → (3 quests) → evaluation_period → game_over → winner
 ```
 
 ---
@@ -65,11 +66,11 @@ Fluxo: Fase 5 → (4 quests) → evaluation_period → game_over → winner
 ├─ Quest 4.1 (20 min) → 4.2 (25 min) → 4.3 (20 min) → 4.4 BOSS (10 min)
 └─ Total: ~75 minutos
 
-[Fase 5 - FINAL] ← DIFERENTE!
-├─ Quest 5.1 (20 min) → 5.2 (15 min) → 5.3 (15 min) → 5.4 BOSS FINAL (10 min)
-└─ Total: 60 minutos ← MAIS CURTA
+[Fase 5 - FINAL] ← DIFERENTE! SEM BOSS
+├─ Quest 5.1 (20 min) → 5.2 (15 min) → 5.3 (15 min) [SEM Quest 5.4 BOSS]
+└─ Total: 50 minutos ← MAIS CURTA, SEM APRESENTAÇÃO
 
-[Quest 5.4 fecha]
+[Quest 5.3 fecha (ÚLTIMA QUEST)]
   ↓
 [evaluation_period_end_time = NOW() + 30 segundos (teste)]
 [event_end_time = NOW() + 60 segundos (teste)]
@@ -227,12 +228,7 @@ Expected: ✅ Compiled successfully
   ├─ Console: Logs de atualização
   └─ Dashboard: Quest 5.3 agora ativa
 
-[00:50] Quest 5.3 expira
-  ├─ Terminal: ADVANCE-QUEST endpoint chamado
-  ├─ Console: Logs de atualização
-  └─ Dashboard: Quest 5.4 (BOSS) agora ativa
-
-[01:00] Quest 5.4 (BOSS) expira ← MOMENTO CRÍTICO!
+[00:50] Quest 5.3 expira (ÚLTIMA QUEST) ← MOMENTO CRÍTICO!
   ├─ Terminal: ⏰ Período de avaliação: [timestamp]
   ├─ Terminal: ⏰ Evento terminará em: [timestamp]
   ├─ Console: 📊 [EventEndCountdownWrapper] Carregado estado...
@@ -278,7 +274,7 @@ Expected: ✅ Compiled successfully
 SELECT * FROM phases WHERE order_index = 5;
 -- Expected: 1 row, max_points = 500
 
--- Verificar 4 quests
+-- Verificar 3 quests (SEM BOSS)
 SELECT order_index, name, max_points, array_to_string(deliverable_type, ',')
 FROM quests
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5)
@@ -287,7 +283,7 @@ ORDER BY order_index;
 -- 1, Quest 5.1..., 100, file
 -- 2, Quest 5.2..., 100, file
 -- 3, Quest 5.3..., 100, file
--- 4, Quest 5.4..., 200, presentation ← KEY!
+-- (NO Quest 5.4 - Phase 5 doesn't have a boss quest!)
 
 -- Verificar evaluation_period foi setado
 SELECT evaluation_period_end_time, event_end_time, all_submissions_evaluated
@@ -357,14 +353,14 @@ SELECT COUNT(*) FROM boss_battles WHERE phase = 5;
 
 Após implementar:
 
-✅ **Phase 5 completa com 4 quests:**
+✅ **Phase 5 completa com 3 quests (SEM BOSS):**
 - 5.1: 100 pts (documento)
 - 5.2: 100 pts (slides)
 - 5.3: 100 pts (vídeo)
-- 5.4: 200 pts (apresentação ao vivo)
+- (NO 5.4 BOSS - Not required)
 
 ✅ **Fluxo de fim de evento funcionando:**
-- Quest 5.4 fecha → evaluation_period inicia
+- Quest 5.3 fecha (última quest) → evaluation_period inicia
 - 30 seg: AVALIAÇÕES FINAIS (azul/roxo)
 - 30 seg: COUNTDOWN FINAL (vermelho)
 - GAME OVER com revelaçã de vencedor

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SupabaseProvider } from "@/lib/supabase/context";
+import { AudioInitializer } from "@/components/AudioInitializer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* 🎵 Audio System Initializer - MUST be loaded globally */}
+        <AudioInitializer />
+
         {/* ✨ P3: Centralized Supabase Provider */}
         <SupabaseProvider>
           {/* ✅ REMOVED: EventEndCountdownWrapper was duplicated here and in live-dashboard/page.tsx

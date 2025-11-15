@@ -286,7 +286,7 @@ export default function CurrentQuestTimer({
   const [loadingQuests, setLoadingQuests] = useState(true)
   const supabaseRef = useRef(createClient())
   const supabase = supabaseRef.current
-  const { play } = useSoundSystem()
+  const { play, soundConfig } = useSoundSystem()
   const previousQuestIdRef = useRef<string | null>(null)
   const [isPageVisible, setIsPageVisible] = useState(true)
   const lastQuestUpdateRef = useRef<number>(0) // Track last update time for cache busting
@@ -457,12 +457,40 @@ export default function CurrentQuestTimer({
         console.log(`🔊 [CurrentQuestTimer] Primeira quest ativada! ${currentQuestId}`)
       }
 
+      // Verificar se soundConfig está habilitado antes de tocar som
+      if (!soundConfig?.enabled) {
+        console.warn(`⚠️ [SoundSystem] Som está desabilitado! soundConfig.enabled = ${soundConfig?.enabled}`)
+        // Atualizar referência mesmo sem tocar som
+        if (currentQuestId) {
+          previousQuestIdRef.current = currentQuestId
+        }
+        return
+      }
+
+      if (soundConfig?.volume === 0) {
+        console.warn(`⚠️ [SoundSystem] Volume está em 0! soundConfig.volume = ${soundConfig?.volume}`)
+        // Atualizar referência mesmo com volume 0
+        if (currentQuestId) {
+          previousQuestIdRef.current = currentQuestId
+        }
+        return
+      }
+
       // Detectar som apropriado para a quest
       const isFirstQuestOfPhase1 = phase === 1 && currentQuest.order_index === 1
       const isFirstQuestOfAnyPhase = currentQuest.order_index === 1  // Primera quest de qualquer fase
       const isBoss = currentQuest.order_index === 4 ||
                      currentQuest.deliverable_type === 'presentation' ||
                      (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
+
+      console.log(`🔍 [SoundDebug] Detectando som apropriado:`, {
+        isFirstQuestOfPhase1,
+        isFirstQuestOfAnyPhase,
+        isBoss,
+        questOrder: currentQuest.order_index,
+        questType: currentQuest.deliverable_type,
+        soundConfig: { enabled: soundConfig?.enabled, volume: soundConfig?.volume }
+      })
 
       if (isFirstQuestOfPhase1) {
         // Som especial para o começo do evento (Fase 1, Quest 1)
@@ -490,13 +518,20 @@ export default function CurrentQuestTimer({
         console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)
         play('quest-start')
       }
+    } else {
+      console.log(`🔇 [CurrentQuestTimer] Sem mudança de quest detectada:`, {
+        previousQuestId: previousQuestIdRef.current,
+        currentQuestId,
+        isQuestChange,
+        isFirstActivation
+      })
     }
 
     // Atualizar referência
     if (currentQuestId) {
       previousQuestIdRef.current = currentQuestId
     }
-  }, [quests, play])
+  }, [quests, play, soundConfig])
 
   const questCount = quests.length
 

@@ -1,5 +1,3 @@
-'use server'
-
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getUTCTimestamp } from '@/lib/utils'
 import { NextResponse } from 'next/server'

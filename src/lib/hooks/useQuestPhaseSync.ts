@@ -60,6 +60,8 @@ export function useQuestPhaseSync(
   /**
    * Calcular tempos sincronizados
    * Usar serverTime como source of truth, não Date.now()
+   *
+   * Obs: useCallback para evitar dependency issues
    */
   useEffect(() => {
     const calculate = () => {
@@ -120,21 +122,6 @@ export function useQuestPhaseSync(
         phaseProgress: Math.min(100, Math.max(0, phaseProgress)),
         questProgress: Math.min(100, Math.max(0, questProgress))
       })
-
-      // Debug logging
-      if (questStartedAt) {
-        console.log(`⏱️ [QuestPhaseSync] Tempos sincronizados:`, {
-          serverNow: new Date(serverNow).toISOString(),
-          phaseRemaining: `${Math.floor(phaseTimeRemaining / 60)}m ${Math.floor(phaseTimeRemaining % 60)}s`,
-          questRemaining: `${Math.floor(questTimeRemaining / 60)}m ${Math.floor(questTimeRemaining % 60)}s`,
-          phaseProgress: `${phaseProgress}%`,
-          questProgress: `${questProgress}%`,
-          isPhaseExpired,
-          isQuestExpired,
-          isSynced,
-          serverOffset: `${offset > 0 ? '+' : ''}${offset.toFixed(0)}ms`
-        })
-      }
     }
 
     // Calcular imediatamente
@@ -144,7 +131,7 @@ export function useQuestPhaseSync(
     const interval = setInterval(calculate, 1000)
 
     return () => clearInterval(interval)
-  }, [phaseStartedAt, questStartedAt, questDurationMinutes, phaseDurationMinutes, serverTime, isSynced, offset])
+  }, [phaseStartedAt, questStartedAt, questDurationMinutes, phaseDurationMinutes, serverTime.getTime()])
 
   return times
 }

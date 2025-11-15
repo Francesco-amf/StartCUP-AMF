@@ -6,8 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { useRealtimeQuests } from '@/lib/hooks/useRealtimeQuests'
-import { useServerTime } from '@/lib/hooks/useServerTime'
-import { useQuestPhaseSync } from '@/lib/hooks/useQuestPhaseSync'
 
 interface Quest {
   id: string
@@ -551,100 +549,151 @@ export default function CurrentQuestTimer({
 
   const timePerQuest = getQuestDurationMs(0) // Será recalculado para cada quest
 
-  // 🔄 Usar sincronização com servidor como source of truth
-  const { serverTime, isSynced: isServerTimeSynced, offset: serverOffset } = useServerTime()
-  const phaseSyncTimes = useQuestPhaseSync(phaseStartedAt, null, 60, phaseDurationMinutes)
+  // 🔄 Usar Date.now() diretamente (Realtime já fornece dados precisos)
+  // O problema foi tentar sincronizar com servidor - Realtime já faz isso!
+  // Vamos voltar ao cálculo simples mas preciso
 
   useEffect(() => {
-    // ⚠️ SAFETY CHECK: Handle NULL/undefined phaseStartedAt
-    if (!phaseStartedAt) {
-      console.warn(`⚠️ WARNING: phaseStartedAt is null or undefined for Phase ${phase}`)
-      console.warn('   This means phase_X_start_time is not set in event_config')
+    const calculateTimeLeft = () => {
+      // ⚠️ SAFETY CHECK: Handle NULL/undefined phaseStartedAt
+      if (!phaseStartedAt) {
+        console.warn(`⚠️ WARNING: phaseStartedAt is null or undefined for Phase ${phase}`)
+        console.warn('   This means phase_X_start_time is not set in event_config')
+        setTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          percentage: 0
+        })
+        return
+      }
+
+      // ⚠️ CRÍTICO: phaseStartedAt pode vir SEM Z do Supabase
+      // Se não tem Z, adicionar para forçar interpretação como UTC
+      const ensureZFormat = phaseStartedAt.endsWith('Z')
+        ? phaseStartedAt
+        : `${phaseStartedAt}Z`
+
+      const startTime = new Date(ensureZFormat).getTime()
+
+      // ⚠️ SAFETY CHECK: Ensure startTime is valid (not NaN)
+      if (isNaN(startTime)) {
+        console.error(`❌ ERROR: Could not parse phaseStartedAt timestamp for Phase ${phase}:`, phaseStartedAt)
+        setTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          percentage: 0
+        })
+        return
+      }
+
+      const now = new Date().getTime()
+      const elapsed = now - startTime
+      const totalDuration = phaseDurationMinutes * 60 * 1000
+
+      if (elapsed >= totalDuration) {
+        setTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          percentage: 0
+        })
+        return
+      }
+
+      const timeRemaining = totalDuration - elapsed
+      const hours = Math.floor(timeRemaining / (1000 * 60 * 60))
+      const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000)
+      const percentage = Math.round((timeRemaining / totalDuration) * 100)
+
       setTimeLeft({
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        percentage: 0
+        hours,
+        minutes,
+        seconds,
+        percentage
       })
-      return
     }
 
-    // ✅ SINCRONIZADO: Usar servidor como source of truth
-    const timeRemaining = phaseSyncTimes.phaseTimeRemainingMs
+    calculateTimeLeft()
+    const interval = setInterval(calculateTimeLeft, 1000)
 
-    if (timeRemaining <= 0) {
-      setTimeLeft({
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        percentage: 0
-      })
-      console.log(`⏱️ [CurrentQuestTimer] Phase ${phase} expirou (tempo restante: 0ms)`)
-      return
-    }
-
-    const hours = Math.floor(timeRemaining / (1000 * 60 * 60))
-    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000)
-    const percentage = phaseSyncTimes.phaseProgress
-
-    // Debug com informações de sincronização
-    console.log(`⏱️ [CurrentQuestTimer-Sync] Phase ${phase}:`)
-    console.log(`   - Servidor sincronizado: ${isServerTimeSynced ? '✅ SIM' : '❌ NÃO'}`)
-    console.log(`   - Offset servidor: ${serverOffset > 0 ? '+' : ''}${serverOffset.toFixed(0)}ms`)
-    console.log(`   - Tempo restante: ${hours}h ${minutes}m ${seconds}s`)
-    console.log(`   - Progresso: ${percentage}%`)
-
-    setTimeLeft({
-      hours,
-      minutes,
-      seconds,
-      percentage
-    })
-  }, [phaseStartedAt, phaseDurationMinutes, phase, phaseSyncTimes.phaseTimeRemainingMs, isServerTimeSynced, serverOffset])
+    return () => clearInterval(interval)
+  }, [phaseStartedAt, phaseDurationMinutes, phase])
 
 
 
-  // 🔄 Encontrar quest atual
-  const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
-  const currentQuestForSync = activeQuests.length > 0
-    ? [...activeQuests].sort((a, b) => {
+  // 🔄 useEffect para calcular tempo da quest a cada segundo
+  useEffect(() => {
+    const calculateQuestTime = () => {
+      if (quests.length === 0) {
+        setQuestTimeRemaining(0)
+        return
+      }
+
+      // Encontrar quest atual (com started_at mais recente)
+      const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+      if (activeQuests.length === 0) {
+        setQuestTimeRemaining(0)
+        return
+      }
+
+      const sortedByStart = [...activeQuests].sort((a, b) => {
         const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
         const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
         return timeB - timeA
-      })[0]
-    : null
+      })
 
-  const questDurationForSync = currentQuestForSync
-    ? (currentQuestForSync.planned_deadline_minutes ?? currentQuestForSync.duration_minutes ?? 60)
-    : 60
+      const currentQuest = sortedByStart[0]
+      if (!currentQuest.started_at) {
+        setQuestTimeRemaining(0)
+        return
+      }
 
-  // ✅ SINCRONIZADO: Usar hook de sincronização para tempo da quest
-  const questSyncTimes = useQuestPhaseSync(
-    phaseStartedAt,
-    currentQuestForSync?.started_at ?? null,
-    questDurationForSync,
-    phaseDurationMinutes
-  )
+      // Limpar timestamp
+      let cleanTimestamp = currentQuest.started_at
+      if (cleanTimestamp.includes('+00:00')) {
+        cleanTimestamp = cleanTimestamp.replace('+00:00', 'Z')
+      } else if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
+        cleanTimestamp = `${cleanTimestamp}Z`
+      }
 
-  useEffect(() => {
-    // Atualizar state com tempo sincronizado da quest
-    setQuestTimeRemaining(questSyncTimes.questTimeRemaining)
+      const questStartTime = new Date(cleanTimestamp).getTime()
 
-    if (currentQuestForSync) {
-      console.log(`⏱️ [QuestTimer-Sync] Quest "${currentQuestForSync.name}":`)
-      console.log(`   - Duration: ${questDurationForSync}min`)
-      console.log(`   - Remaining: ${Math.floor(questSyncTimes.questTimeRemaining / 60)}m ${Math.floor(questSyncTimes.questTimeRemaining % 60)}s`)
-      console.log(`   - Progress: ${questSyncTimes.questProgress}%`)
-      console.log(`   - Server synced: ${isServerTimeSynced ? '✅' : '❌'}`)
+      // 🔧 CORRIGIDO: Usar planned_deadline_minutes com fallback melhorado
+      // Prioridade: planned_deadline_minutes > duration_minutes > 60 (fallback padrão)
+      const questDuration = currentQuest.planned_deadline_minutes ?? currentQuest.duration_minutes ?? 60
+      const questDurationMs = questDuration * 60 * 1000
+
+      const elapsed = Date.now() - questStartTime
+      let timeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
+
+      setQuestTimeRemaining(timeRemaining)
     }
-  }, [questSyncTimes.questTimeRemaining, currentQuestForSync, questDurationForSync, isServerTimeSynced])
+
+    calculateQuestTime()
+    const interval = setInterval(calculateQuestTime, 1000)
+    return () => clearInterval(interval)
+  }, [quests])
 
 
     const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // 🎯 CORRIGIDO: Detectar quest atual baseado em started_at do DB
-  // Usando activeQuests e currentQuestForSync já calculados acima
+  // Calcular activeQuests e currentQuestForSync localmente
+  const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+
+  let currentQuestForSync: Quest | undefined
+  if (activeQuests.length > 0) {
+    const sortedByStart = [...activeQuests].sort((a, b) => {
+      const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+      const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+      return timeB - timeA
+    })
+    currentQuestForSync = sortedByStart[0]
+  }
+
   console.log(`📋 [ActiveQuestFilter] Total quests: ${quests.length}, Active quests: ${activeQuests.length}`)
   console.log(`📋 [ActiveQuestFilter] Todos os quests com seus started_at:`, quests.map(q => ({
     id: q.id,

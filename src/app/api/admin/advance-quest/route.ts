@@ -66,37 +66,62 @@ export async function POST(request: Request) {
     // 1. Marcar a quest atual como 'closed'
     console.log(`📝 Tentando fechar quest: ${questId}`)
 
+    // DEBUG: Validação prévia
+    if (!questId || typeof questId !== 'string') {
+      console.error('❌ ERRO CRÍTICO: questId inválido:', { questId, type: typeof questId })
+      return NextResponse.json(
+        { error: 'Quest ID inválido', code: 'INVALID_QUEST_ID' },
+        { status: 400 }
+      )
+    }
+    console.log(`✅ Quest ID validado: "${questId}" (type: ${typeof questId}, length: ${questId.length})`)
+
     // ✅ FIX: Separar UPDATE e SELECT para evitar array vazio
     // Supabase às vezes não retorna dados em .update().select()
     // Então fazemos UPDATE primeiro, depois SELECT
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError, count: updateCount } = await supabaseAdmin
       .from('quests')
       .update({ status: 'closed', ended_at: getUTCTimestamp() })
       .eq('id', questId)
 
+    console.log(`📊 UPDATE resultado: error=${updateError ? 'sim' : 'não'}, count=${updateCount}`)
+
     if (updateError) {
-      console.error('Erro ao fechar quest atual:', updateError)
+      console.error('❌ Erro ao fechar quest atual:', {
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        questId
+      })
       return NextResponse.json(
-        { error: 'Erro ao fechar quest atual ou quest não encontrada.' },
+        { error: 'Erro ao fechar quest atual ou quest não encontrada.', code: updateError.code },
         { status: 500 }
       )
     }
 
     // Agora SELECT para obter dados da quest que acabamos de fechar
+    console.log(`🔍 Tentando SELECT com questId: "${questId}"`)
     const { data: closedQuestArray, error: selectError } = await supabaseAdmin
       .from('quests')
       .select('id, phase_id, order_index')
       .eq('id', questId)
       .single()
 
+    console.log(`📊 SELECT resultado:`, {
+      error: selectError ? { code: selectError.code, message: selectError.message } : null,
+      data: closedQuestArray,
+      questId
+    })
+
     if (selectError || !closedQuestArray) {
       console.error('❌ Erro ao recuperar dados da quest fechada:', {
-        selectError,
+        selectError: selectError ? { code: selectError.code, message: selectError.message, details: selectError.details } : null,
         data: closedQuestArray,
-        questId
+        questId,
+        updateCount
       })
       return NextResponse.json(
-        { error: 'Erro ao fechar quest - não conseguiu recuperar dados.' },
+        { error: 'Erro ao fechar quest - não conseguiu recuperar dados.', code: selectError?.code },
         { status: 500 }
       )
     }
@@ -157,10 +182,12 @@ export async function POST(request: Request) {
       // ✅ FIX: Separar UPDATE e SELECT para evitar array vazio
       console.log(`📝 UPDATE separado: ativando quest ${nextQuest.id}`)
 
-      const { error: startNextQuestError } = await supabaseAdmin
+      const { error: startNextQuestError, count: activateCount } = await supabaseAdmin
         .from('quests')
         .update({ status: 'active', started_at: updateTime })
         .eq('id', nextQuest.id)
+
+      console.log(`📊 ACTIVATE UPDATE resultado: error=${startNextQuestError ? 'sim' : 'não'}, count=${activateCount}`)
 
       if (startNextQuestError) {
         console.error('❌ Erro ao ativar próxima quest:', {
@@ -182,22 +209,30 @@ export async function POST(request: Request) {
       }
 
       // Agora SELECT para obter dados da quest que acabamos de ativar
+      console.log(`🔍 Tentando SELECT quest ativada com questId: "${nextQuest.id}"`)
       const { data: activatedQuestData, error: selectActivatedError } = await supabaseAdmin
         .from('quests')
         .select('id, name, status, started_at')
         .eq('id', nextQuest.id)
         .single()
 
+      console.log(`📊 ACTIVATE SELECT resultado:`, {
+        error: selectActivatedError ? { code: selectActivatedError.code, message: selectActivatedError.message } : null,
+        data: activatedQuestData,
+        questId: nextQuest.id
+      })
+
       if (selectActivatedError || !activatedQuestData) {
         console.error('❌ Erro ao recuperar dados da quest ativada:', {
-          selectActivatedError,
+          selectActivatedError: selectActivatedError ? { code: selectActivatedError.code, message: selectActivatedError.message, details: selectActivatedError.details } : null,
           data: activatedQuestData,
-          questId: nextQuest.id
+          questId: nextQuest.id,
+          activateCount
         })
         return NextResponse.json(
           {
             error: 'Erro ao ativar próxima quest - não conseguiu recuperar dados.',
-            code: 'SELECT_ACTIVATED_FAILED'
+            code: selectActivatedError?.code
           },
           { status: 500 }
         )

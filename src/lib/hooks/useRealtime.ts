@@ -215,7 +215,8 @@ export function useRealtimePhase() {
   return { phase, loading }
 }
 
-// Hook para penalidades com Polling rápido (som de penalidade)
+// ✨ P2.3 OPTIMIZATION: Consolidada penalties com teams + evaluators em uma única operação
+// Hook para penalidades com Polling rápido (som de penalidade) + enrichment
 export function useRealtimePenalties() {
   const [penalties, setPenalties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -223,6 +224,8 @@ export function useRealtimePenalties() {
   const { play } = useSoundSystem()
   const previousPenaltyIdsRef = useRef<Set<string>>(new Set())
   const isFirstRenderRef = useRef(true)
+  const penaltiesEnrichCacheRef = useRef<{ data: any; timestamp: number } | null>(null)
+  const ENRICH_CACHE_DURATION_MS = 5000 // Cache team/evaluator enrichment for 5s
 
   useEffect(() => {
     let isFetching = false
@@ -232,31 +235,116 @@ export function useRealtimePenalties() {
 
       isFetching = true
       try {
-        const { data, error } = await supabase
+        console.log('📡 [useRealtimePenalties] Buscando penalidades...')
+        const { data: penaltiesData, error: penaltiesError } = await supabase
           .from('penalties')
           .select('*')
           .order('created_at', { ascending: false })
 
-        if (!error && data) {
-          // Detectar penalidades novas e tocar som
-          if (!isFirstRenderRef.current) {
-            data.forEach((penalty: any) => {
-              if (!previousPenaltyIdsRef.current.has(penalty.id)) {
-                play('penalty')
-              }
-            })
+        if (penaltiesError || !penaltiesData || penaltiesData.length === 0) {
+          if (penaltiesError) {
+            console.error('[useRealtimePenalties] Error:', penaltiesError)
+          } else {
+            console.log('ℹ️ [useRealtimePenalties] Nenhuma penalidade encontrada')
           }
-
-          // Atualizar conjunto de IDs
-          previousPenaltyIdsRef.current = new Set(data.map((p: any) => p.id))
-
-          // Marcar que primeira renderização foi feita
-          if (isFirstRenderRef.current) {
-            isFirstRenderRef.current = false
-          }
-
-          setPenalties(data)
+          setPenalties([])
+          setLoading(false)
+          isFetching = false
+          return
         }
+
+        console.log(`✅ [useRealtimePenalties] ${penaltiesData.length} penalidades encontradas`)
+
+        // ✨ P2.3: Check cache antes de fazer enrichment queries
+        const now = Date.now()
+        const cachedEnrich = penaltiesEnrichCacheRef.current
+        let teamMap = new Map()
+        let evaluatorMap = new Map()
+
+        if (cachedEnrich && now - cachedEnrich.timestamp < ENRICH_CACHE_DURATION_MS) {
+          console.log(`✅ [useRealtimePenalties] Usando cache de enrichment (válido por mais ${ENRICH_CACHE_DURATION_MS - (now - cachedEnrich.timestamp)}ms)`)
+          teamMap = cachedEnrich.data.teamMap
+          evaluatorMap = cachedEnrich.data.evaluatorMap
+        } else {
+          console.log('🔄 [useRealtimePenalties] Buscando enrichment data (teams + evaluators)...')
+
+          // Parallel queries para teams e evaluators
+          const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
+          const evaluatorIds = [
+            ...new Set(
+              penaltiesData
+                .filter((p: any) => p.assigned_by_evaluator_id)
+                .map((p: any) => p.assigned_by_evaluator_id)
+            )
+          ]
+
+          // Execute ambas as queries em paralelo
+          const [teamsResult, evaluatorsResult] = await Promise.all([
+            teamIds.length > 0
+              ? supabase.from('teams').select('id, name, email').in('id', teamIds)
+              : Promise.resolve({ data: [], error: null }),
+            evaluatorIds.length > 0
+              ? supabase.from('evaluators').select('id, name').in('id', evaluatorIds)
+              : Promise.resolve({ data: [], error: null })
+          ])
+
+          // Process teams with filtering
+          const testEmails = ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com']
+          if (!teamsResult.error && teamsResult.data) {
+            const realTeams = teamsResult.data.filter((t: any) => !testEmails.includes(t.email))
+            teamMap = new Map(realTeams.map((t: any) => [t.id, t.name]))
+            console.log(`✅ [useRealtimePenalties] Teams enriquecidas: ${teamMap.size}`)
+          } else if (teamsResult.error) {
+            console.warn('⚠️ [useRealtimePenalties] Erro ao buscar teams:', teamsResult.error)
+          }
+
+          // Process evaluators
+          if (!evaluatorsResult.error && evaluatorsResult.data) {
+            evaluatorMap = new Map(evaluatorsResult.data.map((e: any) => [e.id, e.name]))
+            console.log(`✅ [useRealtimePenalties] Evaluators enriquecidos: ${evaluatorMap.size}`)
+          } else if (evaluatorsResult.error) {
+            console.warn('⚠️ [useRealtimePenalties] Erro ao buscar evaluators:', evaluatorsResult.error)
+          }
+
+          // Cache the enrichment data
+          penaltiesEnrichCacheRef.current = {
+            data: { teamMap, evaluatorMap },
+            timestamp: now
+          }
+        }
+
+        // Format penalties com enrichment data
+        const formatted = penaltiesData.map((p: any) => ({
+          id: p.id,
+          team_id: p.team_id,
+          team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
+          penalty_type: p.penalty_type,
+          points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
+          reason: p.reason || null,
+          assigned_by_admin: p.assigned_by_admin || false,
+          evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
+          created_at: p.created_at
+        }))
+
+        // Detectar penalidades novas e tocar som
+        if (!isFirstRenderRef.current) {
+          formatted.forEach((penalty: any) => {
+            if (!previousPenaltyIdsRef.current.has(penalty.id)) {
+              console.log(`🔊 [useRealtimePenalties] PENALTY NOVA: ${penalty.team_name}`)
+              play('penalty')
+            }
+          })
+        }
+
+        // Atualizar conjunto de IDs
+        previousPenaltyIdsRef.current = new Set(formatted.map((p: any) => p.id))
+
+        // Marcar que primeira renderização foi feita
+        if (isFirstRenderRef.current) {
+          isFirstRenderRef.current = false
+        }
+
+        setPenalties(formatted)
       } catch (err) {
         console.error('[useRealtimePenalties] Error:', err)
       } finally {

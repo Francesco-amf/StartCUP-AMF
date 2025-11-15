@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
+import { useRealtimePenalties } from '@/lib/hooks/useRealtime'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 
 interface Penalty {
@@ -32,161 +32,10 @@ const PENALTY_NAMES: Record<string, string> = {
   atraso: 'Atraso'
 }
 
+// ✨ P2.3 OPTIMIZATION: Use consolidated hook instead of duplicated fetches
 export default function LivePenaltiesStatus() {
-  const [penalties, setPenalties] = useState<Penalty[]>([])
-  const [loading, setLoading] = useState(true)
-  const { play } = useSoundSystem()
-  const previousPenaltyIdsRef = useRef<Set<string>>(new Set())
-  const isFirstRenderRef = useRef(true)
-
-  useEffect(() => {
-    const supabase = createClient()
-
-    const fetchPenalties = async () => {
-      try {
-        console.log('📡 [LivePenaltiesStatus] Buscando penalidades do banco...')
-        // Obter todas as penalidades
-        const { data: penaltiesData, error: penaltiesError } = await supabase
-          .from('penalties')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (penaltiesError) {
-          console.error('❌ Erro ao buscar penalidades:', penaltiesError)
-          setPenalties([])
-          setLoading(false)
-          return
-        }
-
-        if (!penaltiesData || penaltiesData.length === 0) {
-          console.log('ℹ️ Nenhuma penalidade encontrada')
-          setPenalties([])
-          setLoading(false)
-          return
-        }
-
-        console.log(`✅ ${penaltiesData.length} penalidades encontradas`)
-        // Obter nomes das equipes (sem filtro de email - será feito em memória)
-        const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('id, name, email')
-          .in('id', teamIds)
-
-        if (teamsError) {
-          console.warn('⚠️ Erro ao buscar equipes:', teamsError)
-          // Fallback: usar penalidades sem nomes das equipes
-          const formatted = penaltiesData.map((p: any) => ({
-            id: p.id,
-            team_id: p.team_id,
-            team_name: p.team_id, // Fallback: usar ID da equipe
-            penalty_type: p.penalty_type,
-            points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
-            reason: p.reason || null,
-            assigned_by_admin: p.assigned_by_admin || false,
-            evaluator_name: null,
-            created_at: p.created_at
-          }))
-          setPenalties(formatted)
-          setLoading(false)
-          return
-        }
-
-        // Filtrar equipes fantasma em memória (excluir admins/avaliadores)
-        const testEmails = ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com']
-        const realTeamsData = teamsData?.filter((t: any) => !testEmails.includes(t.email)) || []
-        const teamMap = new Map(realTeamsData.map((t: any) => [t.id, t.name]))
-
-        // Obter nomes dos avaliadores (apenas se houver IDs para buscar)
-        let evaluatorMap = new Map()
-        const evaluatorIds = penaltiesData
-          .filter((p: any) => p.assigned_by_evaluator_id)
-          .map((p: any) => p.assigned_by_evaluator_id)
-          .filter((id: any, index: number, self: any[]) => id && self.indexOf(id) === index) // Remove duplicatas e null/undefined
-
-        if (evaluatorIds.length > 0) {
-          const { data: evaluatorsData, error: evaluatorsError } = await supabase
-            .from('evaluators')
-            .select('id, name')
-            .in('id', evaluatorIds)
-
-          if (evaluatorsError) {
-            console.error('Erro ao buscar avaliadores:', evaluatorsError)
-          } else {
-            evaluatorMap = new Map(evaluatorsData?.map((e: any) => [e.id, e.name]) || [])
-          }
-        }
-
-        // Formatar penalidades
-        const formatted = penaltiesData.map((p: any) => {
-          return {
-            id: p.id,
-            team_id: p.team_id,
-            team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
-            penalty_type: p.penalty_type,
-            points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
-            reason: p.reason || null,
-            assigned_by_admin: p.assigned_by_admin || false,
-            evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
-            created_at: p.created_at
-          }
-        })
-
-        // IMEDIATAMENTE: Tocar som se houver nova penalidade (antes de atualizar estado)
-        // Isso garante que o som toca na ORDEM CORRETA
-        console.log('🔍 [LivePenaltiesStatus] isFirstRenderRef.current:', isFirstRenderRef.current)
-        console.log('🔍 [LivePenaltiesStatus] previousPenaltyIdsRef.current:', previousPenaltyIdsRef.current)
-        console.log('🔍 [LivePenaltiesStatus] formatted.length:', formatted.length)
-
-        if (!isFirstRenderRef.current) {
-          // Detectar TODAS as penalidades novas
-          const newPenalties: Penalty[] = []
-          formatted.forEach((penalty: Penalty) => {
-            console.log('🔍 [LivePenaltiesStatus] Verificando penalty ID:', penalty.id, 'já conhecida?', previousPenaltyIdsRef.current.has(penalty.id))
-            if (!previousPenaltyIdsRef.current.has(penalty.id)) {
-              newPenalties.push(penalty)
-              console.log('✨ [LivePenaltiesStatus] PENALIDADE NOVA ENCONTRADA:', penalty.team_name, 'ID:', penalty.id)
-            }
-          })
-
-          console.log('📊 [LivePenaltiesStatus] Total de penalidades novas:', newPenalties.length)
-
-          // Tocar som para CADA penalidade nova (em ordem)
-          newPenalties.forEach((penalty: Penalty, index: number) => {
-            console.log(`🔊🔊🔊 [${index + 1}/${newPenalties.length}] PENALIDADE NOVA DETECTADA: ${penalty.team_name} → TOCANDO play('penalty') AGORA!`)
-            console.log('⚠️ ANTES DE CHAMAR play() - tipo:', typeof play, 'isClient:', typeof window !== 'undefined')
-            play('penalty')
-            console.log('✅ DEPOIS DE CHAMAR play()')
-          })
-        } else {
-          console.log('⏭️ [LivePenaltiesStatus] Primeira renderização de penalidades, não tocar som')
-        }
-
-        // Atualizar conjunto de IDs de penalidades
-        previousPenaltyIdsRef.current = new Set(formatted.map((p: Penalty) => p.id))
-
-        // Marcar que a primeira renderização foi feita
-        if (isFirstRenderRef.current) {
-          isFirstRenderRef.current = false
-        }
-
-        // AGORA atualizar estado da UI
-        setPenalties(formatted)
-      } catch (err) {
-        console.error('Erro ao buscar penalidades:', err)
-        setPenalties([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    setLoading(true)
-    fetchPenalties()
-
-    // 🔄 Polling removido - useRealtimePenalties já faz isso a cada 500ms
-    // Não é necessário duplicar o polling aqui
-    return () => {}
-  }, [])
+  // Get penalties from consolidated hook (includes teams + evaluators + sound)
+  const { penalties, loading } = useRealtimePenalties()
 
   if (loading) {
     return (

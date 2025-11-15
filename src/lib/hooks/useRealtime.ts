@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
+import { DEBUG } from '@/lib/debug'
 
 // Helper para mapear número da fase para nome e duração
 function getPhaseInfo(phase: number): { name: string; duration_minutes: number } {
@@ -49,7 +50,7 @@ export function useRealtimeRanking() {
           setRanking(data)
         }
       } catch (err) {
-        console.error('[useRealtimeRanking] Error:', err)
+        DEBUG.error('useRealtimeRanking', 'Error:', err)
       } finally {
         setLoading(false)
         isFetching = false
@@ -105,39 +106,39 @@ export function useRealtimePhase() {
         const now = Date.now()
         const cachedRPC = rpcCacheRef.current
         if (cachedRPC && now - cachedRPC.timestamp < RPC_CACHE_DURATION_MS) {
-          console.log(`✅ [useRealtimePhase] Usando cache RPC (válido por mais ${RPC_CACHE_DURATION_MS - (now - cachedRPC.timestamp)}ms)`)
+          DEBUG.log('useRealtimePhase', `✅ Usando cache RPC (válido por mais ${RPC_CACHE_DURATION_MS - (now - cachedRPC.timestamp)}ms)`)
           eventConfig = cachedRPC.data.event_config
           activeQuest = cachedRPC.data.active_quest
         } else {
           // Tentar RPC primeiro
           try {
-            console.log(`📡 [useRealtimePhase] Chamando RPC...`)
+            DEBUG.log('useRealtimePhase', `📡 Chamando RPC...`)
             const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_phase_data')
             if (!rpcError && rpcData?.event_config) {
-              console.log(`✅ [useRealtimePhase] RPC success`)
+              DEBUG.log('useRealtimePhase', `✅ RPC success`)
               eventConfig = rpcData.event_config
               activeQuest = rpcData.active_quest
               // ✅ Cachear resultado de RPC
               rpcCacheRef.current = { data: rpcData, timestamp: now }
             } else {
-              console.warn(`⚠️ [useRealtimePhase] RPC failed, using fallback queries`)
+              DEBUG.warn('useRealtimePhase', `⚠️ RPC failed, using fallback queries`)
             }
           } catch (rpcErr) {
-            console.warn(`⚠️ [useRealtimePhase] RPC error: ${rpcErr}`)
+            DEBUG.warn('useRealtimePhase', `⚠️ RPC error: ${rpcErr}`)
             // Continue to fallback
           }
         }
 
         // Fallback: Buscar event_config diretamente se RPC falhou
         if (!eventConfig) {
-          console.log(`🔄 [useRealtimePhase] Usando fallback queries (sem RPC)`)
+          DEBUG.log('useRealtimePhase', `🔄 Usando fallback queries (sem RPC)`)
           const { data: configData, error: configError } = await supabase
             .from('event_config')
             .select('*')
             .single()
 
           if (configError || !configData) {
-            console.error('[useRealtimePhase] Config fetch error:', configError)
+            DEBUG.error('useRealtimePhase', 'Config fetch error:', configError)
             setPhase(null)
             setLoading(false)
             isFetching = false
@@ -183,7 +184,7 @@ export function useRealtimePhase() {
         setPhase(phaseData)
         setLoading(false)
       } catch (err) {
-        console.error('[useRealtimePhase] Error:', err)
+        DEBUG.error('useRealtimePhase', 'Error:', err)
         setPhase(null)
         setLoading(false)
       } finally {
@@ -235,7 +236,7 @@ export function useRealtimePenalties() {
 
       isFetching = true
       try {
-        console.log('📡 [useRealtimePenalties] Buscando penalidades...')
+        DEBUG.log('useRealtimePenalties', '📡 Buscando penalidades...')
         const { data: penaltiesData, error: penaltiesError } = await supabase
           .from('penalties')
           .select('*')
@@ -243,9 +244,9 @@ export function useRealtimePenalties() {
 
         if (penaltiesError || !penaltiesData || penaltiesData.length === 0) {
           if (penaltiesError) {
-            console.error('[useRealtimePenalties] Error:', penaltiesError)
+            DEBUG.error('useRealtimePenalties', 'Error:', penaltiesError)
           } else {
-            console.log('ℹ️ [useRealtimePenalties] Nenhuma penalidade encontrada')
+            DEBUG.log('useRealtimePenalties', 'ℹ️ Nenhuma penalidade encontrada')
           }
           setPenalties([])
           setLoading(false)
@@ -253,7 +254,7 @@ export function useRealtimePenalties() {
           return
         }
 
-        console.log(`✅ [useRealtimePenalties] ${penaltiesData.length} penalidades encontradas`)
+        DEBUG.log('useRealtimePenalties', `✅ ${penaltiesData.length} penalidades encontradas`)
 
         // ✨ P2.3: Check cache antes de fazer enrichment queries
         const now = Date.now()
@@ -262,11 +263,11 @@ export function useRealtimePenalties() {
         let evaluatorMap = new Map()
 
         if (cachedEnrich && now - cachedEnrich.timestamp < ENRICH_CACHE_DURATION_MS) {
-          console.log(`✅ [useRealtimePenalties] Usando cache de enrichment (válido por mais ${ENRICH_CACHE_DURATION_MS - (now - cachedEnrich.timestamp)}ms)`)
+          DEBUG.log('useRealtimePenalties', `✅ Usando cache de enrichment (válido por mais ${ENRICH_CACHE_DURATION_MS - (now - cachedEnrich.timestamp)}ms)`)
           teamMap = cachedEnrich.data.teamMap
           evaluatorMap = cachedEnrich.data.evaluatorMap
         } else {
-          console.log('🔄 [useRealtimePenalties] Buscando enrichment data (teams + evaluators)...')
+          DEBUG.log('useRealtimePenalties', '🔄 Buscando enrichment data (teams + evaluators)...')
 
           // Parallel queries para teams e evaluators
           const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
@@ -293,17 +294,17 @@ export function useRealtimePenalties() {
           if (!teamsResult.error && teamsResult.data) {
             const realTeams = teamsResult.data.filter((t: any) => !testEmails.includes(t.email))
             teamMap = new Map(realTeams.map((t: any) => [t.id, t.name]))
-            console.log(`✅ [useRealtimePenalties] Teams enriquecidas: ${teamMap.size}`)
+            DEBUG.log('useRealtimePenalties', `✅ Teams enriquecidas: ${teamMap.size}`)
           } else if (teamsResult.error) {
-            console.warn('⚠️ [useRealtimePenalties] Erro ao buscar teams:', teamsResult.error)
+            DEBUG.warn('useRealtimePenalties', '⚠️ Erro ao buscar teams:', teamsResult.error)
           }
 
           // Process evaluators
           if (!evaluatorsResult.error && evaluatorsResult.data) {
             evaluatorMap = new Map(evaluatorsResult.data.map((e: any) => [e.id, e.name]))
-            console.log(`✅ [useRealtimePenalties] Evaluators enriquecidos: ${evaluatorMap.size}`)
+            DEBUG.log('useRealtimePenalties', `✅ Evaluators enriquecidos: ${evaluatorMap.size}`)
           } else if (evaluatorsResult.error) {
-            console.warn('⚠️ [useRealtimePenalties] Erro ao buscar evaluators:', evaluatorsResult.error)
+            DEBUG.warn('useRealtimePenalties', '⚠️ Erro ao buscar evaluators:', evaluatorsResult.error)
           }
 
           // Cache the enrichment data
@@ -330,7 +331,7 @@ export function useRealtimePenalties() {
         if (!isFirstRenderRef.current) {
           formatted.forEach((penalty: any) => {
             if (!previousPenaltyIdsRef.current.has(penalty.id)) {
-              console.log(`🔊 [useRealtimePenalties] PENALTY NOVA: ${penalty.team_name}`)
+              DEBUG.log('useRealtimePenalties', `🔊 PENALTY NOVA: ${penalty.team_name}`)
               play('penalty')
             }
           })
@@ -346,7 +347,7 @@ export function useRealtimePenalties() {
 
         setPenalties(formatted)
       } catch (err) {
-        console.error('[useRealtimePenalties] Error:', err)
+        DEBUG.error('useRealtimePenalties', 'Error:', err)
       } finally {
         setLoading(false)
         isFetching = false
@@ -422,7 +423,7 @@ export function useRealtimeEvaluators() {
           setEvaluators(data)
         }
       } catch (err) {
-        console.error('[useRealtimeEvaluators] Error:', err)
+        DEBUG.error('useRealtimeEvaluators', 'Error:', err)
       } finally {
         setLoading(false)
         isFetching = false

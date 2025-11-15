@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { DEBUG } from '@/lib/debug'
 
 interface Quest {
   id: string
@@ -57,7 +58,7 @@ export function useRealtimeQuests(phaseId: string | null) {
       if (!mounted) return
 
       try {
-        console.log(`⏳ [useRealtimeQuests-Polling] Buscando quests via HTTP fallback...`)
+        DEBUG.log('useRealtimeQuests-Polling', `⏳ Buscando quests via HTTP fallback...`)
         const { data, error: fetchError } = await supabase
           .from('quests')
           .select('*')
@@ -67,19 +68,19 @@ export function useRealtimeQuests(phaseId: string | null) {
         if (!fetchError && data && mounted) {
           setQuests(data)
           setError(null)
-          console.log(`✅ [useRealtimeQuests-Polling] Quests atualizadas via polling: ${data.length} items`)
+          DEBUG.log('useRealtimeQuests-Polling', `✅ Quests atualizadas via polling: ${data.length} items`)
         }
       } catch (err) {
-        console.error(`❌ [useRealtimeQuests-Polling] Error:`, err)
+        DEBUG.error('useRealtimeQuests-Polling', `❌ Error:`, err)
       }
     }
 
     const setupRealtimeQuests = async () => {
       try {
-        console.log(`📡 [useRealtimeQuests] Iniciando Realtime para phase_id: ${phaseId}`)
+        DEBUG.log('useRealtimeQuests', `📡 Iniciando Realtime para phase_id: ${phaseId}`)
 
         // 1️⃣ INITIAL LOAD: Carregar dados existentes
-        console.log(`⏳ [useRealtimeQuests] Fazendo initial load...`)
+        DEBUG.log('useRealtimeQuests', `⏳ Fazendo initial load...`)
         const { data: initialData, error: initialError } = await supabase
           .from('quests')
           .select('*')
@@ -87,12 +88,12 @@ export function useRealtimeQuests(phaseId: string | null) {
           .order('order_index', { ascending: true })
 
         if (initialError) {
-          console.error(`❌ [useRealtimeQuests] Initial load error:`, initialError)
+          DEBUG.error('useRealtimeQuests', `❌ Initial load error:`, initialError)
           setError(initialError.message)
           setLoading(false)
           // ✅ FALLBACK: Ativar polling se initial load falha
           if (mounted) {
-            console.log(`🔄 [useRealtimeQuests] Ativando polling fallback após initial load failure...`)
+            DEBUG.log('useRealtimeQuests', `🔄 Ativando polling fallback após initial load failure...`)
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current)
             }
@@ -103,13 +104,13 @@ export function useRealtimeQuests(phaseId: string | null) {
         }
 
         if (mounted) {
-          console.log(`✅ [useRealtimeQuests] Initial load completo: ${initialData?.length || 0} quests`)
+          DEBUG.log('useRealtimeQuests', `✅ Initial load completo: ${initialData?.length || 0} quests`)
           setQuests(initialData || [])
           initialLoadRef.current = true
         }
 
         // 2️⃣ SUBSCRIBE: Configurar listener para mudanças em tempo real
-        console.log(`🔔 [useRealtimeQuests] Configurando Realtime subscription...`)
+        DEBUG.log('useRealtimeQuests', `🔔 Configurando Realtime subscription...`)
 
         const channel = supabase
           .channel(`quests:${phaseId}`)
@@ -122,7 +123,7 @@ export function useRealtimeQuests(phaseId: string | null) {
               filter: `phase_id=eq.${phaseId}`
             },
             (payload: any) => {
-              console.log(`📡 [useRealtimeQuests] Mudança detectada:`, {
+              DEBUG.log('useRealtimeQuests', `📡 Mudança detectada:`, {
                 event: payload.eventType,
                 id: payload.new?.id || payload.old?.id,
                 name: payload.new?.name || payload.old?.name
@@ -138,21 +139,21 @@ export function useRealtimeQuests(phaseId: string | null) {
                   // ➕ Nova quest foi adicionada
                   const newQuest = payload.new as Quest
                   updatedQuests.push(newQuest)
-                  console.log(`✅ Quest adicionada: [${newQuest.order_index}] ${newQuest.name}`)
+                  DEBUG.log('useRealtimeQuests', `✅ Quest adicionada: [${newQuest.order_index}] ${newQuest.name}`)
                 } else if (payload.eventType === 'UPDATE') {
                   // 🔄 Quest foi atualizada
                   const updatedQuest = payload.new as Quest
                   const index = updatedQuests.findIndex((q) => q.id === updatedQuest.id)
                   if (index !== -1) {
-                    console.log(`🔄 Quest atualizada: [${updatedQuest.order_index}] ${updatedQuest.name}`)
-                    console.log(`   - started_at: ${updatedQuest.started_at ? '✅ SIM' : '❌ NÃO'}`)
+                    DEBUG.log('useRealtimeQuests', `🔄 Quest atualizada: [${updatedQuest.order_index}] ${updatedQuest.name}`)
+                    DEBUG.log('useRealtimeQuests', `   - started_at: ${updatedQuest.started_at ? '✅ SIM' : '❌ NÃO'}`)
                     updatedQuests[index] = updatedQuest
                   }
                 } else if (payload.eventType === 'DELETE') {
                   // ❌ Quest foi deletada (raro)
                   const deletedId = payload.old?.id
                   updatedQuests = updatedQuests.filter((q) => q.id !== deletedId)
-                  console.log(`❌ Quest deletada: ${deletedId}`)
+                  DEBUG.log('useRealtimeQuests', `❌ Quest deletada: ${deletedId}`)
                 }
 
                 // Ordenar sempre por order_index
@@ -163,40 +164,40 @@ export function useRealtimeQuests(phaseId: string | null) {
             }
           )
           .subscribe((status: any) => {
-            console.log(`🔔 [useRealtimeQuests] Subscription status: ${status}`)
+            DEBUG.log('useRealtimeQuests', `🔔 Subscription status: ${status}`)
 
             subscriptionHealthRef.current = status === 'SUBSCRIBED'
 
             if (status === 'SUBSCRIBED') {
-              console.log(`✅ [useRealtimeQuests] Realtime subscription ativa!`)
+              DEBUG.log('useRealtimeQuests', `✅ Realtime subscription ativa!`)
 
               // ✅ WebSocket está funcionando, parar polling e debounce
               if (pollingDebounceRef.current) {
-                console.log(`🛑 [useRealtimeQuests] Cancelando debounce de polling (WebSocket ativo)`)
+                DEBUG.log('useRealtimeQuests', `🛑 Cancelando debounce de polling (WebSocket ativo)`)
                 clearTimeout(pollingDebounceRef.current)
                 pollingDebounceRef.current = null
               }
 
               if (pollingIntervalRef.current) {
-                console.log(`🛑 [useRealtimeQuests] Parando polling fallback (WebSocket ativo)`)
+                DEBUG.log('useRealtimeQuests', `🛑 Parando polling fallback (WebSocket ativo)`)
                 clearInterval(pollingIntervalRef.current)
                 pollingIntervalRef.current = null
               }
             } else {
-              console.warn(`⚠️ [useRealtimeQuests] Subscription status: ${status} (aguardando debounce antes de polling)`)
+              DEBUG.warn('useRealtimeQuests', `⚠️ Subscription status: ${status} (aguardando debounce antes de polling)`)
               // ❌ WebSocket não está funcionando, iniciar debounce para ativar polling
               // Isso evita ativar polling em flutuações temporárias de conexão
               if (!pollingDebounceRef.current && mounted) {
-                console.log(`⏳ [useRealtimeQuests] Debounce iniciado (${POLLING_DEBOUNCE_MS}ms antes de ativar polling)`)
+                DEBUG.log('useRealtimeQuests', `⏳ Debounce iniciado (${POLLING_DEBOUNCE_MS}ms antes de ativar polling)`)
                 pollingDebounceRef.current = setTimeout(() => {
                   // Confirmar que Realtime AINDA está inativo antes de ativar polling
                   if (!mounted) return
 
                   if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
-                    console.log(`🔄 [useRealtimeQuests] Debounce expirado - ativando polling fallback...`)
+                    DEBUG.log('useRealtimeQuests', `🔄 Debounce expirado - ativando polling fallback...`)
                     pollingIntervalRef.current = setInterval(fetchQuestsFallback, 2000)
                   } else {
-                    console.log(`✅ [useRealtimeQuests] Debounce expirado mas Realtime voltou - polling não ativado`)
+                    DEBUG.log('useRealtimeQuests', `✅ Debounce expirado mas Realtime voltou - polling não ativado`)
                   }
                   pollingDebounceRef.current = null
                 }, POLLING_DEBOUNCE_MS)
@@ -208,12 +209,12 @@ export function useRealtimeQuests(phaseId: string | null) {
 
         setLoading(false)
       } catch (err) {
-        console.error(`❌ [useRealtimeQuests] Setup error:`, err)
+        DEBUG.error('useRealtimeQuests', `❌ Setup error:`, err)
         setError(err instanceof Error ? err.message : 'Unknown error')
         setLoading(false)
         // ✅ FALLBACK: Ativar polling em caso de erro
         if (mounted && !pollingIntervalRef.current) {
-          console.log(`🔄 [useRealtimeQuests] Ativando polling fallback após setup error...`)
+          DEBUG.log('useRealtimeQuests', `🔄 Ativando polling fallback após setup error...`)
           pollingIntervalRef.current = setInterval(fetchQuestsFallback, 2000)
         }
       }
@@ -225,20 +226,20 @@ export function useRealtimeQuests(phaseId: string | null) {
     return () => {
       mounted = false
       if (subscriptionRef.current) {
-        console.log(`🧹 [useRealtimeQuests] Limpando subscription para phase_id: ${phaseId}`)
+        DEBUG.log('useRealtimeQuests', `🧹 Limpando subscription para phase_id: ${phaseId}`)
         supabase.removeChannel(subscriptionRef.current)
         subscriptionRef.current = null
         initialLoadRef.current = false
       }
       // 🧹 Limpar polling fallback
       if (pollingIntervalRef.current) {
-        console.log(`🧹 [useRealtimeQuests] Limpando polling fallback para phase_id: ${phaseId}`)
+        DEBUG.log('useRealtimeQuests', `🧹 Limpando polling fallback para phase_id: ${phaseId}`)
         clearInterval(pollingIntervalRef.current)
         pollingIntervalRef.current = null
       }
       // 🧹 Limpar debounce de polling
       if (pollingDebounceRef.current) {
-        console.log(`🧹 [useRealtimeQuests] Limpando debounce de polling para phase_id: ${phaseId}`)
+        DEBUG.log('useRealtimeQuests', `🧹 Limpando debounce de polling para phase_id: ${phaseId}`)
         clearTimeout(pollingDebounceRef.current)
         pollingDebounceRef.current = null
       }

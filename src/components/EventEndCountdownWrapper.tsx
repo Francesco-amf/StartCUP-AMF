@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { DEBUG } from '@/lib/debug'
 import EventEndCountdown from './EventEndCountdown'
 import EvaluationPeriodCountdown from './EvaluationPeriodCountdown'
 
@@ -34,7 +35,7 @@ export default function EventEndCountdownWrapper() {
     // ✅ FIX: Detectar visibilidade da página
     const handleVisibilityChange = () => {
       isPageVisibleRef.current = !document.hidden
-      console.log('👁️ [EventEndCountdownWrapper] Page visibility:', isPageVisibleRef.current ? 'visible' : 'hidden')
+      DEBUG.log('EventEndCountdownWrapper', '👁️ Page visibility:', isPageVisibleRef.current ? 'visible' : 'hidden')
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -54,7 +55,7 @@ export default function EventEndCountdownWrapper() {
           .single()
 
         if (eventConfig) {
-          console.log('📊 [EventEndCountdownWrapper] Carregado estado do evento:', {
+          DEBUG.log('EventEndCountdownWrapper', '📊 Carregado estado do evento:', {
             event_ended: eventConfig.event_ended,
             event_end_time: eventConfig.event_end_time,
             evaluation_period_end_time: eventConfig.evaluation_period_end_time,

@@ -59,36 +59,46 @@ export default function LivePowerUpStatus() {
         setCurrentPhase(eventConfig.current_phase)
 
         // Obter power-ups usados APENAS nesta fase específica e que estão com status 'used'
-        const { data: pups, error: pupsError } = await supabase
+        let { data: pups, error: pupsError } = await supabase
           .from('power_ups')
           .select('team_id, power_up_type, phase_used')
           .eq('phase_used', eventConfig.current_phase)
           .eq('status', 'used')
 
         if (pupsError) {
-          console.error('Erro ao buscar power-ups:', pupsError)
+          console.warn('⚠️ power_ups table não acessível, tentando com fallback:', pupsError)
+          // Fallback: sem power-ups se a tabela não existir
           setPowerUps([])
           setLoading(false)
           return
         }
 
         if (pups && pups.length > 0) {
-          // Obter nomes das equipes (excluindo equipes fantasma)
+          // Obter nomes das equipes
           const teamIds = [...new Set(pups.map((p: any) => p.team_id))]
           const { data: teams, error: teamsError } = await supabase
             .from('teams')
-            .select('id, name')
+            .select('id, name, email')
             .in('id', teamIds)
-            .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
 
           if (teamsError) {
-            console.error('Erro ao buscar equipes:', teamsError)
-            setPowerUps([])
+            console.warn('⚠️ Erro ao buscar equipes:', teamsError)
+            // Usar power-ups sem nomes das equipes
+            const formatted = pups
+              .map((p: any) => ({
+                team_id: p.team_id,
+                team_name: p.team_id, // Fallback: usar ID da equipe
+                power_up_type: p.power_up_type
+              }))
+            setPowerUps(formatted)
             setLoading(false)
             return
           }
 
-          const teamMap = new Map(teams?.map((t: any) => [t.id, t.name]) || [])
+          // Filtrar equipes fantasma em memória (excluir admins/avaliadores)
+          const testEmails = ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com']
+          const realTeams = teams?.filter((t: any) => !testEmails.includes(t.email)) || []
+          const teamMap = new Map(realTeams.map((t: any) => [t.id, t.name]))
 
           // Filtrar apenas power-ups de equipes que existem
           const formatted = pups
@@ -103,7 +113,7 @@ export default function LivePowerUpStatus() {
           setPowerUps([])
         }
       } catch (err) {
-        console.error('Erro ao buscar power-ups:', err)
+        console.error('❌ Erro ao buscar power-ups:', err)
         setPowerUps([])
       } finally {
         setLoading(false)

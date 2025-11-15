@@ -80,6 +80,8 @@ export function useRealtimePhase() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
   const isPageVisibleRef = useRef(true)
+  const rpcCacheRef = useRef<{ data: any; timestamp: number } | null>(null)
+  const RPC_CACHE_DURATION_MS = 5000 // Cache RPC results for 5 seconds
 
   useEffect(() => {
     // Detectar quando a aba está visível ou oculta
@@ -88,31 +90,78 @@ export function useRealtimePhase() {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    let isFetching = false // � Evitar chamadas simultâneas
+    let isFetching = false // Evitar chamadas simultâneas
 
-    // �🚀 Usar RPC para buscar tudo em UMA query (otimização)
+    // Buscar dados com fallback (RPC se existir, caso contrário direct query)
     const fetchPhase = async () => {
       if (isFetching || !isPageVisibleRef.current) return // Skip se já buscando OU página oculta
 
       isFetching = true
       try {
-        const { data, error } = await supabase.rpc('get_current_phase_data')
+        let eventConfig = null
+        let activeQuest = null
 
-        if (error) {
-          console.error('[useRealtimePhase] RPC error:', error)
-          setLoading(false)
-          return
+        // ✅ OPTIMIZATION: Verificar cache de RPC primeiro
+        const now = Date.now()
+        const cachedRPC = rpcCacheRef.current
+        if (cachedRPC && now - cachedRPC.timestamp < RPC_CACHE_DURATION_MS) {
+          console.log(`✅ [useRealtimePhase] Usando cache RPC (válido por mais ${RPC_CACHE_DURATION_MS - (now - cachedRPC.timestamp)}ms)`)
+          eventConfig = cachedRPC.data.event_config
+          activeQuest = cachedRPC.data.active_quest
+        } else {
+          // Tentar RPC primeiro
+          try {
+            console.log(`📡 [useRealtimePhase] Chamando RPC...`)
+            const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_phase_data')
+            if (!rpcError && rpcData?.event_config) {
+              console.log(`✅ [useRealtimePhase] RPC success`)
+              eventConfig = rpcData.event_config
+              activeQuest = rpcData.active_quest
+              // ✅ Cachear resultado de RPC
+              rpcCacheRef.current = { data: rpcData, timestamp: now }
+            } else {
+              console.warn(`⚠️ [useRealtimePhase] RPC failed, using fallback queries`)
+            }
+          } catch (rpcErr) {
+            console.warn(`⚠️ [useRealtimePhase] RPC error: ${rpcErr}`)
+            // Continue to fallback
+          }
         }
 
-        if (!data || !data.event_config) {
-          setPhase(null)
-          setLoading(false)
-          return
+        // Fallback: Buscar event_config diretamente se RPC falhou
+        if (!eventConfig) {
+          console.log(`🔄 [useRealtimePhase] Usando fallback queries (sem RPC)`)
+          const { data: configData, error: configError } = await supabase
+            .from('event_config')
+            .select('*')
+            .single()
+
+          if (configError || !configData) {
+            console.error('[useRealtimePhase] Config fetch error:', configError)
+            setPhase(null)
+            setLoading(false)
+            isFetching = false
+            return
+          }
+
+          eventConfig = configData
+
+          // Buscar quest ativa se houver
+          if (eventConfig.current_phase > 0) {
+            const { data: questData } = await supabase
+              .from('quests')
+              .select('*')
+              .eq('phase_id', eventConfig.current_phase)
+              .order('order_index', { ascending: true })
+              .limit(1)
+
+            if (questData?.length) {
+              activeQuest = questData[0]
+            }
+          }
         }
 
-        const eventConfig = data.event_config
-        const phaseInfo = data.phase || getPhaseInfo(eventConfig.current_phase)
-        const activeQuest = data.active_quest
+        const phaseInfo = getPhaseInfo(eventConfig.current_phase)
 
         // Obter timestamp de quando a fase atual começou
         let phaseStartTime = null
@@ -135,6 +184,7 @@ export function useRealtimePhase() {
         setLoading(false)
       } catch (err) {
         console.error('[useRealtimePhase] Error:', err)
+        setPhase(null)
         setLoading(false)
       } finally {
         isFetching = false
@@ -158,6 +208,7 @@ export function useRealtimePhase() {
       if (pollInterval) {
         clearInterval(pollInterval)
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [supabase])
 

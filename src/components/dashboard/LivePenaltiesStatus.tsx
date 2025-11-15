@@ -66,22 +66,36 @@ export default function LivePenaltiesStatus() {
         }
 
         console.log(`✅ ${penaltiesData.length} penalidades encontradas`)
-        // Obter nomes das equipes (excluindo equipes fantasma)
+        // Obter nomes das equipes (sem filtro de email - será feito em memória)
         const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
-          .select('id, name')
+          .select('id, name, email')
           .in('id', teamIds)
-          .not('email', 'in', '("admin@test.com","avaliador1@test.com","avaliador2@test.com","avaliador3@test.com")')
 
         if (teamsError) {
-          console.error('Erro ao buscar equipes:', teamsError)
-          setPenalties([])
+          console.warn('⚠️ Erro ao buscar equipes:', teamsError)
+          // Fallback: usar penalidades sem nomes das equipes
+          const formatted = penaltiesData.map((p: any) => ({
+            id: p.id,
+            team_id: p.team_id,
+            team_name: p.team_id, // Fallback: usar ID da equipe
+            penalty_type: p.penalty_type,
+            points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
+            reason: p.reason || null,
+            assigned_by_admin: p.assigned_by_admin || false,
+            evaluator_name: null,
+            created_at: p.created_at
+          }))
+          setPenalties(formatted)
           setLoading(false)
           return
         }
 
-        const teamMap = new Map(teamsData?.map((t: any) => [t.id, t.name]) || [])
+        // Filtrar equipes fantasma em memória (excluir admins/avaliadores)
+        const testEmails = ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com']
+        const realTeamsData = teamsData?.filter((t: any) => !testEmails.includes(t.email)) || []
+        const teamMap = new Map(realTeamsData.map((t: any) => [t.id, t.name]))
 
         // Obter nomes dos avaliadores (apenas se houver IDs para buscar)
         let evaluatorMap = new Map()

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
+import { useRealtimeQuests } from '@/lib/hooks/useRealtimeQuests'
 
 interface Quest {
   id: string
@@ -283,7 +284,8 @@ export default function CurrentQuestTimer({
 
   const [quests, setQuests] = useState<Quest[]>([])
   const [loadingQuests, setLoadingQuests] = useState(true)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
   const { play } = useSoundSystem()
   const previousQuestIdRef = useRef<string | null>(null)
   const [isPageVisible, setIsPageVisible] = useState(true)
@@ -331,21 +333,13 @@ export default function CurrentQuestTimer({
     }
   }, [isLiveDashboard])
 
-  // ✅ Carregar quests da fase atual E FAZER POLLING ADAPTATIVO
-  // Necessário porque apenas o phase número não muda quando quests são atualizadas
-  // Agora usa polling de 500ms quando ativa e 5s quando inativa
+  // ✅ REALTIME: Buscar phase_id e usar Realtime Subscriptions para quests
+  // Muito mais eficiente que polling (0 requisições quando nada muda)
+  const [phaseId, setPhaseId] = useState<string | null>(null)
+
   useEffect(() => {
-    let isFetching = false
-
-    const fetchQuests = async () => {
-      if (isFetching) return
-      isFetching = true
-
-      // Store reference so BroadcastChannel listener can trigger immediate refresh
-      fetchQuestsRef.current = fetchQuests
-
+    const getPhaseId = async () => {
       try {
-        // Usar phase prop (vem de useRealtimePhase que já faz polling 2s)
         const { data: phaseData, error: phaseError } = await supabase
           .from('phases')
           .select('id')
@@ -353,95 +347,58 @@ export default function CurrentQuestTimer({
           .single()
 
         if (phaseError || !phaseData) {
-          console.error('❌ [FetchQuests] Erro ao buscar fase:', {
+          console.error('❌ [CurrentQuestTimer] Erro ao buscar phase_id:', {
             phase,
-            error: phaseError?.message,
-            code: phaseError?.code
+            error: phaseError?.message
           })
+          setPhaseId(null)
           setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
           setLoadingQuests(false)
-          isFetching = false
           return
         }
 
-        console.log(`🔍 Buscando quests para Fase ${phase} (phase_id: ${phaseData.id})`)
-
-        // Buscar quests dessa fase
-        // IMPORTANTE: Adicionar timestamp para forçar revalidação de cache (evita dados stale)
-        const cacheBypassParam = `_t=${Date.now()}`
-        const { data, error } = await supabase
-          .from('quests')
-          .select(`
-            id,
-            order_index,
-            name,
-            description,
-            max_points,
-            deliverable_type,
-            status,
-            duration_minutes,
-            started_at,
-            planned_deadline_minutes,
-            late_submission_window_minutes
-          `)
-          .eq('phase_id', phaseData.id)
-          .order('order_index')
-
-        if (error) {
-          console.error(`❌ [FetchQuests] Erro ao buscar quests para Fase ${phase}:`, {
-            error: error.message,
-            code: error.code,
-            hint: error.hint
-          })
-          // Use fallback if query fails
-          setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
-          setLoadingQuests(false)
-          isFetching = false
-          return
-        }
-
-        console.log(`📊 [FetchQuests] Resultado da query - Total de quests: ${data?.length || 0}`)
-        console.log(`📊 [FetchQuests] Raw query data:`, JSON.stringify(data, null, 2))
-
-        if (data && data.length > 0) {
-          // Ordenar por order_index para garantir ordem correta
-          const sortedData = [...data].sort((a: any, b: any) => a.order_index - b.order_index)
-
-          console.log(`✅ Quests carregadas do DB para Fase ${phase}:`, sortedData.map((q: any) => `[${q.order_index}] ${q.name} (started_at: ${q.started_at ? 'SIM' : 'NÃO'}, status: ${q.status})`))
-          setQuests(sortedData)
-        } else {
-          // Usar fallback APENAS se não houver quests no banco ou erro na query
-          console.log(`⚠️ Nenhuma quest encontrada para Fase ${phase} (ou erro na query), usando fallback`)
-          const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
-          console.log(`📋 Fallback quests para Fase ${phase}:`, fallbackQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
-          setQuests(fallbackQuests)
-        }
+        console.log(`✅ [CurrentQuestTimer] phase_id encontrado para Fase ${phase}: ${phaseData.id}`)
+        setPhaseId(phaseData.id)
       } catch (err) {
-        console.error('Erro ao carregar quests:', err)
-        // Usar fallback em caso de erro
-        const fallbackQuests = PHASES_QUESTS_FALLBACK[phase] || []
-        setQuests(fallbackQuests)
-      } finally {
+        console.error('❌ [CurrentQuestTimer] Erro ao buscar phase_id:', err)
+        setPhaseId(null)
+        setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
         setLoadingQuests(false)
-        isFetching = false
       }
     }
 
-    // ✅ Buscar quests imediatamente quando phase mudar
-    setLoadingQuests(true)
-    fetchQuests()
+    getPhaseId()
+  }, [phase])
 
-    // 🔄 ADAPTATIVO: Polling de 500ms quando página ativa, 5s quando inativa
-    // Garante detecção rápida (500ms vs 2s antes) mas economiza recursos quando aba fechada
-    const pollInterval = setInterval(
-      fetchQuests,
-      isPageVisible ? 500 : 5000  // 500ms ativo, 5s inativo
-    )
+  // 📡 Usar Realtime Subscriptions em vez de polling
+  const { quests: realtimeQuests, loading: realtimeLoading, error: realtimeError } = useRealtimeQuests(phaseId)
 
-    console.log(`🔄 [CurrentQuestTimer] Polling iniciado: ${isPageVisible ? '500ms (ATIVO)' : '5s (INATIVO)'}`)
+  useEffect(() => {
+    if (phaseId) {
+      if (realtimeQuests && realtimeQuests.length > 0) {
+        console.log(`✅ [CurrentQuestTimer] Quests atualizadas via Realtime:`, realtimeQuests.map((q: any) => `[${q.order_index}] ${q.name}`))
+        setQuests(realtimeQuests)
+        setLoadingQuests(false)
+      } else if (realtimeError) {
+        console.error(`⚠️ [CurrentQuestTimer] Erro ao buscar quests via Realtime:`, realtimeError)
+        setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+        setLoadingQuests(false)
+      } else if (realtimeLoading) {
+        setLoadingQuests(true)
+      } else {
+        console.log(`⚠️ [CurrentQuestTimer] Nenhuma quest encontrada para Fase ${phase}`)
+        setQuests(PHASES_QUESTS_FALLBACK[phase] || [])
+        setLoadingQuests(false)
+      }
 
-    return () => clearInterval(pollInterval)
-  }, [phase, supabase, isPageVisible]) // Adicionar isPageVisible para reagir a visibility changes
+      // Store reference for BroadcastChannel listener
+      fetchQuestsRef.current = async () => {
+        console.log(`🔄 [CurrentQuestTimer] Refresh solicitado via BroadcastChannel`)
+        // Com Realtime, a atualização é automática, mas podemos forçar um re-fetch se necessário
+        // Por enquanto, apenas logamos a solicitação
+      }
+    }
+  }, [phaseId, realtimeQuests])
 
   // 🔊 Detectar mudanças de quest e tocar sons apropriados
   useEffect(() => {

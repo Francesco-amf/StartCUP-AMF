@@ -110,22 +110,6 @@ export default function LoginPage() {
             {loading ? '⏳ Entrando...' : '→ Entrar'}
           </Button>
         </form>
-
-        <div className="mt-8 pt-6 border-t border-[#00E5FF]/20">
-          <p className="text-center text-xs font-medium text-[#00E5FF]/60 mb-3">
-            👤 USUÁRIOS DE TESTE
-          </p>
-          <div className="space-y-2 text-xs">
-            <div className="bg-white/5 p-3 rounded border border-[#00E5FF]/20">
-              <p className="text-[#00E5FF] font-mono">equipe1@test.com</p>
-              <p className="text-white/50 font-mono">teste123</p>
-            </div>
-            <div className="bg-white/5 p-3 rounded border border-[#00E5FF]/20">
-              <p className="text-[#00E5FF] font-mono">avaliador1@test.com</p>
-              <p className="text-white/50 font-mono">teste123</p>
-            </div>
-          </div>
-        </div>
       </Card>
 
       {/* Decoração de fundo */}

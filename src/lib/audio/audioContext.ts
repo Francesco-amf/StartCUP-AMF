@@ -35,6 +35,7 @@ export function getAudioContext(): AudioContextType | null {
       try {
         sharedAudioContext = new AudioContextClass()
         contextCreationAttempts = 0
+        console.log('✅ [AudioContext] Criado com sucesso! Estado:', sharedAudioContext.state)
       } catch (e: any) {
         // NotAllowedError: AudioContext não pode ser criado ainda (browser policy)
         // Isto é NORMAL e esperado - será retentado após autorização
@@ -164,10 +165,11 @@ export function isAudioAuthorizedByUser(): boolean {
 
 /**
  * Auto-setup de autorização de áudio na primeira interação do usuário
- * Isso contorna a Autoplay Policy do Chrome automaticamente
+ * Requer um gesto REAL do usuário (click, touch, keypress)
+ * Browsers modernos não aceitam eventos sintéticos como gestos reais
  *
- * NOVO: Também simula um clique virtual automático após 500ms do carregamento
- * Isso evita a necessidade de clicar manualmente a cada refresh
+ * ⚠️ IMPORTANTE: A única forma de autorizar áudio em navegadores modernos
+ * é através de interação genuína do usuário.
  */
 export function setupAutoAudioAuthorization(): void {
   if (typeof window === 'undefined' || interactionListenersAdded) {
@@ -175,18 +177,19 @@ export function setupAutoAudioAuthorization(): void {
   }
 
   interactionListenersAdded = true
+  let authorizationAttempted = false
 
-  const handleInteraction = () => {
+  const handleInteraction = (eventType: string) => {
     if (!isAudioAuthorized) {
       isAudioAuthorized = true
+      authorizationAttempted = true
 
-      // Resumir AudioContext
-      const ctx = getAudioContext()
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch(() => {})
-      }
+      // ✅ IMPORTANTE: NÃO tentar criar AudioContext aqui!
+      // AudioContext NÃO pode ser criado antes de user gesture real
+      // Quando audioManager.playFile() for chamado, ele criará o contexto
+      // Apenas marcar como autorizado para que playFile() tente criar
 
-      // Tentar tocar um som silencioso para pré-carregar
+      // Tentar tocar um som silencioso para pré-autorizar o HTML5 Audio API
       try {
         const audioTest = new Audio()
         audioTest.volume = 0 // Silencioso
@@ -196,51 +199,30 @@ export function setupAutoAudioAuthorization(): void {
         // Silenciosamente ignora
       }
 
-      console.log('✅ Áudio autorizado automaticamente após interação do usuário')
+      console.log(`✅ [audioContext] Áudio autorizado via interação real (${eventType})!`)
+      console.log('🎵 [audioContext] AudioContext será criado no primeiro playFile()')
     }
-
-    // Remover listeners após primeira interação
-    window.removeEventListener('click', handleInteraction)
-    window.removeEventListener('touchstart', handleInteraction)
-    window.removeEventListener('keydown', handleInteraction)
   }
 
   // Adicionar listeners para qualquer interação do usuário
-  window.addEventListener('click', handleInteraction, { passive: true })
-  window.addEventListener('touchstart', handleInteraction, { passive: true })
-  window.addEventListener('keydown', handleInteraction, { passive: true })
+  // ⚠️ CRÍTICO: Apenas gestos reais funcionam (click, touchstart, keydown)
+  // Eventos sintéticos/simulados NÃO funcionam em navegadores modernos
+  const clickHandler = () => handleInteraction('click')
+  const touchHandler = () => handleInteraction('touchstart')
+  const keyHandler = () => handleInteraction('keydown')
 
-  // ✨ AUTO-CLICK VIRTUAL ✨
-  // Simula um clique automático após 500ms do carregamento
-  // Isso autoriza áudio sem precisar o usuário clicar manualmente
-  // Especialmente útil para live dashboards com refresh automático
+  window.addEventListener('click', clickHandler, { passive: true })
+  window.addEventListener('touchstart', touchHandler, { passive: true })
+  window.addEventListener('keydown', keyHandler, { passive: true })
+
+  // ⏰ Log de debug: Avisar se não autorizar em 5 segundos
   setTimeout(() => {
-    if (!isAudioAuthorized) {
-      console.log('⚡ [AUTO-CLICK] Simulando clique virtual para autorizar áudio...')
-
-      // Simular um clique virtual (dispara evento de clique)
-      try {
-        const clickEvent = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        })
-        document.dispatchEvent(clickEvent)
-
-        // Se o clique não funcionou, tentar com touchstart
-        setTimeout(() => {
-          if (!isAudioAuthorized) {
-            const touchEvent = new TouchEvent('touchstart', {
-              bubbles: true,
-              cancelable: true,
-              touches: [] as any
-            })
-            document.dispatchEvent(touchEvent)
-          }
-        }, 100)
-      } catch (err) {
-        console.log('⚠️ [AUTO-CLICK] Simulação de clique falhou:', err)
-      }
+    if (!authorizationAttempted) {
+      console.warn(
+        '⚠️ [audioContext] AVISO: Audio ainda não foi autorizado após 5s.\n' +
+        '   → Clique, toque ou pressione qualquer tecla para autorizar áudio.\n' +
+        '   → Isso é necessário por política de segurança do navegador.'
+      )
     }
-  }, 500)
+  }, 5000)
 }

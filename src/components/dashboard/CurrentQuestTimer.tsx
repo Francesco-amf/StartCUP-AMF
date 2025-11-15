@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 import { useRealtimeQuests } from '@/lib/hooks/useRealtimeQuests'
+import { playedSoundsTracker } from '@/lib/audio/playedSoundsTracker'
 
 interface Quest {
   id: string
@@ -288,8 +289,14 @@ export default function CurrentQuestTimer({
   const supabase = supabaseRef.current
   const { play, soundConfig } = useSoundSystem()
   const previousQuestIdRef = useRef<string | null>(null)
+  const currentPhaseRef = useRef<number>(phase) // Track current phase
   const [isPageVisible, setIsPageVisible] = useState(true)
   const lastQuestUpdateRef = useRef<number>(0) // Track last update time for cache busting
+
+  // Atualizar ref quando phase muda
+  useEffect(() => {
+    currentPhaseRef.current = phase
+  }, [phase])
 
   // 📡 Detectar quando página está visível (para polling adaptativo)
   useEffect(() => {
@@ -441,9 +448,11 @@ export default function CurrentQuestTimer({
       }
 
       const secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
-      isFirstActivation = secondsElapsed < 5 // Apenas se começou há menos de 5 segundos
+      // 🔔 IMPORTANTE: Aumentar limite para 10 segundos para cobrir transições de fase
+      isFirstActivation = secondsElapsed < 10
 
       console.log(`🔍 [CurrentQuestTimer] Primeira quest detectada: ${currentQuest.order_index} (${secondsElapsed.toFixed(2)}s atrás) - isFirstActivation: ${isFirstActivation}`)
+      console.log(`🔍 [CurrentQuestTimer] DEBUG: Quest started_at: ${currentQuest.started_at}, Phase: ${currentPhaseRef.current}, Order: ${currentQuest.order_index}`)
 
       if (!isFirstActivation) {
         console.log(`🔇 [CurrentQuestTimer] Quest ${currentQuest.order_index} começou há ${Math.round(secondsElapsed)}s (reload detectado, som não tocará)`)
@@ -477,7 +486,7 @@ export default function CurrentQuestTimer({
       }
 
       // Detectar som apropriado para a quest
-      const isFirstQuestOfPhase1 = phase === 1 && currentQuest.order_index === 1
+      const isFirstQuestOfPhase1 = currentPhaseRef.current === 1 && currentQuest.order_index === 1
       const isFirstQuestOfAnyPhase = currentQuest.order_index === 1  // Primera quest de qualquer fase
       const isBoss = currentQuest.order_index === 4 ||
                      currentQuest.deliverable_type === 'presentation' ||
@@ -494,29 +503,45 @@ export default function CurrentQuestTimer({
 
       if (isFirstQuestOfPhase1) {
         // Som especial para o começo do evento (Fase 1, Quest 1)
-        console.log(`🎬 INÍCIO DO EVENTO! Fase 1, Quest 1 ativada!`)
-        console.log('🔊 Tocando som: event-start')
-        play('event-start')
+        if (playedSoundsTracker.shouldPlay('phase-1-quest-1')) {
+          console.log(`🎬 INÍCIO DO EVENTO! Fase 1, Quest 1 ativada!`)
+          console.log('🔊 Tocando som: event-start')
+          play('event-start')
+        } else {
+          console.log(`🔇 [CurrentQuestTimer] event-start já foi tocado`)
+        }
       } else if (isBoss) {
         // Som especial para BOSS
-        console.log(`🔥 BOSS DETECTADO! Ordem: ${currentQuest.order_index}, Tipo: ${currentQuest.deliverable_type}`)
-        console.log('🔊 Tocando som: boss-spawn (2x para efeito épico!)')
-        // Reproduzir boss-spawn 2 vezes com pequeno delay entre elas
-        play('boss-spawn')
-        setTimeout(() => {
+        const bossKey = `boss-${currentQuest.id}`
+
+        if (playedSoundsTracker.shouldPlay(bossKey as any)) {
+          console.log(`🔥 BOSS DETECTADO! Ordem: ${currentQuest.order_index}, Tipo: ${currentQuest.deliverable_type}`)
+          console.log('🔊 Tocando som: boss-spawn (2x para efeito épico!)')
+          // Reproduzir boss-spawn 2 vezes com pequeno delay entre elas
           play('boss-spawn')
-        }, 2500) // 2.5 segundos após a primeira, quando a primeira terminar
+          setTimeout(() => {
+            play('boss-spawn')
+          }, 2500) // 2.5 segundos após a primeira, quando a primeira terminar
+        }
       } else if (isFirstQuestOfAnyPhase) {
         // ✅ Som especial para primeira quest de CADA FASE (não importa qual)
         // Fase 1 Quest 1 já foi tratada acima (event-start)
         // Fase 2+ Quest 1 deve tocar phase-start
-        console.log(`🌟 MUDANÇA DE FASE DETECTADA! De Fase ${phase - 1 || 0} → Fase ${phase}`)
-        console.log(`📣 Primeira quest da Fase ${phase} iniciada! Tocando som: phase-start`)
-        play('phase-start')
+        const phaseKey = `phase-${currentPhaseRef.current}-quest-1` as const
+
+        if (playedSoundsTracker.shouldPlay(phaseKey)) {
+          console.log(`🌟 MUDANÇA DE FASE DETECTADA! De Fase ${currentPhaseRef.current - 1 || 0} → Fase ${currentPhaseRef.current}`)
+          console.log(`📣 Primeira quest da Fase ${currentPhaseRef.current} iniciada! Tocando som: phase-start`)
+          play('phase-start')
+        }
       } else {
         // Som padrão para quest normal
-        console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)
-        play('quest-start')
+        const questKey = `quest-${currentQuest.id}`
+
+        if (playedSoundsTracker.shouldPlay(questKey as any)) {
+          console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)
+          play('quest-start')
+        }
       }
     } else {
       console.log(`🔇 [CurrentQuestTimer] Sem mudança de quest detectada:`, {

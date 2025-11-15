@@ -248,9 +248,13 @@ class AudioManager {
           volume: Math.max(0, Math.min(1, parsed.volume ?? 0.7)),
           enabled: parsed.enabled ?? true
         }
+        console.log(`🎵 [AudioManager] Config carregada do localStorage:`, this.config)
+      } else {
+        console.log(`🎵 [AudioManager] Nenhuma config no localStorage. Usando padrão:`, this.config)
       }
     } catch (error) {
       console.warn('⚠️ Erro ao carregar configuração de áudio:', error)
+      console.log(`🎵 [AudioManager] Usando config padrão após erro:`, this.config)
     }
   }
 
@@ -380,7 +384,10 @@ class AudioManager {
    * Reproduz um arquivo de áudio com suporte a prioridade
    */
   async playFile(type: AudioFileType, priority?: number): Promise<void> {
-    if (!this.config.enabled) return
+    if (!this.config.enabled) {
+      console.warn(`🔇 [playFile] Áudio desabilitado! Som "${type}" não será tocado. Config:`, this.config)
+      return
+    }
 
     try {
       // Verificar se arquivo existe

@@ -15,6 +15,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
   const autoAdvancedPhaseRef = useRef<Set<number>>(new Set())
   const lastPhaseStateRef = useRef<string>('')
   const zeroTimeQuestDetectionRef = useRef<{ questId: string; detectedAt: number } | null>(null)
+  const advancingQuestRef = useRef<string | null>(null) // Debounce para evitar múltiplos advances simultâneos
 
   // Usa currentPhase do servidor, que é atualizado a cada clique
   // Reflete sempre o estado real do banco de dados
@@ -175,6 +176,13 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
 
         // ✅ RÁPIDO: Se quest passou do deadline final, avançar IMEDIATAMENTE
         if (now > finalDeadline) {
+          // ✅ DEBOUNCE: Evitar múltiplos advances da mesma quest
+          if (advancingQuestRef.current === activeQuest.id) {
+            console.log(`⏳ [PhaseController] Já tentando avançar quest ${activeQuest.id}, ignorando nova tentativa`);
+            return;
+          }
+
+          advancingQuestRef.current = activeQuest.id; // Mark as in-progress
           console.warn(`⚠️ [PhaseController] Quest ${activeQuest.order_index} expirada! Avançando AGORA (expirou há ${Math.round(-timeRemainingMs / 1000)}s)`);
           console.log(`📤 Chamando /api/admin/advance-quest com questId: ${activeQuest.id}`);
 
@@ -196,12 +204,15 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
                 } catch (err) {
                   console.warn(`⚠️ [PhaseController] BroadcastChannel não suportado:`, err);
                 }
+                advancingQuestRef.current = null; // Clear advancing flag
                 fetchEventData();
               } else {
+                advancingQuestRef.current = null; // Clear advancing flag on error
                 console.error(`❌ Erro na resposta: ${data.error}`);
               }
             });
           }).catch((err) => {
+            advancingQuestRef.current = null; // Clear advancing flag on error
             console.error('❌ Erro ao forçar auto-advance:', err);
           });
           return;

@@ -60,10 +60,10 @@ export function useRealtimeRanking() {
     // Buscar imediatamente
     fetchRanking()
 
-    // 🔄 Polling staggered a cada 500ms com delay de 0ms (primeiro hook)
-    // IMPORTANTE: Cada hook começa em tempo diferente para evitar polling storms
-    // T=0ms: useRealtimeRanking
-    const pollInterval = setInterval(fetchRanking, 500)
+    // 🔄 Polling a cada 2 segundos (não 500ms)
+    // IMPORTANTE: 500ms era muito agressivo (120 req/min)
+    // 2s = 30 req/min (mais razoável para Supabase free tier)
+    const pollInterval = setInterval(fetchRanking, 2000)
 
     // Cleanup
     return () => {
@@ -195,13 +195,13 @@ export function useRealtimePhase() {
     // Buscar imediatamente
     fetchPhase()
 
-    // 🔄 Polling staggered a cada 500ms com delay de 125ms (segundo hook)
-    // IMPORTANTE: Cada hook começa em tempo diferente para evitar polling storms
-    // T=125ms: useRealtimePhase
+    // 🔄 Polling a cada 5 segundos (RPC cacheia por 5s anyway)
+    // IMPORTANTE: 500ms era muito agressivo
+    // 5s = 12 req/min (matches RPC cache duration)
     let pollInterval: NodeJS.Timeout
     const timeoutId = setTimeout(() => {
-      pollInterval = setInterval(fetchPhase, 500)
-    }, 125)
+      pollInterval = setInterval(fetchPhase, 5000)
+    }, 0)
 
     // Cleanup
     return () => {
@@ -357,12 +357,14 @@ export function useRealtimePenalties() {
     // Buscar imediatamente
     fetchPenalties()
 
-    // 🔄 Polling staggered a cada 500ms com delay de 250ms (terceiro hook)
-    // T=250ms: useRealtimePenalties
+    // 🔄 Polling a cada 3 segundos
+    // IMPORTANTE: 500ms era muito agressivo (60+ queries/min)
+    // 3s = 20 req/min (muito mais razoável)
+    // Penalidades não mudam tão frequentemente
     let pollInterval: NodeJS.Timeout
     const timeoutId = setTimeout(() => {
-      pollInterval = setInterval(fetchPenalties, 500)
-    }, 250)
+      pollInterval = setInterval(fetchPenalties, 3000)
+    }, 0)
 
     // Cleanup
     return () => {
@@ -433,12 +435,13 @@ export function useRealtimeEvaluators() {
     // Buscar imediatamente
     fetchEvaluators()
 
-    // 🔄 Polling staggered a cada 500ms com delay de 375ms (quarto hook)
-    // T=375ms: useRealtimeEvaluators
+    // 🔄 Polling a cada 5 segundos
+    // IMPORTANTE: 500ms era muito agressivo
+    // 5s = 12 req/min (status de avaliadores não muda tão rápido)
     let pollInterval: NodeJS.Timeout
     const timeoutId = setTimeout(() => {
-      pollInterval = setInterval(fetchEvaluators, 500)
-    }, 375)
+      pollInterval = setInterval(fetchEvaluators, 5000)
+    }, 0)
 
     // Cleanup
     return () => {

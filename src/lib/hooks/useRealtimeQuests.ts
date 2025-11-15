@@ -97,8 +97,8 @@ export function useRealtimeQuests(phaseId: string | null) {
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current)
             }
-            // Start polling every 2 seconds
-            pollingIntervalRef.current = setInterval(fetchQuestsFallback, 2000)
+            // Start polling every 5 seconds (fallback polling is less urgent)
+            pollingIntervalRef.current = setInterval(fetchQuestsFallback, 5000)
           }
           return
         }
@@ -195,7 +195,7 @@ export function useRealtimeQuests(phaseId: string | null) {
 
                   if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
                     DEBUG.log('useRealtimeQuests', `🔄 Debounce expirado - ativando polling fallback...`)
-                    pollingIntervalRef.current = setInterval(fetchQuestsFallback, 2000)
+                    pollingIntervalRef.current = setInterval(fetchQuestsFallback, 5000)
                   } else {
                     DEBUG.log('useRealtimeQuests', `✅ Debounce expirado mas Realtime voltou - polling não ativado`)
                   }

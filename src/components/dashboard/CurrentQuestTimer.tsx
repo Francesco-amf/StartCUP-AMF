@@ -578,6 +578,31 @@ export default function CurrentQuestTimer({
   // O problema foi tentar sincronizar com servidor - Realtime já faz isso!
   // Vamos voltar ao cálculo simples mas preciso
 
+  // 🎯 NOVO: Track quando a última quest começou (para pausar o timer da fase)
+  const lastQuestStartTimeRef = useRef<number>(0)
+
+  useEffect(() => {
+    // Atualizar quando uma quest começa
+    const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+    if (activeQuests.length > 0) {
+      const sortedByStart = [...activeQuests].sort((a, b) => {
+        const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+        const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+        return timeB - timeA
+      })
+      const currentQuest = sortedByStart[0]
+      if (currentQuest.started_at) {
+        const cleanTimestamp = currentQuest.started_at.includes('+00:00')
+          ? currentQuest.started_at.replace('+00:00', 'Z')
+          : currentQuest.started_at.endsWith('Z')
+          ? currentQuest.started_at
+          : `${currentQuest.started_at}Z`
+
+        lastQuestStartTimeRef.current = new Date(cleanTimestamp).getTime()
+      }
+    }
+  }, [quests])
+
   useEffect(() => {
     const calculateTimeLeft = () => {
       // ⚠️ SAFETY CHECK: Handle NULL/undefined phaseStartedAt
@@ -613,8 +638,17 @@ export default function CurrentQuestTimer({
         return
       }
 
+      // 🎯 NOVO: Detectar se há quest ativa
+      const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+      const hasActiveQuest = activeQuests.length > 0
+
       const now = new Date().getTime()
-      const elapsed = now - startTime
+
+      // 🔥 NOVO: Se não há quest ativa, usar o tempo da última quest como "agora"
+      // Isso pausa efetivamente o timer da fase durante os gaps entre quests
+      const timeBaseForCalculation = hasActiveQuest ? now : lastQuestStartTimeRef.current
+
+      const elapsed = timeBaseForCalculation - startTime
       const totalDuration = phaseDurationMinutes * 60 * 1000
 
       if (elapsed >= totalDuration) {
@@ -633,6 +667,11 @@ export default function CurrentQuestTimer({
       const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000)
       const percentage = Math.round((timeRemaining / totalDuration) * 100)
 
+      // 🎯 NOVO: Log quando o timer está pausado
+      if (!hasActiveQuest && lastQuestStartTimeRef.current > 0) {
+        console.log(`⏸️ [Phase Timer] PAUSADO - Aguardando próxima quest. Tempo restante: ${hours}h ${minutes}m ${seconds}s`)
+      }
+
       setTimeLeft({
         hours,
         minutes,
@@ -645,7 +684,7 @@ export default function CurrentQuestTimer({
     const interval = setInterval(calculateTimeLeft, 1000)
 
     return () => clearInterval(interval)
-  }, [phaseStartedAt, phaseDurationMinutes, phase])
+  }, [phaseStartedAt, phaseDurationMinutes, phase, quests])
 
 
 
@@ -762,6 +801,10 @@ export default function CurrentQuestTimer({
     console.warn(`[LiveDashboard] ⚠️ Quest ${currentQuest?.name} não tem started_at! Timer zerado.`)
   }
 
+  // 🎯 NOVO: Detectar se há quest ativa para mostrar status do timer
+  const activeQuestsNow = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+  const hasActiveQuest = activeQuestsNow.length > 0
+
   const getProgressColor = () => {
     if (timeLeft.percentage > 66) return 'bg-green-500'
     if (timeLeft.percentage > 33) return 'bg-yellow-500'
@@ -859,57 +902,68 @@ export default function CurrentQuestTimer({
       )}
 
       {/* Total Phase Time */}
-      <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 text-white overflow-visible border-2 border-[#00E5FF]/40">
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs md:text-sm font-semibold text-[#00E5FF] mb-3">⏱️ TEMPO TOTAL DA FASE</p>
+      <Card className={`p-4 md:p-6 text-white overflow-visible border-2 transition-all duration-500 ${
+        hasActiveQuest
+          ? 'bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-[#00E5FF]/40'
+          : 'bg-gradient-to-br from-[#0A1E47]/40 to-[#001A4D]/40 border-[#FFD700]/40 animate-pulse'
+      }`}>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs md:text-sm font-semibold text-[#00E5FF]">⏱️ TEMPO TOTAL DA FASE</p>
+                  {!hasActiveQuest && (
+                    <span className="text-xs font-bold text-[#FFD700] bg-[#FFD700]/20 px-2 py-1 rounded-full animate-pulse">
+                      ⏸️ PAUSADO
+                    </span>
+                  )}
+                </div>
 
-            {/* Timer Numbers - Escala fluida com CSS clamp */}
-            <div
-              className="flex items-center justify-center gap-0 font-bold font-mono leading-none"
-              style={{
-                fontSize: 'clamp(1.5rem, 8vw, 2.5rem)',
-              }}
-            >
-              {/* Horas */}
-              <div className="flex flex-col items-center min-w-max">
-                <span className="leading-tight">{formatNumber(timeLeft.hours)}</span>
-                <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>h</span>
+                {/* Timer Numbers - Escala fluida com CSS clamp */}
+                <div
+                  className="flex items-center justify-center gap-0 font-bold font-mono leading-none"
+                  style={{
+                    fontSize: 'clamp(1.5rem, 8vw, 2.5rem)',
+                  }}
+                >
+                  {/* Horas */}
+                  <div className="flex flex-col items-center min-w-max">
+                    <span className="leading-tight">{formatNumber(timeLeft.hours)}</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>h</span>
+                  </div>
+
+                  {/* Separador */}
+                  <span className="leading-tight" style={{ padding: 'clamp(0.25rem, 1vw, 1rem)' }}>:</span>
+
+                  {/* Minutos */}
+                  <div className="flex flex-col items-center min-w-max">
+                    <span className="leading-tight">{formatNumber(timeLeft.minutes)}</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>m</span>
+                  </div>
+
+                  {/* Separador */}
+                  <span className="leading-tight" style={{ padding: 'clamp(0.25rem, 1vw, 1rem)' }}>:</span>
+
+                  {/* Segundos */}
+                  <div className="flex flex-col items-center min-w-max">
+                    <span className="leading-tight">{formatNumber(timeLeft.seconds)}</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>s</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Separador */}
-              <span className="leading-tight" style={{ padding: 'clamp(0.25rem, 1vw, 1rem)' }}>:</span>
-
-              {/* Minutos */}
-              <div className="flex flex-col items-center min-w-max">
-                <span className="leading-tight">{formatNumber(timeLeft.minutes)}</span>
-                <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>m</span>
-              </div>
-
-              {/* Separador */}
-              <span className="leading-tight" style={{ padding: 'clamp(0.25rem, 1vw, 1rem)' }}>:</span>
-
-              {/* Segundos */}
-              <div className="flex flex-col items-center min-w-max">
-                <span className="leading-tight">{formatNumber(timeLeft.seconds)}</span>
-                <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>s</span>
+              {/* Overall progress bar */}
+              <div className="space-y-2">
+                <div className="w-full bg-[#0A1E47]/20 rounded-full h-3 md:h-4 overflow-hidden">
+                  <div
+                    className={`${getProgressColor()} h-full transition-all duration-1000`}
+                    style={{ width: `${timeLeft.percentage}%` }}
+                  />
+                </div>
+                <p className="text-xs md:text-sm text-white/80 text-center font-semibold">
+                  {timeLeft.percentage}% da fase restante
+                </p>
               </div>
             </div>
-          </div>
-
-          {/* Overall progress bar */}
-          <div className="space-y-2">
-            <div className="w-full bg-[#0A1E47]/20 rounded-full h-3 md:h-4 overflow-hidden">
-              <div
-                className={`${getProgressColor()} h-full transition-all duration-1000`}
-                style={{ width: `${timeLeft.percentage}%` }}
-              />
-            </div>
-            <p className="text-xs md:text-sm text-white/80 text-center font-semibold">
-              {timeLeft.percentage}% da fase restante
-            </p>
-          </div>
-        </div>
       </Card>
     </div>
   )

@@ -690,7 +690,9 @@ export default function CurrentQuestTimer({
 
   // 🔄 useEffect para calcular tempo da quest a cada segundo
   useEffect(() => {
+    let callCount = 0
     const calculateQuestTime = () => {
+      callCount++
       if (quests.length === 0) {
         setQuestTimeRemaining(0)
         return
@@ -730,15 +732,27 @@ export default function CurrentQuestTimer({
       const questDuration = currentQuest.planned_deadline_minutes ?? currentQuest.duration_minutes ?? 60
       const questDurationMs = questDuration * 60 * 1000
 
-      const elapsed = Date.now() - questStartTime
+      const now = Date.now()
+      const elapsed = now - questStartTime
       let timeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
+
+      // 🔍 DEBUG: Log a cada chamada (pode ser muito verbose!)
+      // Mostrar CADA cálculo para encontrar onde o erro acontece
+      if (callCount <= 10 || callCount % 5 === 0) {
+        const displayMinutes = Math.floor(timeRemaining / 60)
+        const displaySeconds = Math.floor(timeRemaining % 60)
+        console.log(`⏱️ [QuestTimer #${callCount}] ${currentQuest.name} | Start: ${questStartTime} | Now: ${now} | Elapsed: ${elapsed}ms | Duration: ${questDurationMs}ms | Remaining: ${timeRemaining}s | Display: ${displayMinutes}:${String(displaySeconds).padStart(2, '0')}`)
+      }
 
       setQuestTimeRemaining(timeRemaining)
     }
 
     calculateQuestTime()
     const interval = setInterval(calculateQuestTime, 1000)
-    return () => clearInterval(interval)
+
+    return () => {
+      clearInterval(interval)
+    }
   }, [quests])
 
 

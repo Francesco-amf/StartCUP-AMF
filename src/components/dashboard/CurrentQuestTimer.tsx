@@ -885,32 +885,33 @@ export default function CurrentQuestTimer({
 
         console.log(`✅ [Phase Offset Sync] Nova fase start time: ${newPhaseStartedAt}`)
 
-        // 🔄 Atualizar no Supabase
+        // 🔄 Atualizar via API endpoint (não direto ao Supabase)
         const updatePhaseStartTime = async () => {
           try {
-            const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
             const phaseFieldName = `phase_${phase}_start_time`
 
-            console.log(`📡 [Phase Offset Sync] Atualizando ${phaseFieldName} no servidor...`)
-            console.log(`   - eventConfigId: ${eventConfigId}`)
+            console.log(`📡 [Phase Offset Sync] Chamando API para atualizar ${phaseFieldName}...`)
+            console.log(`   - phase: ${phase}`)
             console.log(`   - newPhaseStartedAt: ${newPhaseStartedAt}`)
 
-            const { error } = await supabaseRef.current
-              .from('event_config')
-              .update({
-                [phaseFieldName]: newPhaseStartedAt
+            const response = await fetch('/api/admin/update-phase-timing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phase,
+                newPhaseStartedAt
               })
-              .eq('id', eventConfigId)
+            })
 
-            if (error) {
-              console.error(`❌ [Phase Offset Sync] Erro ao atualizar: ${error.message}`)
-              console.error(`   - Code: ${error.code}`)
-              console.error(`   - Details: ${error.details}`)
+            const result = await response.json()
+
+            if (!response.ok) {
+              console.error(`❌ [Phase Offset Sync] Erro ao atualizar via API:`, result.error)
             } else {
-              console.log(`✅ [Phase Offset Sync] ${phaseFieldName} atualizado com sucesso: ${newPhaseStartedAt}`)
+              console.log(`✅ [Phase Offset Sync] ${phaseFieldName} atualizado com sucesso via API`)
             }
           } catch (err) {
-            console.error(`❌ [Phase Offset Sync] Exceção ao atualizar fase:`, err)
+            console.error(`❌ [Phase Offset Sync] Exceção ao chamar API:`, err)
           }
         }
 

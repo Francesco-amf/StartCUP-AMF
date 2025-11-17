@@ -786,11 +786,12 @@ export default function CurrentQuestTimer({
   // ✅ FIX: Usar apenas phase/phaseStartedAt/phaseDurationMinutes no dependency array
   // Usar questsRef para acessar dados atualizados sem causar re-execução excessiva
   useEffect(() => {
-    console.log(`🔄 [Phase Offset Sync] useEffect iniciado - phase=${phase}`)
+    console.log(`🚀 [Phase Offset Sync] useEffect montado para Phase ${phase}, phaseStartedAt: ${phaseStartedAt}, phaseDurationMinutes: ${phaseDurationMinutes}`)
 
     const syncPhaseOffset = () => {
       // ✅ Usar questsRef em vez de quests para evitar dependency issues
       const currentQuests = questsRef.current
+      console.log(`🔄 [Phase Offset Sync TICK] Phase ${phase}, Quests: ${currentQuests.length}`)
       if (currentQuests.length === 0) return
 
       // Encontrar quest ativa atual
@@ -803,10 +804,7 @@ export default function CurrentQuestTimer({
         return now < questDeadline
       })
 
-      if (activeQuestsForSync.length === 0 || !phaseStartedAt) {
-        console.log(`🔍 [Phase Offset Sync] Early return: activeQuests=${activeQuestsForSync.length}, phaseStartedAt=${!!phaseStartedAt}`)
-        return
-      }
+      if (activeQuestsForSync.length === 0 || !phaseStartedAt) return
 
       const currentQuestForSync = activeQuestsForSync.sort((a, b) => {
         const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
@@ -818,6 +816,7 @@ export default function CurrentQuestTimer({
 
       // Verificar se já sincronizamos esta quest (só uma vez por quest)
       if (syncedQuestsRef.current.has(currentQuestForSync.id)) {
+        console.log(`⏭️ [Phase Offset Sync] Quest ${currentQuestForSync.id} já sincronizada, pulando`)
         return
       }
 
@@ -827,14 +826,11 @@ export default function CurrentQuestTimer({
 
       // Aguardar 2 segundos antes de sincronizar (dar tempo mínimo para estabilizar)
       if (questElapsedMs < 2000) {
-        console.log(`⏳ [Phase Offset Sync] Aguardando estabilização: ${Math.round(questElapsedMs / 1000)}s / 2s`)
+        console.log(`⏸️ [Phase Offset Sync] Quest muito nova (${Math.round(questElapsedMs / 1000)}s < 2s), aguardando...`)
         return // Menos de 2 segundos - não sincronizar ainda
       }
 
-      // ✅ Marcar esta quest como sincronizada (só vai sincronizar uma vez por quest)
-      syncedQuestsRef.current.add(currentQuestForSync.id)
-
-      // 🔍 Calcular offset esperado
+      // 🔍 Calcular offset esperado PRIMEIRO (sem marcar como sincronizado ainda)
       // Encontrar índice da quest atual no array de quests
       const currentQuestIndex = currentQuests.findIndex(q => q.id === currentQuestForSync.id)
 
@@ -867,32 +863,32 @@ export default function CurrentQuestTimer({
       // Diferença entre o que deveria ser e o que é
       const offsetDifferenceMs = phaseActualRemainingMs - expectedPhaseOffsetMs
 
-      console.log(`⚙️ [Phase Offset Sync] Quest: ${currentQuestForSync.name}`)
+      console.log(`🔍 [Phase Offset Sync] Offset Calculation for Phase ${phase}:`)
       console.log(`   - Quest Remaining: ${Math.round(questTimeRemainingMs / 1000)}s`)
       console.log(`   - Future Quests Duration: ${Math.round(futureQuestsDurationMs / 1000)}s`)
       console.log(`   - Expected Phase Remaining: ${Math.round(expectedPhaseOffsetMs / 1000)}s`)
       console.log(`   - Actual Phase Remaining: ${Math.round(phaseActualRemainingMs / 1000)}s`)
-      console.log(`   - Offset Difference: ${Math.round(offsetDifferenceMs / 1000)}s`)
+      console.log(`   - Offset Difference: ${Math.round(offsetDifferenceMs / 1000)}s (Threshold: 5s)`)
 
       // Se diferença > 5 segundos, ajustar o phaseStartedAt
       if (Math.abs(offsetDifferenceMs) > 5000) {
-        console.log(`⚠️ [Phase Offset Sync] AJUSTANDO FASE em ${Math.round(offsetDifferenceMs / 1000)}s`)
+        console.log(`⚠️ [Phase Offset Sync] Detectado drift de ${Math.round(offsetDifferenceMs / 1000)}s - Ajustando fase ${phase}...`)
+
+        // ✅ Marcar esta quest como sincronizada AGORA (depois de detectar o drift)
+        syncedQuestsRef.current.add(currentQuestForSync.id)
 
         // Calcular novo phaseStartedAt ajustado
-        const adjustmentMs = offsetDifferenceMs
+        // IMPORTANTE: Inverter o offset!
+        // Se offsetDifferenceMs é NEGATIVO (phase rodando AHEAD), precisamos mover start EARLIER (subtrair)
+        // Se offsetDifferenceMs é POSITIVO (phase rodando BEHIND), precisamos mover start LATER (somar)
+        const adjustmentMs = -offsetDifferenceMs
         const newPhaseStartTimeMs = phaseStartTimeMs + adjustmentMs
         const newPhaseStartedAt = new Date(newPhaseStartTimeMs).toISOString()
-
-        console.log(`✅ [Phase Offset Sync] Nova fase start time: ${newPhaseStartedAt}`)
 
         // 🔄 Atualizar via API endpoint (não direto ao Supabase)
         const updatePhaseStartTime = async () => {
           try {
             const phaseFieldName = `phase_${phase}_start_time`
-
-            console.log(`📡 [Phase Offset Sync] Chamando API para atualizar ${phaseFieldName}...`)
-            console.log(`   - phase: ${phase}`)
-            console.log(`   - newPhaseStartedAt: ${newPhaseStartedAt}`)
 
             const response = await fetch('/api/admin/update-phase-timing', {
               method: 'POST',
@@ -916,14 +912,16 @@ export default function CurrentQuestTimer({
         }
 
         updatePhaseStartTime()
-      } else {
-        console.log(`✅ [Phase Offset Sync] Sincronização OK - Diferença: ${Math.round(offsetDifferenceMs / 1000)}s`)
       }
     }
 
     // Executar a sincronização a cada segundo enquanto há quest ativa
     const syncInterval = setInterval(syncPhaseOffset, 1000)
-    return () => clearInterval(syncInterval)
+    console.log(`✅ [Phase Offset Sync] Intervalo de sincronização criado para Phase ${phase}`)
+    return () => {
+      console.log(`🛑 [Phase Offset Sync] Limpando intervalo para Phase ${phase}`)
+      clearInterval(syncInterval)
+    }
   }, [phase, phaseStartedAt, phaseDurationMinutes])
 
     const formatNumber = (num: number) => String(num).padStart(2, '0')

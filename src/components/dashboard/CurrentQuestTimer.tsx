@@ -20,6 +20,7 @@ interface Quest {
   started_at: string | null
   planned_deadline_minutes: number | null
   late_submission_window_minutes: number | null
+  phase_id?: string
 }
 
 interface CurrentQuestTimerProps {
@@ -290,12 +291,18 @@ export default function CurrentQuestTimer({
   const { play, soundConfig } = useSoundSystem()
   const previousQuestIdRef = useRef<string | null>(null)
   const currentPhaseRef = useRef<number>(phase) // Track current phase
+  const questsRef = useRef<Quest[]>([]) // Store current quests without triggering dependency changes
   const [isPageVisible, setIsPageVisible] = useState(true)
   const lastQuestUpdateRef = useRef<number>(0) // Track last update time for cache busting
+  const syncedQuestsRef = useRef<Set<string>>(new Set()) // Track which quests have been synced (only sync once per quest)
+  const phaseStartTimeRef = useRef<number>(0) // Store phase start time for sync calculation
 
   // Atualizar ref quando phase muda
   useEffect(() => {
     currentPhaseRef.current = phase
+    // 🔄 Limpar o registro de quests sincronizadas quando muda de fase
+    syncedQuestsRef.current.clear()
+    console.log(`🔄 [Phase Change] Fase mudou para ${phase}. Resetando sincronizações.`)
   }, [phase])
 
   // 📡 Detectar quando página está visível (para polling adaptativo)
@@ -406,6 +413,11 @@ export default function CurrentQuestTimer({
       }
     }
   }, [phaseId, realtimeQuests])
+
+  // 🔄 Manter questsRef sempre atualizado sem afetar outras dependencies
+  useEffect(() => {
+    questsRef.current = quests
+  }, [quests])
 
   // 🔊 Detectar mudanças de quest e tocar sons apropriados
   useEffect(() => {
@@ -638,11 +650,24 @@ export default function CurrentQuestTimer({
         return
       }
 
-      // 🎯 NOVO: Detectar se há quest ativa
-      const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
-      const hasActiveQuest = activeQuests.length > 0
-
+      // 🎯 NOVO: Detectar se há quest ativa (realmente em andamento, não apenas agendada)
+      // 🔥 CRÍTICO: Uma quest só conta como "ativa" se:
+      //   1. status === 'active'
+      //   2. started_at é definido (já começou)
+      //   3. Tempo atual < deadline (ainda não terminou)
       const now = new Date().getTime()
+      const activeQuests = quests.filter(q => {
+        if (q.status !== 'active' || !q.started_at) return false
+
+        // Calcular deadline da quest
+        const questStartTime = new Date(q.started_at).getTime()
+        const questDurationMs = (q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000
+        const questDeadline = questStartTime + questDurationMs
+
+        // Quest só é ativa se ainda não passou o deadline
+        return now < questDeadline
+      })
+      const hasActiveQuest = activeQuests.length > 0
 
       // 🔥 NOVO: Se não há quest ativa, usar o tempo da última quest como "agora"
       // Isso pausa efetivamente o timer da fase durante os gaps entre quests
@@ -755,12 +780,163 @@ export default function CurrentQuestTimer({
     }
   }, [quests])
 
+  // 🔄 NOVO: Sincronização de Offset de Fase
+  // Objetivo: Manter o timer da fase sincronizado com as quests
+  // Fórmula: Fase Restante = Quest Atual Restante + Soma(Quests Futuras)
+  // ✅ FIX: Usar apenas phase/phaseStartedAt/phaseDurationMinutes no dependency array
+  // Usar questsRef para acessar dados atualizados sem causar re-execução excessiva
+  useEffect(() => {
+    console.log(`🔄 [Phase Offset Sync] useEffect iniciado - phase=${phase}`)
+
+    const syncPhaseOffset = () => {
+      // ✅ Usar questsRef em vez de quests para evitar dependency issues
+      const currentQuests = questsRef.current
+      if (currentQuests.length === 0) return
+
+      // Encontrar quest ativa atual
+      const now = Date.now()
+      const activeQuestsForSync = currentQuests.filter(q => {
+        if (q.status !== 'active' || !q.started_at) return false
+        const questStartTime = new Date(q.started_at).getTime()
+        const questDurationMs = (q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000
+        const questDeadline = questStartTime + questDurationMs
+        return now < questDeadline
+      })
+
+      if (activeQuestsForSync.length === 0 || !phaseStartedAt) {
+        console.log(`🔍 [Phase Offset Sync] Early return: activeQuests=${activeQuestsForSync.length}, phaseStartedAt=${!!phaseStartedAt}`)
+        return
+      }
+
+      const currentQuestForSync = activeQuestsForSync.sort((a, b) => {
+        const timeA = a.started_at ? new Date(a.started_at).getTime() : 0
+        const timeB = b.started_at ? new Date(b.started_at).getTime() : 0
+        return timeB - timeA
+      })[0]
+
+      if (!currentQuestForSync?.id || !currentQuestForSync?.started_at) return
+
+      // Verificar se já sincronizamos esta quest (só uma vez por quest)
+      if (syncedQuestsRef.current.has(currentQuestForSync.id)) {
+        return
+      }
+
+      // Calcular tempo desde o início da quest
+      const questStartTime = new Date(currentQuestForSync.started_at).getTime()
+      const questElapsedMs = now - questStartTime
+
+      // Aguardar 5 segundos antes de sincronizar (dar tempo mínimo para estabilizar)
+      if (questElapsedMs < 5000) {
+        console.log(`⏳ [Phase Offset Sync] Aguardando estabilização: ${Math.round(questElapsedMs / 1000)}s / 5s`)
+        return // Menos de 5 segundos - não sincronizar ainda
+      }
+
+      // ✅ Marcar esta quest como sincronizada (só vai sincronizar uma vez por quest)
+      syncedQuestsRef.current.add(currentQuestForSync.id)
+
+      // 🔍 Calcular offset esperado
+      // Encontrar índice da quest atual no array de quests
+      const currentQuestIndex = currentQuests.findIndex(q => q.id === currentQuestForSync.id)
+
+      // Somar duração de todas as quests DEPOIS da quest atual (no mesmo phase)
+      const futureQuestsDurationMs = currentQuests
+        .slice(currentQuestIndex + 1)
+        .reduce((sum, q) => {
+          // Só contar quests do mesmo phase
+          if (q.phase_id !== currentQuestForSync.phase_id) return sum
+          return sum + ((q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000)
+        }, 0)
+
+      // Duração da quest atual
+      const currentQuestDurationMs = (currentQuestForSync.planned_deadline_minutes ?? currentQuestForSync.duration_minutes ?? 60) * 60 * 1000
+
+      // Tempo RESTANTE da quest atual
+      const questDeadline = questStartTime + currentQuestDurationMs
+      const questTimeRemainingMs = Math.max(0, questDeadline - now)
+
+      // OFFSET esperado = Tempo restante da quest atual + Soma de futuras
+      const expectedPhaseOffsetMs = questTimeRemainingMs + futureQuestsDurationMs
+
+      // Tempo que a fase DEVERIA estar (baseado no offset esperado)
+      const ensureZFormat = phaseStartedAt.endsWith('Z') ? phaseStartedAt : `${phaseStartedAt}Z`
+      const phaseStartTimeMs = new Date(ensureZFormat).getTime()
+      const phaseElapsedMs = now - phaseStartTimeMs
+      const phaseTotalDurationMs = phaseDurationMinutes * 60 * 1000
+      const phaseActualRemainingMs = Math.max(0, phaseTotalDurationMs - phaseElapsedMs)
+
+      // Diferença entre o que deveria ser e o que é
+      const offsetDifferenceMs = phaseActualRemainingMs - expectedPhaseOffsetMs
+
+      console.log(`⚙️ [Phase Offset Sync] Quest: ${currentQuestForSync.name}`)
+      console.log(`   - Quest Remaining: ${Math.round(questTimeRemainingMs / 1000)}s`)
+      console.log(`   - Future Quests Duration: ${Math.round(futureQuestsDurationMs / 1000)}s`)
+      console.log(`   - Expected Phase Remaining: ${Math.round(expectedPhaseOffsetMs / 1000)}s`)
+      console.log(`   - Actual Phase Remaining: ${Math.round(phaseActualRemainingMs / 1000)}s`)
+      console.log(`   - Offset Difference: ${Math.round(offsetDifferenceMs / 1000)}s`)
+
+      // Se diferença > 10 segundos, ajustar o phaseStartedAt
+      if (Math.abs(offsetDifferenceMs) > 10000) {
+        console.log(`⚠️ [Phase Offset Sync] AJUSTANDO FASE em ${Math.round(offsetDifferenceMs / 1000)}s`)
+
+        // Calcular novo phaseStartedAt ajustado
+        const adjustmentMs = offsetDifferenceMs
+        const newPhaseStartTimeMs = phaseStartTimeMs + adjustmentMs
+        const newPhaseStartedAt = new Date(newPhaseStartTimeMs).toISOString()
+
+        console.log(`✅ [Phase Offset Sync] Nova fase start time: ${newPhaseStartedAt}`)
+
+        // 🔄 Atualizar no Supabase
+        const updatePhaseStartTime = async () => {
+          try {
+            const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
+            const phaseFieldName = `phase_${phase}_start_time`
+
+            console.log(`📡 [Phase Offset Sync] Atualizando ${phaseFieldName} no servidor...`)
+            console.log(`   - eventConfigId: ${eventConfigId}`)
+            console.log(`   - newPhaseStartedAt: ${newPhaseStartedAt}`)
+
+            const { error } = await supabaseRef.current
+              .from('event_config')
+              .update({
+                [phaseFieldName]: newPhaseStartedAt
+              })
+              .eq('id', eventConfigId)
+
+            if (error) {
+              console.error(`❌ [Phase Offset Sync] Erro ao atualizar: ${error.message}`)
+              console.error(`   - Code: ${error.code}`)
+              console.error(`   - Details: ${error.details}`)
+            } else {
+              console.log(`✅ [Phase Offset Sync] ${phaseFieldName} atualizado com sucesso: ${newPhaseStartedAt}`)
+            }
+          } catch (err) {
+            console.error(`❌ [Phase Offset Sync] Exceção ao atualizar fase:`, err)
+          }
+        }
+
+        updatePhaseStartTime()
+      } else {
+        console.log(`✅ [Phase Offset Sync] Sincronização OK - Diferença: ${Math.round(offsetDifferenceMs / 1000)}s`)
+      }
+    }
+
+    // Executar a sincronização a cada segundo enquanto há quest ativa
+    const syncInterval = setInterval(syncPhaseOffset, 1000)
+    return () => clearInterval(syncInterval)
+  }, [phase, phaseStartedAt, phaseDurationMinutes])
 
     const formatNumber = (num: number) => String(num).padStart(2, '0')
 
   // 🎯 CORRIGIDO: Detectar quest atual baseado em started_at do DB
-  // Calcular activeQuests e currentQuestForSync localmente
-  const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+  // 🔥 Uma quest só conta se: status='active' && started_at !== null && ainda não expirou
+  const now2 = new Date().getTime()
+  const activeQuests = quests.filter(q => {
+    if (q.status !== 'active' || !q.started_at) return false
+    const questStartTime = new Date(q.started_at).getTime()
+    const questDurationMs = (q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000
+    const questDeadline = questStartTime + questDurationMs
+    return now2 < questDeadline
+  })
 
   let currentQuestForSync: Quest | undefined
   if (activeQuests.length > 0) {
@@ -816,8 +992,22 @@ export default function CurrentQuestTimer({
   }
 
   // 🎯 NOVO: Detectar se há quest ativa para mostrar status do timer
-  const activeQuestsNow = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+  // 🔥 CRÍTICO: Uma quest só conta como "ativa" se realmente está em andamento (não expirou)
+  const now3 = new Date().getTime()
+  const activeQuestsNow = quests.filter(q => {
+    if (q.status !== 'active' || !q.started_at) return false
+    const questStartTime = new Date(q.started_at).getTime()
+    const questDurationMs = (q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000
+    const questDeadline = questStartTime + questDurationMs
+    return now3 < questDeadline
+  })
   const hasActiveQuest = activeQuestsNow.length > 0
+
+  // 🔍 DEBUG: Verificar se o badge deveria aparecer
+  console.log(`🔴 [Phase Badge Check] hasActiveQuest: ${hasActiveQuest}, activeQuestsNow.length: ${activeQuestsNow.length}, quests.length: ${quests.length}, statuses:`, quests.map(q => ({ name: q.name, status: q.status, started_at: q.started_at ? 'YES' : 'NO' })))
+  if (!hasActiveQuest && activeQuestsNow.length === 0) {
+    console.log(`✅ [Phase Badge] PAUSADO badge deveria aparecer! Quests:`, quests.map(q => ({ name: q.name, status: q.status, started_at: q.started_at })))
+  }
 
   const getProgressColor = () => {
     if (timeLeft.percentage > 66) return 'bg-green-500'

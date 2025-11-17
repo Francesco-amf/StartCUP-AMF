@@ -371,6 +371,28 @@ export async function POST(request: Request) {
       }
 
       // Ativar a PRIMEIRA quest da nova fase
+      console.log(`🔍 [PHASE ADVANCE] Buscando primeira quest da Fase ${nextPhaseId}...`)
+      console.log(`   - phaseData.id: ${phaseData?.id}`)
+
+      // ✅ DEBUG: Buscar TODAS as quests da fase antes de pegar a primeira
+      const { data: allQuestsInNewPhase, error: allQuestsError } = await supabaseAdmin
+        .from('quests')
+        .select('id, name, order_index, status, phase_id')
+        .eq('phase_id', phaseData.id)
+        .order('order_index', { ascending: true })
+
+      if (allQuestsError) {
+        console.error(`❌ Erro ao buscar quests da fase ${nextPhaseId}:`, allQuestsError)
+      } else {
+        console.log(`✅ Quests encontradas na Fase ${nextPhaseId}: ${allQuestsInNewPhase?.length || 0}`)
+        if (!allQuestsInNewPhase || allQuestsInNewPhase.length === 0) {
+          console.error(`⚠️ AVISO: Nenhuma quest encontrada na Fase ${nextPhaseId}! phaseData.id=${phaseData.id}`)
+        }
+        allQuestsInNewPhase?.forEach(q => {
+          console.log(`   - ${q.order_index}: ${q.name} (id: ${q.id}, status: ${q.status}, phase_id: ${q.phase_id})`)
+        })
+      }
+
       const { data: firstQuestOfNewPhase, error: firstQuestError } = await supabaseAdmin
         .from('quests')
         .select('id, name, order_index')
@@ -378,6 +400,13 @@ export async function POST(request: Request) {
         .order('order_index', { ascending: true })
         .limit(1)
         .single()
+
+      console.log(`📋 Primeira quest selecionada:`, {
+        questId: firstQuestOfNewPhase?.id,
+        questName: firstQuestOfNewPhase?.name,
+        orderIndex: firstQuestOfNewPhase?.order_index,
+        error: firstQuestError ? { code: firstQuestError.code, message: firstQuestError.message } : null
+      })
 
       let questsActivated = 0
       if (firstQuestError) {

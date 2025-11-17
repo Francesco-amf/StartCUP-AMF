@@ -265,18 +265,18 @@ export async function POST(request: Request) {
 
       // Verificar se chegou ao final (Fase 5 completa = evento termina)
       if (nextPhaseId > MAX_PHASE) {
-        console.log(`✅ Todas as quests da Fase 5 concluídas! Definindo intervalo de 1 minuto antes do game over.`)
+        console.log(`✅ Todas as quests da Fase 5 concluídas! Abrindo janela de atraso (20 min) + countdown final (60 seg).`)
 
         // IMPORTANTE: Não finalizar logo, esperar 1 minuto em MODO TESTE (normalmente 15 minutos para intervalo na live)
         // Isso permite que avaliadores preparem o ranking final
         const eventConfigId = process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001'
 
-        // FASE 1: Período de Avaliação (1 minuto em teste)
-        // FASE 2: Countdown final (0 seg em teste - será setado manualmente depois)
-        // Total: 1 minuto em teste (em produção seria 15 min para avaliação + 15 min countdown)
+        // FASE 1: Período de Avaliação (20 minutos: 15 min late submission + 5 min avaliação)
+        // FASE 2: Countdown final (60 seg)
+        // Total: 20 min + 60 seg
         const now = new Date()
-        const evaluationPeriodEnd = new Date(now.getTime() + 60 * 1000) // +60 seg para avaliação (TESTE)
-        const eventEndTime = new Date(evaluationPeriodEnd.getTime() + 0 * 1000) // +0 seg de countdown (TESTE) - será ajustado depois
+        const evaluationPeriodEnd = new Date(now.getTime() + 20 * 60 * 1000) // +20 min (15 late submission + 5 eval)
+        const eventEndTime = new Date(evaluationPeriodEnd.getTime() + 60 * 1000) // +60 seg de countdown final
 
         const evaluationPeriodTimestamp = evaluationPeriodEnd.toISOString()
         const eventEndTimestamp = eventEndTime.toISOString()
@@ -305,9 +305,10 @@ export async function POST(request: Request) {
 
         const response = NextResponse.json({
           success: true,
-          message: `Todas as quests da Fase ${closedQuestData.phase_id} concluídas. Evento finalizará em 15 minutos.`,
+          message: `Todas as quests da Fase ${closedQuestData.phase_id} concluídas. Período de avaliação: 20 min. Countdown final: 60 seg.`,
           eventScheduledToEnd: true,
           eventEndTime: eventEndTimestamp,
+          evaluationPeriodEnd: evaluationPeriodTimestamp,
           timestamp: Date.now() // Cache-busting timestamp
         }, { status: 200 })
 

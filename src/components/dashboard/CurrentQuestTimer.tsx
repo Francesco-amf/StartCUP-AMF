@@ -825,10 +825,10 @@ export default function CurrentQuestTimer({
       const questStartTime = new Date(currentQuestForSync.started_at).getTime()
       const questElapsedMs = now - questStartTime
 
-      // Aguardar 5 segundos antes de sincronizar (dar tempo mínimo para estabilizar)
-      if (questElapsedMs < 5000) {
-        console.log(`⏳ [Phase Offset Sync] Aguardando estabilização: ${Math.round(questElapsedMs / 1000)}s / 5s`)
-        return // Menos de 5 segundos - não sincronizar ainda
+      // Aguardar 2 segundos antes de sincronizar (dar tempo mínimo para estabilizar)
+      if (questElapsedMs < 2000) {
+        console.log(`⏳ [Phase Offset Sync] Aguardando estabilização: ${Math.round(questElapsedMs / 1000)}s / 2s`)
+        return // Menos de 2 segundos - não sincronizar ainda
       }
 
       // ✅ Marcar esta quest como sincronizada (só vai sincronizar uma vez por quest)
@@ -874,8 +874,8 @@ export default function CurrentQuestTimer({
       console.log(`   - Actual Phase Remaining: ${Math.round(phaseActualRemainingMs / 1000)}s`)
       console.log(`   - Offset Difference: ${Math.round(offsetDifferenceMs / 1000)}s`)
 
-      // Se diferença > 10 segundos, ajustar o phaseStartedAt
-      if (Math.abs(offsetDifferenceMs) > 10000) {
+      // Se diferença > 5 segundos, ajustar o phaseStartedAt
+      if (Math.abs(offsetDifferenceMs) > 5000) {
         console.log(`⚠️ [Phase Offset Sync] AJUSTANDO FASE em ${Math.round(offsetDifferenceMs / 1000)}s`)
 
         // Calcular novo phaseStartedAt ajustado

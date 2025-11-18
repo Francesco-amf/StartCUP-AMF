@@ -57,11 +57,11 @@ export function useSoundSystem() {
   /**
    * Reproduz um arquivo de áudio (MP3, WAV) com suporte a prioridade opcional
    */
-  const playFile = (type: AudioFileType, priority?: number) => {
+  const playFile = useCallback((type: AudioFileType, priority?: number) => {
     audioManager.playFile(type, priority).catch((err: any) => {
       console.error(`❌ Erro ao reproduzir arquivo: ${type}`, err)
     })
-  }
+  }, [])
 
   /**
    * Reproduz um som sintetizado (Web Audio API)
@@ -71,7 +71,7 @@ export function useSoundSystem() {
    * @param duration - Duração em ms
    * @param callback - Função que implementa a síntese (recebe masterGainNode)
    */
-  const playSynth = (
+  const playSynth = useCallback((
     id: string,
     duration: number,
     callback: (masterGain: GainNode | null) => void
@@ -79,7 +79,7 @@ export function useSoundSystem() {
     audioManager.playSynth(id, duration, callback).catch((err: any) => {
       console.error(`❌ Erro ao reproduzir som sintetizado: ${id}`, err)
     })
-  }
+  }, [])
 
   /**
    * Play com fallback sintetizado para penalty se arquivo falhar

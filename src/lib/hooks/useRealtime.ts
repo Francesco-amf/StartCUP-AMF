@@ -121,11 +121,13 @@ export function useRealtimeRanking() {
             }
           )
           .subscribe((status: any) => {
+            console.log(`📡 [useRealtimeRanking] Subscription status: ${status}`)
             DEBUG.log('useRealtimeRanking', `🔔 Subscription status: ${status}`)
 
             subscriptionHealthRef.current = status === 'SUBSCRIBED'
 
             if (status === 'SUBSCRIBED') {
+              console.log(`✅ [useRealtimeRanking] Realtime subscription ativa!`)
               DEBUG.log('useRealtimeRanking', '✅ Realtime subscription ativa!')
 
               // WebSocket working: stop polling
@@ -138,7 +140,8 @@ export function useRealtimeRanking() {
                 pollingIntervalRef.current = null
               }
             } else {
-              DEBUG.warn('useRealtimeRanking', `⚠️ Realtime inativo, ativando fallback...`)
+              console.warn(`⚠️ [useRealtimeRanking] Realtime inativo (${status}), ativando fallback...`)
+              DEBUG.warn('useRealtimeRanking', `⚠️ Realtime inativo (${status}), ativando fallback...`)
 
               // WebSocket not working: activate polling fallback
               if (!pollingDebounceRef.current && mounted) {
@@ -523,20 +526,24 @@ export function useRealtimePenalties() {
             }
           )
           .subscribe((status: any) => {
+            DEBUG.log('useRealtimePenalties', `📡 Subscription status: ${status}`)
             subscriptionHealthRef.current = status === 'SUBSCRIBED'
 
             if (status !== 'SUBSCRIBED') {
+              DEBUG.warn('useRealtimePenalties', `⚠️ Realtime inativo (${status}), ativando fallback...`)
               // WebSocket not working: activate polling fallback
               if (!pollingDebounceRef.current && mounted) {
                 pollingDebounceRef.current = setTimeout(() => {
                   if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
                     // Poll every 10 seconds
+                    DEBUG.log('useRealtimePenalties', '🔄 Ativando polling fallback para penalidades...')
                     pollingIntervalRef.current = setInterval(fetchPenaltiesFallback, 10000)
                   }
                   pollingDebounceRef.current = null
                 }, POLLING_DEBOUNCE_MS)
               }
             } else {
+              DEBUG.log('useRealtimePenalties', '✅ Realtime subscription ativa para penalidades!')
               // WebSocket working: stop polling
               if (pollingDebounceRef.current) {
                 clearTimeout(pollingDebounceRef.current)

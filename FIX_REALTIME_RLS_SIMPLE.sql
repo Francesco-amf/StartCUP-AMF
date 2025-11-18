@@ -3,11 +3,12 @@
 -- Run this to fix Realtime subscription issues
 -- ============================================================================
 
--- Drop existing restrictive policies
+-- Drop ALL existing read policies (keeping write policies)
 DROP POLICY IF EXISTS "Allow all read access to penalties" ON penalties;
 DROP POLICY IF EXISTS "Allow admin and evaluators to read all penalties" ON penalties;
 DROP POLICY IF EXISTS "Allow teams to read their own penalties" ON penalties;
 DROP POLICY IF EXISTS "Allow anon read access to penalties" ON penalties;
+DROP POLICY IF EXISTS "Allow all roles to read penalties" ON penalties;
 
 -- Create OPEN read policy for Realtime to broadcast changes
 CREATE POLICY "Allow all roles to read penalties" ON penalties
@@ -15,25 +16,29 @@ FOR SELECT
 TO authenticated, anon
 USING (true);
 
--- Keep existing write policies for security
+-- Keep existing write policies for security (only create if they don't exist)
+DROP POLICY IF EXISTS "Allow admin and evaluators to create penalties" ON penalties;
 CREATE POLICY "Allow admin and evaluators to create penalties" ON penalties
 FOR INSERT
 TO authenticated
 WITH CHECK (current_setting('request.jwt.claims', true)::jsonb->>'role' IN ('admin', 'evaluator'));
 
+DROP POLICY IF EXISTS "Allow admin to update penalties" ON penalties;
 CREATE POLICY "Allow admin to update penalties" ON penalties
 FOR UPDATE
 TO authenticated
 USING (current_setting('request.jwt.claims', true)::jsonb->>'role' = 'admin');
 
+DROP POLICY IF EXISTS "Allow admin to delete penalties" ON penalties;
 CREATE POLICY "Allow admin to delete penalties" ON penalties
 FOR DELETE
 TO authenticated
 USING (current_setting('request.jwt.claims', true)::jsonb->>'role' = 'admin');
 
--- Drop restrictive event_config policies
+-- Drop restrictive event_config read policies
 DROP POLICY IF EXISTS "Allow all read access to event_config" ON event_config;
 DROP POLICY IF EXISTS "Allow anon read access to event_config" ON event_config;
+DROP POLICY IF EXISTS "Allow all roles to read event_config" ON event_config;
 
 -- Create OPEN read policy for event_config
 CREATE POLICY "Allow all roles to read event_config" ON event_config
@@ -42,6 +47,7 @@ TO authenticated, anon
 USING (true);
 
 -- Keep existing write policies
+DROP POLICY IF EXISTS "Allow admin to update event_config" ON event_config;
 CREATE POLICY "Allow admin to update event_config" ON event_config
 FOR UPDATE
 TO authenticated

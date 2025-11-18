@@ -61,5 +61,8 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "glob": "^12.0.0"
   }
 }

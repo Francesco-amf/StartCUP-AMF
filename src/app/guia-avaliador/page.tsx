@@ -139,7 +139,7 @@ export default function GuiaAvaliadorPage() {
                 <div className="flex-1">
                   <h3 className="font-bold text-[#00E676] mb-1">Você Avalia</h3>
                   <p className="text-[#00E676]/70 text-sm">
-                    Você clica em "Avaliar", revisa o conteúdo e atribui pontos (0 a máximo) + multiplicador (1 a 2).
+                    Você clica em "Avaliar", revisa o conteúdo e atribui pontos (0 a máximo) + multiplicador (1 a 2). Os AMF Coins base também são definidos por quest; você pode aplicar um multiplicador (até 2x) sobre os AMF Coins após avaliação.
                   </p>
                 </div>
               </div>
@@ -190,6 +190,7 @@ export default function GuiaAvaliadorPage() {
                     <li>• Avalia a <span className="font-bold text-[#FF9800]">qualidade do conteúdo</span></li>
                     <li>• Baseado na solução apresentada</li>
                     <li>• Exemplo: Quest máx 100 pontos → você pode dar 0 a 100</li>
+                    <li>• Observação: o número de AMF Coins associados à quest é definido na configuração da quest. Após sua avaliação, o multiplicador (até 2x) pode ser aplicado sobre os AMF Coins base.</li>
                   </ul>
                 </div>
 
@@ -201,6 +202,7 @@ export default function GuiaAvaliadorPage() {
                     <li>• <span className="text-[#FF9800]">1.0</span> = conforme esperado (padrão)</li>
                     <li>• <span className="text-[#FF9800]">1.5</span> = muito bom/qualidade alta</li>
                     <li>• <span className="text-[#FF9800]">2.0</span> = excelente/excepcional</li>
+                    <li>• Observação: multiplicador aplica-se às AMF Coins das quests regulares; não se aplica a Boss Battles/Pitches.</li>
                   </ul>
                 </div>
               </div>
@@ -287,7 +289,7 @@ export default function GuiaAvaliadorPage() {
               <div className="bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF6B35]/50">
                 <h3 className="font-bold text-[#FF6B35] mb-2">💰 Custo em AMF Coins</h3>
                 <p className="text-[#FF6B35]/90 text-sm">
-                  Cada mentoria consome <span className="font-bold text-[#FF6B35]">10 AMF Coins</span> da equipe. Isso incentiva uso inteligente de mentorias.
+                  O custo de mentoria é variável e aumenta a cada chamada efetuada pela mesma equipe (ex.: 1ª = 5, 2ª = 10, 3ª = 20, ...). Confira o dashboard para o custo atual de cada solicitação.
                 </p>
               </div>
 

@@ -164,29 +164,30 @@ export default function GuiaEquipePage() {
     {
       name: 'Mentoria',
       icon: '👨‍🏫',
-      cost: '10 coins',
-      description: 'Receba orientação direta de um mentor experiente sobre sua solução',
+      cost: 'Custo variável',
+      description:
+        'Receba orientação direta de um mentor experiente sobre sua solução. O custo de mentoria cresce a cada chamada (ex.: 1ª = 5, 2ª = 10, 3ª = 20, 4ª = 35, 5ª = 55) — ver no dashboard para valores atuais.',
       benefit: 'Melhora na qualidade e direção do projeto'
     },
     {
       name: 'Dica',
       icon: '💡',
-      cost: '10 coins',
-      description: 'Obtenha uma dica valiosa sobre como resolver um desafio específico',
+      cost: 'Custo variável',
+      description: 'Obtenha uma dica valiosa sobre como resolver um desafio específico (custo configurável).',
       benefit: 'Insight para evitar caminhos errados'
     },
     {
       name: 'Validação',
       icon: '✅',
-      cost: '10 coins',
-      description: 'Tenha seu conceito ou solução validado por um especialista',
+      cost: 'Custo variável',
+      description: 'Tenha seu conceito ou solução validado por um especialista (custo configurável).',
       benefit: 'Confiança de que está no caminho certo'
     },
     {
       name: 'Checkpoint',
       icon: '🏁',
-      cost: '10 coins',
-      description: 'Salve um checkpoint. Se sua avaliação cair, volta a este ponto',
+      cost: 'Custo variável',
+      description: 'Salve um checkpoint. Se sua avaliação cair, volta a este ponto (uso limitado; custo configurável).',
       benefit: 'Proteção contra avaliações injustas (uso limitado)'
     }
   ]
@@ -373,20 +374,20 @@ export default function GuiaEquipePage() {
               <div className="bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FFEB3B]/50">
                 <h3 className="font-bold text-[#FFEB3B] mb-3">Como Ganhar</h3>
                 <ul className="text-[#FFEB3B]/80 text-sm space-y-2">
-                  <li>✅ Completar quests: +5 a +20 coins</li>
-                  <li>✅ Avaliação bem-sucedida: +coins (variável)</li>
-                  <li>✅ Bônus de fase: +10 a +50 coins</li>
-                  <li>✅ Participação especial: +coins</li>
+                  <li>✅ Completar quests: valor variável por quest (definido na configuração da quest)</li>
+                  <li>✅ Avaliação: o avaliador atribui os AMF Coins base e pode aplicar um multiplicador (até 2x) após avaliação</li>
+                  <li>✅ Bônus de fase/participação: aplicados conforme regras do evento e somente após avaliação</li>
+                  <li>✅ Participação especial: +coins (quando aplicável)</li>
                 </ul>
               </div>
 
               <div className="bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FFEB3B]/50">
                 <h3 className="font-bold text-[#FFEB3B] mb-3">Como Gastar</h3>
                 <ul className="text-[#FFEB3B]/80 text-sm space-y-2">
-                  <li>🎯 Solicitar Mentoria: -10 coins</li>
-                  <li>💡 Pedir Dica: -10 coins</li>
-                  <li>✨ Validar Conceito: -10 coins</li>
-                  <li>🏁 Usar Checkpoint: -10 coins</li>
+                  <li>🎯 Solicitar Mentoria: custo variável e cresce a cada chamada (ver exemplo no card de mentoria)</li>
+                  <li>💡 Pedir Dica: custo configurável</li>
+                  <li>✨ Validar Conceito: custo configurável</li>
+                  <li>🏁 Usar Checkpoint: custo configurável</li>
                 </ul>
               </div>
             </div>

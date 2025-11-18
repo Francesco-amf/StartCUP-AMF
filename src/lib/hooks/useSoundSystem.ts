@@ -91,12 +91,16 @@ export function useSoundSystem() {
   const play = useCallback((type: AudioFileType, priority?: number) => {
     // ✅ FIX: Verificar usando soundConfigRef.current em vez de closure-captured soundConfig
     if (!soundConfigRef.current.enabled) {
+      console.log(`🔇 [useSoundSystem.play] Som "${type}" skipped - sounds disabled`)
       return
     }
+
+    console.log(`🔊 [useSoundSystem.play] Tocando: "${type}" (prioridade: ${priority})`)
 
     // Para penalty especificamente, usar fallback synthesized
     if (type === 'penalty') {
       audioManager.playFile(type, priority).catch((err: any) => {
+        console.log(`⚠️ [useSoundSystem.play] penalty fallback acionado`)
         // Fallback: buzina/aviso com síntese
         playSynth('penalty-fallback', 400, (masterGain) => {
           const ctx = getAudioContext()
@@ -125,7 +129,7 @@ export function useSoundSystem() {
     } else {
       playFile(type, priority)
     }
-  }, []) // ✅ FIX: Empty deps - uses soundConfigRef.current which always has latest value
+  }, [playFile]) // ✅ FIX: Adicionar playFile como dependência
 
   /**
    * Define volume (0-1)

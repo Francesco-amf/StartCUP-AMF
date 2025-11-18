@@ -376,6 +376,8 @@ class AudioManager {
    * Reproduz um arquivo de áudio com suporte a prioridade
    */
   async playFile(type: AudioFileType, priority?: number): Promise<void> {
+    console.log(`[audioManager.playFile] "${type}" enabled=${this.config.enabled}`)
+
     if (!this.config.enabled) {
       return
     }
@@ -387,6 +389,8 @@ class AudioManager {
         console.warn(`⚠️ Arquivo de áudio não mapeado: ${type}`)
         return
       }
+
+      console.log(`[audioManager.playFile] Arquivo: ${filePath}`)
 
       let audio = this.audioCache.get(type)
 
@@ -431,6 +435,8 @@ class AudioManager {
 
       // Usar prioridade fornecida ou obter do mapa de prioridades
       const soundPriority = priority !== undefined ? priority : AUDIO_PRIORITIES[type]
+
+      console.log(`[audioManager.playFile] Enfileirando: ${type} (duração: ${duration}ms, prioridade: ${soundPriority})`)
 
       await this.enqueueSound({
         type: 'file',
@@ -572,6 +578,8 @@ class AudioManager {
    * Adiciona som à fila de reprodução com suporte a prioridade
    */
   private async enqueueSound(sound: QueuedSound): Promise<void> {
+    console.log(`[audioManager.enqueueSound] Adicionando: ${sound.id}`)
+
     // 🎯 FILTRO AGRESSIVO: Se é som de transição, SEMPRE remover quest-start
     // Independente do que estiver tocando, transições são prioritárias
     if (sound.id === 'phase-start' || sound.id === 'event-start') {
@@ -594,8 +602,11 @@ class AudioManager {
       return a.timestamp - b.timestamp // Empate: ordem de chegada
     })
 
+    console.log(`[audioManager.enqueueSound] Fila agora tem ${this.soundQueue.length} sons, isPlaying=${this.isPlaying}`)
+
     // Se não está tocando, começar
     if (!this.isPlaying) {
+      console.log(`[audioManager.enqueueSound] Iniciando processQueue`)
       this.processQueue()
     }
   }
@@ -604,13 +615,19 @@ class AudioManager {
    * Processa a fila de sons
    */
   private async processQueue(): Promise<void> {
-    if (this.isPlaying || this.soundQueue.length === 0) return
+    if (this.isPlaying || this.soundQueue.length === 0) {
+      console.log(`[audioManager.processQueue] Saída precoce - isPlaying=${this.isPlaying}, queue.length=${this.soundQueue.length}`)
+      return
+    }
 
+    console.log(`[audioManager.processQueue] INICIANDO processamento de ${this.soundQueue.length} sons`)
     this.isPlaying = true
 
     while (this.soundQueue.length > 0) {
       const sound = this.soundQueue.shift()
       if (!sound) break
+
+      console.log(`[audioManager.processQueue] Tocando: ${sound.id}`)
 
       try {
         // Aguardar intervalo entre sons
@@ -624,6 +641,7 @@ class AudioManager {
         // Executar som e aguardar completion
         await sound.callback()
         this.lastPlayTime = Date.now()
+        console.log(`[audioManager.processQueue] Concluído: ${sound.id}`)
 
         // Aguardar apenas o intervalo gap (não duração, pois callback já aguardou)
         if (this.soundQueue.length > 0) {
@@ -635,6 +653,7 @@ class AudioManager {
     }
 
     this.isPlaying = false
+    console.log(`[audioManager.processQueue] Fila vazia, processo terminado`)
   }
 
   /**

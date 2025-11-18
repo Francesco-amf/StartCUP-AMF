@@ -485,7 +485,13 @@ export function useRealtimePenalties() {
                     enriched.forEach((penalty: any) => {
                       if (!previousPenaltyIdsRef.current.has(penalty.id)) {
                         DEBUG.log('useRealtimePenalties', `🔊 PENALTY NOVA: ${penalty.team_name}`)
-                        play('penalty')
+                        console.log(`🎵 [useRealtimePenalties] Nova penalidade detectada para ${penalty.team_name}, tentando tocar som...`)
+                        // ✅ FIX: Validar que play() está disponível antes de chamar
+                        if (typeof play === 'function') {
+                          play('penalty')
+                        } else {
+                          console.warn(`❌ [useRealtimePenalties] play() não é uma função!`, typeof play)
+                        }
                       }
                     })
                   }
@@ -677,16 +683,32 @@ export function useRealtimeEvaluators() {
                   allEvaluators.forEach((evaluator: any) => {
                     const previousOnlineState = previousStateRef.current[evaluator.id]
 
+                    // Log state transitions to help debug missing sounds
                     if (previousOnlineState !== undefined && previousOnlineState !== evaluator.is_online) {
+                      console.log(`🔔 [useRealtimeEvaluators] State change for ${evaluator.name}: ${previousOnlineState} -> ${evaluator.is_online}`)
+
                       if (evaluator.is_online) {
                         DEBUG.log('useRealtimeEvaluators', `🟢 Avaliador online: ${evaluator.name}`)
-                        play('evaluator-online')
+                        console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-online for ${evaluator.name}`)
+                        // ✅ FIX: Validar que play() está disponível antes de chamar
+                        if (typeof play === 'function') {
+                          play('evaluator-online')
+                        } else {
+                          console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                        }
                       } else {
                         DEBUG.log('useRealtimeEvaluators', `⚫ Avaliador offline: ${evaluator.name}`)
-                        play('evaluator-offline')
+                        console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-offline for ${evaluator.name}`)
+                        // ✅ FIX: Validar que play() está disponível antes de chamar
+                        if (typeof play === 'function') {
+                          play('evaluator-offline')
+                        } else {
+                          console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                        }
                       }
                     }
 
+                    // Update stored previous state
                     previousStateRef.current[evaluator.id] = evaluator.is_online
                   })
 

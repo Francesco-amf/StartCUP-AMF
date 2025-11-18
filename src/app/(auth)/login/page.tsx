@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -111,6 +112,20 @@ export default function LoginPage() {
           </Button>
         </form>
       </Card>
+
+      {/* Guias de Consulta */}
+      <div className="mt-8 flex gap-4">
+        <Link href="/guia-avaliador" className="flex-1 max-w-sm">
+          <Button className="w-full bg-[#9C27B0]/20 hover:bg-[#9C27B0]/30 border-2 border-[#9C27B0]/50 text-[#9C27B0] font-bold py-6">
+            📖 Guia para Avaliadores
+          </Button>
+        </Link>
+        <Link href="/guia-equipe" className="flex-1 max-w-sm">
+          <Button className="w-full bg-[#00E676]/20 hover:bg-[#00E676]/30 border-2 border-[#00E676]/50 text-[#00E676] font-bold py-6">
+            📖 Guia para Equipes
+          </Button>
+        </Link>
+      </div>
 
       {/* Decoração de fundo */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

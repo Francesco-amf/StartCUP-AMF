@@ -56,7 +56,7 @@ export default function Header({ title, subtitle, backHref, showLogout = true, l
               </Link>
             )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {userRole === 'evaluator' && <OnlineStatusToggle />}
             {showLogout && (
               <Button

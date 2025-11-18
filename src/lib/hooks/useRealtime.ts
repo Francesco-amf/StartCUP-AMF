@@ -491,25 +491,31 @@ export function useRealtimePenalties() {
                     enriched.forEach((penalty: any) => {
                       if (!previousPenaltyIdsRef.current.has(penalty.id)) {
                         DEBUG.log('useRealtimePenalties', `🔊 PENALTY NOVA: ${penalty.team_name}`)
-                        console.log(`🎵 [useRealtimePenalties] Nova penalidade detectada para ${penalty.team_name}, tentando tocar som...`)
+                        console.log(`🎵 [useRealtimePenalties] NOVA PENALIDADE DETECTADA! ID: ${penalty.id}, Team: ${penalty.team_name}`)
 
                         // ✅ FIX: SEMPRE atualizar estado anterior, mesmo se página está oculta
                         previousPenaltyIdsRef.current.add(penalty.id)
 
                         // Só tocar som se página está visível
                         if (isPageVisibleRef.current) {
+                          console.log(`📍 [useRealtimePenalties] Página VISÍVEL - tentando tocar som 'penalty'`)
                           // ✅ FIX: Validar que play() está disponível antes de chamar
                           if (typeof play === 'function') {
+                            console.log(`✅ [useRealtimePenalties] play() é função, chamando play('penalty')`)
                             play('penalty')
                           } else {
-                            console.warn(`❌ [useRealtimePenalties] play() não é uma função!`, typeof play)
+                            console.warn(`❌ [useRealtimePenalties] play() NÃO é uma função! Type: ${typeof play}`)
                           }
                         } else {
                           // Página está oculta, som não será tocado agora
-                          console.log(`📵 [useRealtimePenalties] Página oculta, som não tocado para ${penalty.team_name}`)
+                          console.log(`📵 [useRealtimePenalties] Página OCULTA - som não tocado para ${penalty.team_name}`)
                         }
+                      } else {
+                        console.log(`ℹ️ [useRealtimePenalties] Penalidade ID ${penalty.id} já conhecida - não tocará som`)
                       }
                     })
+                  } else {
+                    console.log(`⏳ [useRealtimePenalties] Primeira renderização - ${enriched.length} penalidades carregadas, som não tocará`)
                   }
 
                   previousPenaltyIdsRef.current = new Set(enriched.map((p: any) => p.id))

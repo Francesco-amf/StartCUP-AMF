@@ -132,7 +132,7 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
     // Cleanup: desinscrever do canal quando componente desmontar
     return () => {
       console.log('🔌 [MentorRequestsList] Encerrando canal Realtime')
-      supabase.removeChannel(channel)
+      channel.unsubscribe()
     }
   }, [mentorId])
 

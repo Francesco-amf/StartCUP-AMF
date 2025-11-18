@@ -171,7 +171,7 @@ export function useRealtimeRanking() {
       mounted = false
       if (subscriptionRef.current) {
         DEBUG.log('useRealtimeRanking', '🧹 Limpando subscription...')
-        supabase.removeChannel(subscriptionRef.current)
+        subscriptionRef.current.unsubscribe()
         subscriptionRef.current = null
       }
       if (pollingIntervalRef.current) {
@@ -790,7 +790,7 @@ export function useRealtimeEvaluators() {
       mounted = false
       if (subscriptionRef.current) {
         DEBUG.log('useRealtimeEvaluators', '🧹 Limpando subscription...')
-        supabase.removeChannel(subscriptionRef.current)
+        subscriptionRef.current.unsubscribe()
         subscriptionRef.current = null
       }
       if (pollingIntervalRef.current) {

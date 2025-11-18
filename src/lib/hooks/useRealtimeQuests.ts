@@ -227,7 +227,7 @@ export function useRealtimeQuests(phaseId: string | null) {
       mounted = false
       if (subscriptionRef.current) {
         DEBUG.log('useRealtimeQuests', `🧹 Limpando subscription para phase_id: ${phaseId}`)
-        supabase.removeChannel(subscriptionRef.current)
+        subscriptionRef.current.unsubscribe()
         subscriptionRef.current = null
         initialLoadRef.current = false
       }

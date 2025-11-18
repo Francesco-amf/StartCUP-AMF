@@ -229,14 +229,16 @@ export function useRealtimePhase() {
           try {
             console.log(`[useRealtimePhase] 📡 Chamando RPC para dados da fase...`)
             const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_phase_data')
-            if (!rpcError && rpcData?.event_config) {
+
+            // ✅ Validar que RPC retornou dados válidos
+            if (!rpcError && rpcData?.event_config && rpcData.event_config.current_phase >= 0 && rpcData.event_config.event_status) {
               console.log(`[useRealtimePhase] ✅ RPC sucesso - Fase: ${rpcData.event_config.current_phase}, Status: ${rpcData.event_config.event_status}`)
               eventConfig = rpcData.event_config
               activeQuest = rpcData.active_quest
               // ✅ Cachear resultado de RPC
               rpcCacheRef.current = { data: rpcData, timestamp: now }
             } else {
-              console.warn(`[useRealtimePhase] ⚠️ RPC falhou, usando fallback`)
+              console.warn(`[useRealtimePhase] ⚠️ RPC retornou dados inválidos (fase=${rpcData?.event_config?.current_phase}, status=${rpcData?.event_config?.event_status}), usando fallback`)
             }
           } catch (rpcErr) {
             console.warn(`[useRealtimePhase] ⚠️ Erro RPC:`, rpcErr)
@@ -246,20 +248,21 @@ export function useRealtimePhase() {
 
         // Fallback: Buscar event_config diretamente se RPC falhou
         if (!eventConfig) {
-          DEBUG.log('useRealtimePhase', `🔄 Usando fallback queries (sem RPC)`)
+          console.log(`[useRealtimePhase] 🔄 Usando fallback direct query (RPC não retornou dados válidos)`)
           const { data: configData, error: configError } = await supabase
             .from('event_config')
             .select('*')
             .single()
 
           if (configError || !configData) {
-            DEBUG.error('useRealtimePhase', 'Config fetch error:', configError)
+            console.error(`[useRealtimePhase] ❌ Config fallback error:`, configError)
             setPhase(null)
             setLoading(false)
             isFetching = false
             return
           }
 
+          console.log(`[useRealtimePhase] ✅ Fallback sucesso - Fase: ${configData.current_phase}, Status: ${configData.event_status}`)
           eventConfig = configData
 
           // Buscar quest ativa se houver

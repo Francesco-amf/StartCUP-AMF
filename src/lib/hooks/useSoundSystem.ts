@@ -89,23 +89,14 @@ export function useSoundSystem() {
    * ✅ FIX: Usa soundConfigRef para evitar closure stale reference quando soundConfig muda
    */
   const play = useCallback((type: AudioFileType, priority?: number) => {
-    console.log(`📞 [useSoundSystem.play] Chamado com tipo: "${type}", prioridade: ${priority}`)
-    console.log(`   Config atual:`, { enabled: soundConfigRef.current.enabled, volume: soundConfigRef.current.volume })
-    console.trace(`📍 Call stack para play("${type}")`)
-
     // ✅ FIX: Verificar usando soundConfigRef.current em vez de closure-captured soundConfig
     if (!soundConfigRef.current.enabled) {
-      console.warn(`🔇 [useSoundSystem.play] Áudio desabilitado! Som "${type}" não será tocado.`)
-      console.log(`   soundConfigRef.current.enabled = ${soundConfigRef.current.enabled}`)
       return
     }
 
     // Para penalty especificamente, usar fallback synthesized
     if (type === 'penalty') {
-      console.log(`🎵 [useSoundSystem] Attempting to play sound: ${type}`)
       audioManager.playFile(type, priority).catch((err: any) => {
-        console.warn(`⚠️ Penalty.mp3 falhou, usando fallback synthesized...`, err)
-
         // Fallback: buzina/aviso com síntese
         playSynth('penalty-fallback', 400, (masterGain) => {
           const ctx = getAudioContext()
@@ -129,17 +120,9 @@ export function useSoundSystem() {
 
           osc.start(now)
           osc.stop(now + 0.4)
-
-          console.log('🔊 Penalty fallback synthesized tocando...')
         })
       })
-    } else if (type === 'evaluator-online' || type === 'evaluator-offline') {
-      // 🟢 / 🔴 Sons dos avaliadores com logging específico
-      console.log(`🎵 [useSoundSystem] Tocando som do avaliador: ${type}`)
-      playFile(type, priority)
     } else {
-      // Para outros sons, só tenta o arquivo
-      console.log(`🎵 [useSoundSystem] Tocando som padrão: ${type}`)
       playFile(type, priority)
     }
   }, []) // ✅ FIX: Empty deps - uses soundConfigRef.current which always has latest value

@@ -357,21 +357,11 @@ export function useRealtimePenalties() {
     playRef.current = play
   }, [play])
 
-  console.log(`🎯 [useRealtimePenalties] Hook mounted/updated. Current state:`, {
-    isFirstRender: isFirstRenderRef.current,
-    previousPenaltyCount: previousPenaltyIdsRef.current.size,
-    isPageVisible: isPageVisibleRef.current,
-    playAvailable: typeof play === 'function'
-  })
-
   // Helper: Enrich penalties with teams and evaluators
   const enrichPenalties = async (penaltiesData: any[]) => {
     if (!penaltiesData || penaltiesData.length === 0) {
-      console.log(`⚠️ [enrichPenalties] Dados vazios`)
       return []
     }
-
-    console.log(`🔧 [enrichPenalties] Enriquecendo ${penaltiesData.length} penalidades...`)
     try {
       // Extract unique IDs
       const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
@@ -417,7 +407,6 @@ export function useRealtimePenalties() {
         created_at: p.created_at
       }))
 
-      console.log(`✅ [enrichPenalties] ${enriched.length} penalidades enriquecidas com sucesso`)
       return enriched
     } catch (err) {
       DEBUG.error('useRealtimePenalties-enrichPenalties', 'Error:', err)
@@ -497,14 +486,6 @@ export function useRealtimePenalties() {
               table: 'penalties'
             },
             async (payload: any) => {
-              console.log(`🔴 [useRealtimePenalties] REALTIME CALLBACK DISPARADO!`, {
-                eventType: payload.eventType,
-                newData: payload.new,
-                oldData: payload.old,
-                mounted
-              })
-              DEBUG.log('useRealtimePenalties', `📡 Mudança detectada:`, payload.eventType)
-
               if (!mounted) return
 
               try {
@@ -514,47 +495,21 @@ export function useRealtimePenalties() {
                   .order('created_at', { ascending: false })
 
                 if (!error && allPenalties && mounted) {
-                  console.log(`📊 [useRealtimePenalties] Penalidades carregadas do banco:`, {
-                    total: allPenalties.length,
-                    ids: allPenalties.map(p => p.id)
-                  })
                   const enriched = await enrichPenalties(allPenalties)
 
                   // Detect new penalties and play sound
-                  console.log(`🔍 [useRealtimePenalties] Estado antes de detectar penalidades:`, {
-                    isFirstRender: isFirstRenderRef.current,
-                    pageVisible: isPageVisibleRef.current,
-                    playFunctionAvailable: typeof play === 'function'
-                  })
                   if (!isFirstRenderRef.current) {
                     enriched.forEach((penalty: any) => {
                       if (!previousPenaltyIdsRef.current.has(penalty.id)) {
-                        DEBUG.log('useRealtimePenalties', `🔊 PENALTY NOVA: ${penalty.team_name}`)
-                        console.log(`🎵 [useRealtimePenalties] NOVA PENALIDADE DETECTADA! ID: ${penalty.id}, Team: ${penalty.team_name}`)
-
                         // ✅ FIX: SEMPRE atualizar estado anterior, mesmo se página está oculta
                         previousPenaltyIdsRef.current.add(penalty.id)
 
                         // Só tocar som se página está visível
-                        if (isPageVisibleRef.current) {
-                          console.log(`📍 [useRealtimePenalties] Página VISÍVEL - tentando tocar som 'penalty'`)
-                          // ✅ FIX: Usar playRef.current em vez de play para evitar closure stale
-                          if (typeof playRef.current === 'function') {
-                            console.log(`✅ [useRealtimePenalties] play() é função, chamando play('penalty')`)
-                            playRef.current('penalty')
-                          } else {
-                            console.warn(`❌ [useRealtimePenalties] play() NÃO é uma função! Type: ${typeof playRef.current}`)
-                          }
-                        } else {
-                          // Página está oculta, som não será tocado agora
-                          console.log(`📵 [useRealtimePenalties] Página OCULTA - som não tocado para ${penalty.team_name}`)
+                        if (isPageVisibleRef.current && typeof playRef.current === 'function') {
+                          playRef.current('penalty')
                         }
-                      } else {
-                        console.log(`ℹ️ [useRealtimePenalties] Penalidade ID ${penalty.id} já conhecida - não tocará som`)
                       }
                     })
-                  } else {
-                    console.log(`⏳ [useRealtimePenalties] Primeira renderização - ${enriched.length} penalidades carregadas, som não tocará`)
                   }
 
                   previousPenaltyIdsRef.current = new Set(enriched.map((p: any) => p.id))
@@ -566,15 +521,20 @@ export function useRealtimePenalties() {
             }
           )
           .subscribe((status: any) => {
-            console.log(`📡 [useRealtimePenalties.subscribe] Status: ${status}`)
-            DEBUG.log('useRealtimePenalties', `🔔 Subscription status: ${status}`)
-
             subscriptionHealthRef.current = status === 'SUBSCRIBED'
 
-            if (status === 'SUBSCRIBED') {
-              console.log(`✅ [useRealtimePenalties] REALTIME SUBSCRIPTION ATIVA! Agora está ouvindo mudanças na tabela 'penalties'`)
-              DEBUG.log('useRealtimePenalties', '✅ Realtime subscription ativa!')
-
+            if (status !== 'SUBSCRIBED') {
+              // WebSocket not working: activate polling fallback
+              if (!pollingDebounceRef.current && mounted) {
+                pollingDebounceRef.current = setTimeout(() => {
+                  if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
+                    // Poll every 10 seconds
+                    pollingIntervalRef.current = setInterval(fetchPenaltiesFallback, 10000)
+                  }
+                  pollingDebounceRef.current = null
+                }, POLLING_DEBOUNCE_MS)
+              }
+            } else {
               // WebSocket working: stop polling
               if (pollingDebounceRef.current) {
                 clearTimeout(pollingDebounceRef.current)
@@ -583,22 +543,6 @@ export function useRealtimePenalties() {
               if (pollingIntervalRef.current) {
                 clearInterval(pollingIntervalRef.current)
                 pollingIntervalRef.current = null
-              }
-            } else {
-              console.warn(`⚠️ [useRealtimePenalties] Realtime NÃO está ativo! Status: ${status}`)
-              DEBUG.warn('useRealtimePenalties', `⚠️ Realtime inativo, ativando fallback...`)
-
-              // WebSocket not working: activate polling fallback
-              if (!pollingDebounceRef.current && mounted) {
-                pollingDebounceRef.current = setTimeout(() => {
-                  if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
-                    DEBUG.log('useRealtimePenalties', '🔄 Ativando polling fallback...')
-                    console.log(`🔄 [useRealtimePenalties] ATIVANDO POLLING FALLBACK (Realtime indisponível)`)
-                    // Poll every 10 seconds (less aggressive than before)
-                    pollingIntervalRef.current = setInterval(fetchPenaltiesFallback, 10000)
-                  }
-                  pollingDebounceRef.current = null
-                }, POLLING_DEBOUNCE_MS)
               }
             }
           })
@@ -620,8 +564,6 @@ export function useRealtimePenalties() {
       mounted = false
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (subscriptionRef.current) {
-        DEBUG.log('useRealtimePenalties', '🧹 Limpando subscription...')
-        // ✅ FIX: Use .unsubscribe() instead of removeChannel() for proper Realtime cleanup
         subscriptionRef.current.unsubscribe()
         subscriptionRef.current = null
       }

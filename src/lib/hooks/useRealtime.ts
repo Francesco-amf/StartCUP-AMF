@@ -347,6 +347,7 @@ export function useRealtimePenalties() {
   const subscriptionHealthRef = useRef<boolean>(false)
   const previousPenaltyIdsRef = useRef<Set<string>>(new Set())
   const isFirstRenderRef = useRef(true)
+  const isPageVisibleRef = useRef(true)
   const supabase = supabaseRef.current
   const POLLING_DEBOUNCE_MS = 5000 // Wait 5s of Realtime inactivity before activating polling
 
@@ -405,6 +406,11 @@ export function useRealtimePenalties() {
   }
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     let mounted = true
 
     // 🔄 POLLING FALLBACK: When Realtime is unavailable
@@ -486,11 +492,21 @@ export function useRealtimePenalties() {
                       if (!previousPenaltyIdsRef.current.has(penalty.id)) {
                         DEBUG.log('useRealtimePenalties', `🔊 PENALTY NOVA: ${penalty.team_name}`)
                         console.log(`🎵 [useRealtimePenalties] Nova penalidade detectada para ${penalty.team_name}, tentando tocar som...`)
-                        // ✅ FIX: Validar que play() está disponível antes de chamar
-                        if (typeof play === 'function') {
-                          play('penalty')
+
+                        // ✅ FIX: SEMPRE atualizar estado anterior, mesmo se página está oculta
+                        previousPenaltyIdsRef.current.add(penalty.id)
+
+                        // Só tocar som se página está visível
+                        if (isPageVisibleRef.current) {
+                          // ✅ FIX: Validar que play() está disponível antes de chamar
+                          if (typeof play === 'function') {
+                            play('penalty')
+                          } else {
+                            console.warn(`❌ [useRealtimePenalties] play() não é uma função!`, typeof play)
+                          }
                         } else {
-                          console.warn(`❌ [useRealtimePenalties] play() não é uma função!`, typeof play)
+                          // Página está oculta, som não será tocado agora
+                          console.log(`📵 [useRealtimePenalties] Página oculta, som não tocado para ${penalty.team_name}`)
                         }
                       }
                     })
@@ -557,6 +573,7 @@ export function useRealtimePenalties() {
     // 🧹 CLEANUP
     return () => {
       mounted = false
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (subscriptionRef.current) {
         DEBUG.log('useRealtimePenalties', '🧹 Limpando subscription...')
         supabase.removeChannel(subscriptionRef.current)
@@ -669,7 +686,7 @@ export function useRealtimeEvaluators() {
             async (payload: any) => {
               DEBUG.log('useRealtimeEvaluators', `📡 Mudança detectada:`, payload.eventType)
 
-              if (!mounted || !isPageVisibleRef.current) return
+              if (!mounted) return
 
               try {
                 const { data: allEvaluators, error } = await supabase
@@ -687,29 +704,39 @@ export function useRealtimeEvaluators() {
                     if (previousOnlineState !== undefined && previousOnlineState !== evaluator.is_online) {
                       console.log(`🔔 [useRealtimeEvaluators] State change for ${evaluator.name}: ${previousOnlineState} -> ${evaluator.is_online}`)
 
-                      if (evaluator.is_online) {
-                        DEBUG.log('useRealtimeEvaluators', `🟢 Avaliador online: ${evaluator.name}`)
-                        console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-online for ${evaluator.name}`)
-                        // ✅ FIX: Validar que play() está disponível antes de chamar
-                        if (typeof play === 'function') {
-                          play('evaluator-online')
+                      // ✅ FIX: SEMPRE atualizar estado anterior, mesmo se página está oculta
+                      // Isso garante que quando a página ficar visível novamente, não haverá som atrasado
+                      previousStateRef.current[evaluator.id] = evaluator.is_online
+
+                      // Só tocar som se página está visível
+                      if (isPageVisibleRef.current) {
+                        if (evaluator.is_online) {
+                          DEBUG.log('useRealtimeEvaluators', `🟢 Avaliador online: ${evaluator.name}`)
+                          console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-online for ${evaluator.name}`)
+                          // ✅ FIX: Validar que play() está disponível antes de chamar
+                          if (typeof play === 'function') {
+                            play('evaluator-online')
+                          } else {
+                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                          }
                         } else {
-                          console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                          DEBUG.log('useRealtimeEvaluators', `⚫ Avaliador offline: ${evaluator.name}`)
+                          console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-offline for ${evaluator.name}`)
+                          // ✅ FIX: Validar que play() está disponível antes de chamar
+                          if (typeof play === 'function') {
+                            play('evaluator-offline')
+                          } else {
+                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                          }
                         }
                       } else {
-                        DEBUG.log('useRealtimeEvaluators', `⚫ Avaliador offline: ${evaluator.name}`)
-                        console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-offline for ${evaluator.name}`)
-                        // ✅ FIX: Validar que play() está disponível antes de chamar
-                        if (typeof play === 'function') {
-                          play('evaluator-offline')
-                        } else {
-                          console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
-                        }
+                        // Página está oculta, som não será tocado agora
+                        console.log(`📵 [useRealtimeEvaluators] Página oculta, som não tocado para ${evaluator.name} (${evaluator.is_online ? 'online' : 'offline'})`)
                       }
+                    } else if (previousOnlineState === undefined) {
+                      // Primeira vez que vemos este avaliador - guardar estado mas não tocar som
+                      previousStateRef.current[evaluator.id] = evaluator.is_online
                     }
-
-                    // Update stored previous state
-                    previousStateRef.current[evaluator.id] = evaluator.is_online
                   })
 
                   setEvaluators(allEvaluators)

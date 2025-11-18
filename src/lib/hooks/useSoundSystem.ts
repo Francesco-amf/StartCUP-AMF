@@ -125,10 +125,7 @@ export function useSoundSystem() {
     } else if (type === 'evaluator-online' || type === 'evaluator-offline') {
       // 🟢 / 🔴 Sons dos avaliadores com logging específico
       console.log(`🎵 [useSoundSystem] Tocando som do avaliador: ${type}`)
-      playFile(type, priority).catch((err: any) => {
-        console.warn(`⚠️ Som do avaliador "${type}" falhou:`, err)
-        // Fallback silencioso (não precisamos de síntese para esses)
-      })
+      playFile(type, priority)
     } else {
       // Para outros sons, só tenta o arquivo
       console.log(`🎵 [useSoundSystem] Tocando som padrão: ${type}`)

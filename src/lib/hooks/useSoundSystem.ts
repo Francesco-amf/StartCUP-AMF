@@ -84,10 +84,12 @@ export function useSoundSystem() {
   const play = useCallback((type: AudioFileType, priority?: number) => {
     console.log(`📞 [useSoundSystem.play] Chamado com tipo: "${type}", prioridade: ${priority}`)
     console.log(`   Config atual:`, { enabled: soundConfig.enabled, volume: soundConfig.volume })
+    console.trace(`📍 Call stack para play("${type}")`)
 
     // Verificar se áudio está ativado
     if (!soundConfig.enabled) {
       console.warn(`🔇 [useSoundSystem.play] Áudio desabilitado! Som "${type}" não será tocado.`)
+      console.log(`   soundConfig.enabled = ${soundConfig.enabled}`)
       return
     }
 

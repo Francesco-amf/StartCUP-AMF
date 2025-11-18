@@ -515,6 +515,11 @@ export function useRealtimePenalties() {
                   const enriched = await enrichPenalties(allPenalties)
 
                   // Detect new penalties and play sound
+                  console.log(`🔍 [useRealtimePenalties] Estado antes de detectar penalidades:`, {
+                    isFirstRender: isFirstRenderRef.current,
+                    pageVisible: isPageVisibleRef.current,
+                    playFunctionAvailable: typeof play === 'function'
+                  })
                   if (!isFirstRenderRef.current) {
                     enriched.forEach((penalty: any) => {
                       if (!previousPenaltyIdsRef.current.has(penalty.id)) {

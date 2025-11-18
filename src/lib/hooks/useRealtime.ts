@@ -340,6 +340,7 @@ export function useRealtimePenalties() {
   const [penalties, setPenalties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { play } = useSoundSystem()
+  const playRef = useRef(play) // ✅ FIX: Store play in ref to avoid dependency array recreation
   const supabaseRef = useRef(createClient())
   const subscriptionRef = useRef<any>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -350,6 +351,11 @@ export function useRealtimePenalties() {
   const isPageVisibleRef = useRef(true)
   const supabase = supabaseRef.current
   const POLLING_DEBOUNCE_MS = 5000 // Wait 5s of Realtime inactivity before activating polling
+
+  // ✅ FIX: Update playRef when play function changes
+  useEffect(() => {
+    playRef.current = play
+  }, [play])
 
   console.log(`🎯 [useRealtimePenalties] Hook mounted/updated. Current state:`, {
     isFirstRender: isFirstRenderRef.current,
@@ -532,12 +538,12 @@ export function useRealtimePenalties() {
                         // Só tocar som se página está visível
                         if (isPageVisibleRef.current) {
                           console.log(`📍 [useRealtimePenalties] Página VISÍVEL - tentando tocar som 'penalty'`)
-                          // ✅ FIX: Validar que play() está disponível antes de chamar
-                          if (typeof play === 'function') {
+                          // ✅ FIX: Usar playRef.current em vez de play para evitar closure stale
+                          if (typeof playRef.current === 'function') {
                             console.log(`✅ [useRealtimePenalties] play() é função, chamando play('penalty')`)
-                            play('penalty')
+                            playRef.current('penalty')
                           } else {
-                            console.warn(`❌ [useRealtimePenalties] play() NÃO é uma função! Type: ${typeof play}`)
+                            console.warn(`❌ [useRealtimePenalties] play() NÃO é uma função! Type: ${typeof playRef.current}`)
                           }
                         } else {
                           // Página está oculta, som não será tocado agora
@@ -627,7 +633,7 @@ export function useRealtimePenalties() {
         pollingDebounceRef.current = null
       }
     }
-  }, [supabase, play])
+  }, [supabase]) // ✅ FIX: Removed 'play' from dependency - now using playRef instead
 
   return { penalties, loading }
 }
@@ -642,6 +648,7 @@ export function useRealtimeEvaluators() {
   const [evaluators, setEvaluators] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { play } = useSoundSystem()
+  const playRef = useRef(play) // ✅ FIX: Store play in ref to avoid dependency array recreation
   const supabaseRef = useRef(createClient())
   const subscriptionRef = useRef<any>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -651,6 +658,11 @@ export function useRealtimeEvaluators() {
   const isPageVisibleRef = useRef(true)
   const supabase = supabaseRef.current
   const POLLING_DEBOUNCE_MS = 5000 // Wait 5s of Realtime inactivity before activating polling
+
+  // ✅ FIX: Update playRef when play function changes
+  useEffect(() => {
+    playRef.current = play
+  }, [play])
 
   // 🔄 POLLING FALLBACK: When Realtime is unavailable
   const fetchEvaluatorsFallback = async () => {
@@ -752,20 +764,20 @@ export function useRealtimeEvaluators() {
                         if (evaluator.is_online) {
                           DEBUG.log('useRealtimeEvaluators', `🟢 Avaliador online: ${evaluator.name}`)
                           console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-online for ${evaluator.name}`)
-                          // ✅ FIX: Validar que play() está disponível antes de chamar
-                          if (typeof play === 'function') {
-                            play('evaluator-online')
+                          // ✅ FIX: Usar playRef.current em vez de play para evitar closure stale
+                          if (typeof playRef.current === 'function') {
+                            playRef.current('evaluator-online')
                           } else {
-                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof playRef.current)
                           }
                         } else {
                           DEBUG.log('useRealtimeEvaluators', `⚫ Avaliador offline: ${evaluator.name}`)
                           console.log(`🎵 [useRealtimeEvaluators] Attempting to play sound: evaluator-offline for ${evaluator.name}`)
-                          // ✅ FIX: Validar que play() está disponível antes de chamar
-                          if (typeof play === 'function') {
-                            play('evaluator-offline')
+                          // ✅ FIX: Usar playRef.current em vez de play para evitar closure stale
+                          if (typeof playRef.current === 'function') {
+                            playRef.current('evaluator-offline')
                           } else {
-                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof play)
+                            console.warn(`❌ [useRealtimeEvaluators] play() não é uma função!`, typeof playRef.current)
                           }
                         }
                       } else {
@@ -849,7 +861,7 @@ export function useRealtimeEvaluators() {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [supabase, play])
+  }, [supabase]) // ✅ FIX: Removed 'play' from dependency - now using playRef instead
 
   return { evaluators, loading }
 }

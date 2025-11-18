@@ -417,6 +417,7 @@ export function useRealtimePenalties() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       isPageVisibleRef.current = !document.hidden
+      console.log(`[useRealtimePenalties] Page visibility changed: ${isPageVisibleRef.current ? 'VISIBLE' : 'HIDDEN'}`)
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -468,6 +469,7 @@ export function useRealtimePenalties() {
           // ✅ FIX: Marcar primeira renderização como completa AGORA
           // Isso permite que novos eventos de Realtime toquem som
           isFirstRenderRef.current = false
+          console.log(`[useRealtimePenalties] Carregamento inicial concluído. isFirstRender resetado para false. Penalidades: ${enriched.length}`)
           setLoading(false)
         }
 
@@ -487,6 +489,8 @@ export function useRealtimePenalties() {
             async (payload: any) => {
               if (!mounted) return
 
+              console.log(`[useRealtimePenalties] Realtime event recebido: ${payload.eventType}`)
+
               try {
                 const { data: allPenalties, error } = await supabase
                   .from('penalties')
@@ -503,9 +507,15 @@ export function useRealtimePenalties() {
                         // ✅ FIX: SEMPRE atualizar estado anterior, mesmo se página está oculta
                         previousPenaltyIdsRef.current.add(penalty.id)
 
+                        console.log(`[useRealtimePenalties] Penalty detectada: ${penalty.team_name} (-${penalty.value})`)
+                        console.log(`[useRealtimePenalties] isPageVisible=${isPageVisibleRef.current}, playRef=${typeof playRef.current}`)
+
                         // Só tocar som se página está visível
                         if (isPageVisibleRef.current && typeof playRef.current === 'function') {
+                          console.log(`[useRealtimePenalties] Tocando som de penalidade`)
                           playRef.current('penalty')
+                        } else {
+                          console.log(`[useRealtimePenalties] Pulando som - página não visível ou play não é função`)
                         }
                       }
                     })

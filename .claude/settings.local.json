@@ -10,7 +10,14 @@
       "Bash(npm update:*)",
       "Bash(npm install:*)",
       "Bash(npm audit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx supabase:*)",
+      "Bash(where:*)",
+      "Bash(curl:*)",
+      "Bash(node execute_sql.js:*)",
+      "Bash(node create_users_via_sdk.js:*)",
+      "Bash(node create_users_rest_api.js:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

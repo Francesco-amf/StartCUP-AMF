@@ -351,6 +351,13 @@ export function useRealtimePenalties() {
   const supabase = supabaseRef.current
   const POLLING_DEBOUNCE_MS = 5000 // Wait 5s of Realtime inactivity before activating polling
 
+  console.log(`🎯 [useRealtimePenalties] Hook mounted/updated. Current state:`, {
+    isFirstRender: isFirstRenderRef.current,
+    previousPenaltyCount: previousPenaltyIdsRef.current.size,
+    isPageVisible: isPageVisibleRef.current,
+    playAvailable: typeof play === 'function'
+  })
+
   // Helper: Enrich penalties with teams and evaluators
   const enrichPenalties = async (penaltiesData: any[]) => {
     if (!penaltiesData || penaltiesData.length === 0) return []
@@ -473,6 +480,12 @@ export function useRealtimePenalties() {
               table: 'penalties'
             },
             async (payload: any) => {
+              console.log(`🔴 [useRealtimePenalties] REALTIME CALLBACK DISPARADO!`, {
+                eventType: payload.eventType,
+                newData: payload.new,
+                oldData: payload.old,
+                mounted
+              })
               DEBUG.log('useRealtimePenalties', `📡 Mudança detectada:`, payload.eventType)
 
               if (!mounted) return
@@ -484,6 +497,10 @@ export function useRealtimePenalties() {
                   .order('created_at', { ascending: false })
 
                 if (!error && allPenalties && mounted) {
+                  console.log(`📊 [useRealtimePenalties] Penalidades carregadas do banco:`, {
+                    total: allPenalties.length,
+                    ids: allPenalties.map(p => p.id)
+                  })
                   const enriched = await enrichPenalties(allPenalties)
 
                   // Detect new penalties and play sound

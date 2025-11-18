@@ -302,6 +302,8 @@ export default function CurrentQuestTimer({
     currentPhaseRef.current = phase
     // 🔄 Limpar o registro de quests sincronizadas quando muda de fase
     syncedQuestsRef.current.clear()
+    // 🔊 Limpar som de fase anterior para permitir que toque novamente
+    playedSoundsTracker.clearPhaseSound(phase)
     console.log(`🔄 [Phase Change] Fase mudou para ${phase}. Resetando sincronizações.`)
   }, [phase])
 

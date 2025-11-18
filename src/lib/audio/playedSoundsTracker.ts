@@ -45,7 +45,10 @@ class PlayedSoundsTracker {
    * @returns true se o som NÃO foi tocado antes (deve tocar), false se já foi
    */
   public shouldPlay(key: SoundEventKey): boolean {
-    if (this.playedSounds.has(key)) {
+    const alreadyPlayed = this.playedSounds.has(key)
+
+    if (alreadyPlayed) {
+      console.log(`❌ [PlayedSoundsTracker] ${key} JÁ foi tocado nesta sessão. Pulando.`)
       return false
     }
 
@@ -62,6 +65,18 @@ class PlayedSoundsTracker {
    */
   public getPlayedSounds(): string[] {
     return Array.from(this.playedSounds)
+  }
+
+  /**
+   * Limpa sons específicos de uma fase para permitir replay quando mudar de fase
+   */
+  public clearPhaseSound(phaseNumber: number): void {
+    const phaseKey = `phase-${phaseNumber}-quest-1`
+    if (this.playedSounds.has(phaseKey as SoundEventKey)) {
+      this.playedSounds.delete(phaseKey as SoundEventKey)
+      this.saveToStorage()
+      console.log(`🔄 [PlayedSoundsTracker] Limpo: ${phaseKey}`)
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRealtimeRanking, useRealtimePhase } from '@/lib/hooks/useRealtime'
 import { createClient } from '@/lib/supabase/client'
 import RankingBoard from '@/components/dashboard/RankingBoard'
@@ -11,17 +11,29 @@ import LivePowerUpStatus from '@/components/dashboard/LivePowerUpStatus'
 import LivePenaltiesStatus from '@/components/dashboard/LivePenaltiesStatus'
 import AudioAuthorizationBanner from '@/components/dashboard/AudioAuthorizationBanner'
 import EventEndCountdownWrapper from '@/components/EventEndCountdownWrapper'
+import DebugSoundTester from '@/components/DebugSoundTester'
 
 export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
   const { phase } = useRealtimePhase()
   const supabase = useRef(createClient())
   const penaltyChannelRef = useRef<any>(null)
+  const [showAudioTester, setShowAudioTester] = useState(false)
 
   // 🔴 NOVO: Monitorar mudanças em penalidades e refetch ranking
   // Quando uma penalidade é adicionada, o live_ranking view precisa ser refetched
   // para que o total_points seja atualizado no cliente
   useEffect(() => {
+    // Mostrar DebugSoundTester apenas se query param debug_audio=1 estiver presente
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URL(window.location.href).searchParams
+        setShowAudioTester(params.get('debug_audio') === '1')
+      }
+    } catch (e) {
+      // ignore
+    }
+
     let isMounted = true
 
     const setupPenaltyListener = () => {
@@ -122,6 +134,11 @@ export default function LiveDashboard() {
       <div className="container mx-auto p-4 md:p-6">
         {/* Audio Authorization Banner */}
         <AudioAuthorizationBanner />
+        {showAudioTester && (
+          <div className="mt-4">
+            <DebugSoundTester />
+          </div>
+        )}
 
         {/* Timer da Fase e Quest Atual - Topo em destaque */}
         {phase?.event_status === 'running' && phase?.phase_started_at && (

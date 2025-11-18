@@ -65,6 +65,8 @@ export function useRealtimePenaltiesOptimized() {
       data.forEach((penalty: any) => {
         if (!previousPenaltyIdsRef.current.has(penalty.id)) {
           logger.info(`New penalty detected: ${penalty.id}`)
+          // Log explícito para ajudar a diagnosticar falha de autoplay
+          console.log(`🔔 [RealtimePenalties] Nova penalidade detectada: ${penalty.id} | team: ${penalty.team_id ?? penalty.team_name ?? 'unknown'} — tentando tocar som 'penalty'`)
           play('penalty')
         }
       })

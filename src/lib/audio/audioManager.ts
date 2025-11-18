@@ -333,7 +333,9 @@ class AudioManager {
    * Alterna ativação/desativação de sons
    */
   toggleEnabled(): void {
+    const previous = this.config.enabled
     this.config.enabled = !this.config.enabled
+    console.log(`🔁 [AudioManager.toggleEnabled] previous=${previous} -> new=${this.config.enabled}`)
     this.saveConfigToStorage()
     this.notifyListeners()
   }
@@ -343,9 +345,13 @@ class AudioManager {
    */
   setEnabled(enabled: boolean): void {
     if (this.config.enabled !== enabled) {
+      const previous = this.config.enabled
       this.config.enabled = enabled
+      console.log(`🔁 [AudioManager.setEnabled] previous=${previous} -> new=${this.config.enabled}`)
       this.saveConfigToStorage()
       this.notifyListeners()
+    } else {
+      console.log(`🔁 [AudioManager.setEnabled] called but no change: enabled=${enabled}`)
     }
   }
 
@@ -492,6 +498,9 @@ class AudioManager {
                 await audio!.play()
                 console.log(`✅ Som tocando com sucesso: ${type}`)
               } catch (err: any) {
+                // Log detalhado do erro para facilitar diagnóstico de Promise rejeitada
+                console.error(`❌ Erro durante attemptPlay para ${type}:`, err, err?.stack)
+
                 // ✅ FIX #3: Retry automático com backoff exponencial
                 // Tenta novamente com delays crescentes: 100ms, 200ms, 400ms, 800ms
                 const BACKOFF_BASE = 100
@@ -499,10 +508,10 @@ class AudioManager {
 
                 if (shouldRetry) {
                   const delayMs = BACKOFF_BASE * Math.pow(2, playAttempts - 1)
-                  console.warn(`⚠️ Falha ao tocar ${type} (${err.name}), retry ${playAttempts} em ${delayMs}ms...`)
+                  console.warn(`⚠️ Falha ao tocar ${type} (${err?.name || 'unknown error'}), retry ${playAttempts} em ${delayMs}ms...`)
                   setTimeout(attemptPlay, delayMs)
                 } else {
-                  console.warn(`❌ Falha ao tocar ${type} após ${MAX_PLAY_ATTEMPTS} tentativas: ${err.name}`)
+                  console.warn(`❌ Falha ao tocar ${type} após ${MAX_PLAY_ATTEMPTS} tentativas: ${err?.name || 'unknown error'}`)
                   resolve()
                 }
               }
@@ -538,8 +547,8 @@ class AudioManager {
           })
         }
       })
-    } catch (error) {
-      console.error(`❌ Erro ao reproduzir arquivo: ${type}`, error)
+    } catch (error: any) {
+      console.error(`❌ Erro ao reproduzir arquivo: ${type}`, error, error?.stack)
     }
   }
 

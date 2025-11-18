@@ -421,10 +421,16 @@ export default function CurrentQuestTimer({
 
   // 🔊 Detectar mudanças de quest e tocar sons apropriados
   useEffect(() => {
-    if (quests.length === 0) return
+    console.log(`[CurrentQuestTimer.playSound useEffect] quests.length=${quests.length}, soundConfig.enabled=${soundConfig?.enabled}`)
+
+    if (quests.length === 0) {
+      console.log(`[CurrentQuestTimer.playSound] Retornando pois quests vazio`)
+      return
+    }
 
     // Encontrar quest atual (com started_at mais recente)
     const activeQuests = quests.filter(q => q.started_at !== null && q.started_at !== undefined)
+    console.log(`[CurrentQuestTimer.playSound] activeQuests.length=${activeQuests.length}`)
     if (activeQuests.length === 0) return
 
     const sortedByStart = [...activeQuests].sort((a, b) => {
@@ -442,6 +448,7 @@ export default function CurrentQuestTimer({
     // Verificar se é primeira ativação (previousQuestIdRef nulo) E quest começou há menos de 5 segundos
     // Se começou há mais de 5s, é provavelmente um reload da página, não tocar som
     let isFirstActivation = false
+    let secondsElapsed = 0
     if (previousQuestIdRef.current === null && currentQuestId !== undefined && currentQuest.started_at) {
       // ✅ FIX: Parsear timestamp corretamente (pode ter +00:00 ou Z ou nenhum)
       const cleanStartedAt = currentQuest.started_at.includes('+00:00')
@@ -459,10 +466,13 @@ export default function CurrentQuestTimer({
         return // Não tocar som se data inválida
       }
 
-      const secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
+      secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
       // 🔔 IMPORTANTE: Aumentar limite para 10 segundos para cobrir transições de fase
       isFirstActivation = secondsElapsed < 10
     }
+
+    console.log(`[CurrentQuestTimer.sound] previousQuestIdRef.current=${previousQuestIdRef.current}, currentQuestId=${currentQuestId}`)
+    console.log(`[CurrentQuestTimer.sound] isQuestChange=${isQuestChange}, isFirstActivation=${isFirstActivation} (secondsElapsed=${secondsElapsed.toFixed(1)}s)`)
 
     if (isQuestChange || isFirstActivation) {
       // Verificar se soundConfig está habilitado antes de tocar som
@@ -489,9 +499,12 @@ export default function CurrentQuestTimer({
                      currentQuest.deliverable_type === 'presentation' ||
                      (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
 
+      console.log(`[CurrentQuestTimer.sound] phase=${currentPhaseRef.current}, order=${currentQuest.order_index}, isBoss=${isBoss}`)
+
       if (isFirstQuestOfPhase1) {
         // Som especial para o começo do evento (Fase 1, Quest 1)
         if (playedSoundsTracker.shouldPlay('phase-1-quest-1')) {
+          console.log(`[CurrentQuestTimer.sound] Playing event-start`)
           play('event-start')
         }
       } else if (isBoss) {
@@ -499,6 +512,7 @@ export default function CurrentQuestTimer({
         const bossKey = `boss-${currentQuest.id}`
 
         if (playedSoundsTracker.shouldPlay(bossKey as any)) {
+          console.log(`[CurrentQuestTimer.sound] Playing boss-spawn`)
           // Reproduzir boss-spawn 2 vezes com pequeno delay entre elas
           play('boss-spawn')
           setTimeout(() => {
@@ -512,6 +526,7 @@ export default function CurrentQuestTimer({
         const phaseKey = `phase-${currentPhaseRef.current}-quest-1` as const
 
         if (playedSoundsTracker.shouldPlay(phaseKey)) {
+          console.log(`[CurrentQuestTimer.sound] Playing phase-start for phase ${currentPhaseRef.current}`)
           play('phase-start')
         }
       } else {
@@ -519,6 +534,7 @@ export default function CurrentQuestTimer({
         const questKey = `quest-${currentQuest.id}`
 
         if (playedSoundsTracker.shouldPlay(questKey as any)) {
+          console.log(`[CurrentQuestTimer.sound] Playing quest-start for quest ${currentQuest.id}`)
           play('quest-start')
         }
       }

@@ -185,8 +185,12 @@ export default function LiveDashboard() {
               <LivePowerUpStatus />
             </div>
 
-            {/* Penalidades Aplicadas */}
+            {/* Penalidades Aplicadas - SEMPRE renderizar para capturar som mesmo em telas pequenas */}
             <div className="hidden lg:block">
+              <LivePenaltiesStatus />
+            </div>
+            {/* Hidden on large screens, but still mounted to ensure penalty sounds work */}
+            <div className="lg:hidden sr-only">
               <LivePenaltiesStatus />
             </div>
 

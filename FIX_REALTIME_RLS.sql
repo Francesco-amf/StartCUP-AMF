@@ -9,7 +9,7 @@
 -- STEP 1: Verify RLS is enabled (needed for Realtime)
 -- ============================================================================
 ALTER TABLE penalties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE live_ranking ENABLE ROW LEVEL SECURITY;
+-- Note: live_ranking is a VIEW, not a table - no RLS needed for views
 ALTER TABLE event_config ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
@@ -60,38 +60,30 @@ TO authenticated
 USING (current_setting('request.jwt.claims', true)::jsonb->>'role' = 'admin');
 
 -- ============================================================================
--- STEP 4: Ensure live_ranking can be read by all (needed for ranking updates)
+-- STEP 4: Grant necessary permissions to service_role (used by Realtime)
 -- ============================================================================
-DROP POLICY IF EXISTS "Allow all read access to live_ranking" ON live_ranking;
-DROP POLICY IF EXISTS "Allow anon read access to live_ranking" ON live_ranking;
-
-CREATE POLICY "Allow all roles to read live_ranking for Realtime" ON live_ranking
-FOR SELECT
-TO authenticated, anon
-USING (true);
-
--- ============================================================================
--- STEP 5: Grant necessary permissions to service_role (used by Realtime)
--- ============================================================================
+-- Note: live_ranking is a VIEW, so it inherits permissions from its base tables
+-- RLS on base tables (e.g., team_scores) controls access to the view
 GRANT SELECT ON public.penalties TO service_role;
 GRANT SELECT ON public.event_config TO service_role;
 GRANT SELECT ON public.live_ranking TO service_role;
 GRANT SELECT ON public.teams TO service_role;
 
 -- ============================================================================
--- STEP 6: Verify Realtime publication includes these tables
+-- STEP 5: Verify Realtime publication includes these tables
 -- ============================================================================
--- Note: This usually needs to be done in Supabase dashboard:
+-- IMPORTANT: This must be done in Supabase dashboard:
 -- Database -> Publications -> supabase_realtime
 -- Make sure these tables are published:
 -- - penalties (for penalty updates)
 -- - event_config (for phase updates)
--- - live_ranking (for ranking updates)
+-- - live_ranking (for ranking updates via its base tables)
 
 -- ============================================================================
--- STEP 7: SUCCESS
+-- SUCCESS
 -- ============================================================================
 SELECT '✅ REALTIME RLS FIX APPLIED!' AS status;
 SELECT '✅ All policies now allow SELECT for authenticated and anon users' AS detail1;
 SELECT '✅ Service role has full SELECT permissions' AS detail2;
-SELECT '✅ Check Supabase Dashboard > Database > Publications to ensure tables are published' AS detail3;
+SELECT '⚠️ NEXT: Check Supabase Dashboard > Database > Publications > supabase_realtime' AS detail3;
+SELECT '✅ Ensure penalties, event_config, and live_ranking are published' AS detail4;

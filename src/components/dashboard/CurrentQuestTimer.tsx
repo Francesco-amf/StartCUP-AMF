@@ -462,25 +462,11 @@ export default function CurrentQuestTimer({
       const secondsElapsed = (now.getTime() - questStartTime.getTime()) / 1000
       // 🔔 IMPORTANTE: Aumentar limite para 10 segundos para cobrir transições de fase
       isFirstActivation = secondsElapsed < 10
-
-      console.log(`🔍 [CurrentQuestTimer] Primeira quest detectada: ${currentQuest.order_index} (${secondsElapsed.toFixed(2)}s atrás) - isFirstActivation: ${isFirstActivation}`)
-      console.log(`🔍 [CurrentQuestTimer] DEBUG: Quest started_at: ${currentQuest.started_at}, Phase: ${currentPhaseRef.current}, Order: ${currentQuest.order_index}`)
-
-      if (!isFirstActivation) {
-        console.log(`🔇 [CurrentQuestTimer] Quest ${currentQuest.order_index} começou há ${Math.round(secondsElapsed)}s (reload detectado, som não tocará)`)
-      }
     }
 
     if (isQuestChange || isFirstActivation) {
-      if (isQuestChange) {
-        console.log(`🔊 [CurrentQuestTimer] Quest mudou! De: ${previousQuestIdRef.current} → Para: ${currentQuestId}`)
-      } else {
-        console.log(`🔊 [CurrentQuestTimer] Primeira quest ativada! ${currentQuestId}`)
-      }
-
       // Verificar se soundConfig está habilitado antes de tocar som
       if (!soundConfig?.enabled) {
-        console.warn(`⚠️ [SoundSystem] Som está desabilitado! soundConfig.enabled = ${soundConfig?.enabled}`)
         // Atualizar referência mesmo sem tocar som
         if (currentQuestId) {
           previousQuestIdRef.current = currentQuestId
@@ -489,7 +475,6 @@ export default function CurrentQuestTimer({
       }
 
       if (soundConfig?.volume === 0) {
-        console.warn(`⚠️ [SoundSystem] Volume está em 0! soundConfig.volume = ${soundConfig?.volume}`)
         // Atualizar referência mesmo com volume 0
         if (currentQuestId) {
           previousQuestIdRef.current = currentQuestId
@@ -504,31 +489,16 @@ export default function CurrentQuestTimer({
                      currentQuest.deliverable_type === 'presentation' ||
                      (Array.isArray(currentQuest.deliverable_type) && currentQuest.deliverable_type.includes('presentation'))
 
-      console.log(`🔍 [SoundDebug] Detectando som apropriado:`, {
-        isFirstQuestOfPhase1,
-        isFirstQuestOfAnyPhase,
-        isBoss,
-        questOrder: currentQuest.order_index,
-        questType: currentQuest.deliverable_type,
-        soundConfig: { enabled: soundConfig?.enabled, volume: soundConfig?.volume }
-      })
-
       if (isFirstQuestOfPhase1) {
         // Som especial para o começo do evento (Fase 1, Quest 1)
         if (playedSoundsTracker.shouldPlay('phase-1-quest-1')) {
-          console.log(`🎬 INÍCIO DO EVENTO! Fase 1, Quest 1 ativada!`)
-          console.log('🔊 Tocando som: event-start')
           play('event-start')
-        } else {
-          console.log(`🔇 [CurrentQuestTimer] event-start já foi tocado`)
         }
       } else if (isBoss) {
         // Som especial para BOSS
         const bossKey = `boss-${currentQuest.id}`
 
         if (playedSoundsTracker.shouldPlay(bossKey as any)) {
-          console.log(`🔥 BOSS DETECTADO! Ordem: ${currentQuest.order_index}, Tipo: ${currentQuest.deliverable_type}`)
-          console.log('🔊 Tocando som: boss-spawn (2x para efeito épico!)')
           // Reproduzir boss-spawn 2 vezes com pequeno delay entre elas
           play('boss-spawn')
           setTimeout(() => {
@@ -542,8 +512,6 @@ export default function CurrentQuestTimer({
         const phaseKey = `phase-${currentPhaseRef.current}-quest-1` as const
 
         if (playedSoundsTracker.shouldPlay(phaseKey)) {
-          console.log(`🌟 MUDANÇA DE FASE DETECTADA! De Fase ${currentPhaseRef.current - 1 || 0} → Fase ${currentPhaseRef.current}`)
-          console.log(`📣 Primeira quest da Fase ${currentPhaseRef.current} iniciada! Tocando som: phase-start`)
           play('phase-start')
         }
       } else {
@@ -551,17 +519,9 @@ export default function CurrentQuestTimer({
         const questKey = `quest-${currentQuest.id}`
 
         if (playedSoundsTracker.shouldPlay(questKey as any)) {
-          console.log(`📣 Quest ${currentQuest.order_index} iniciada! Tocando som: quest-start`)
           play('quest-start')
         }
       }
-    } else {
-      console.log(`🔇 [CurrentQuestTimer] Sem mudança de quest detectada:`, {
-        previousQuestId: previousQuestIdRef.current,
-        currentQuestId,
-        isQuestChange,
-        isFirstActivation
-      })
     }
 
     // Atualizar referência
@@ -761,13 +721,7 @@ export default function CurrentQuestTimer({
       const elapsed = now - questStartTime
       let timeRemaining = Math.max(0, (questDurationMs - elapsed) / 1000)
 
-      // 🔍 DEBUG: Log a cada chamada (pode ser muito verbose!)
-      // Mostrar CADA cálculo para encontrar onde o erro acontece
-      if (callCount <= 10 || callCount % 5 === 0) {
-        const displayMinutes = Math.floor(timeRemaining / 60)
-        const displaySeconds = Math.floor(timeRemaining % 60)
-        console.log(`⏱️ [QuestTimer #${callCount}] ${currentQuest.name} | Start: ${questStartTime} | Now: ${now} | Elapsed: ${elapsed}ms | Duration: ${questDurationMs}ms | Remaining: ${timeRemaining}s | Display: ${displayMinutes}:${String(displaySeconds).padStart(2, '0')}`)
-      }
+      // Time calculation - no logging needed
 
       setQuestTimeRemaining(timeRemaining)
     }
@@ -786,12 +740,9 @@ export default function CurrentQuestTimer({
   // ✅ FIX: Usar apenas phase/phaseStartedAt/phaseDurationMinutes no dependency array
   // Usar questsRef para acessar dados atualizados sem causar re-execução excessiva
   useEffect(() => {
-    console.log(`🚀 [Phase Offset Sync] useEffect montado para Phase ${phase}, phaseStartedAt: ${phaseStartedAt}, phaseDurationMinutes: ${phaseDurationMinutes}`)
-
     const syncPhaseOffset = () => {
       // ✅ Usar questsRef em vez de quests para evitar dependency issues
       const currentQuests = questsRef.current
-      console.log(`🔄 [Phase Offset Sync TICK] Phase ${phase}, Quests: ${currentQuests.length}`)
       if (currentQuests.length === 0) return
 
       // Encontrar quest ativa atual
@@ -862,13 +813,6 @@ export default function CurrentQuestTimer({
 
       // Diferença entre o que deveria ser e o que é
       const offsetDifferenceMs = phaseActualRemainingMs - expectedPhaseOffsetMs
-
-      console.log(`🔍 [Phase Offset Sync] Offset Calculation for Phase ${phase}:`)
-      console.log(`   - Quest Remaining: ${Math.round(questTimeRemainingMs / 1000)}s`)
-      console.log(`   - Future Quests Duration: ${Math.round(futureQuestsDurationMs / 1000)}s`)
-      console.log(`   - Expected Phase Remaining: ${Math.round(expectedPhaseOffsetMs / 1000)}s`)
-      console.log(`   - Actual Phase Remaining: ${Math.round(phaseActualRemainingMs / 1000)}s`)
-      console.log(`   - Offset Difference: ${Math.round(offsetDifferenceMs / 1000)}s (Threshold: 5s)`)
 
       // Se diferença > 5 segundos, ajustar o phaseStartedAt
       if (Math.abs(offsetDifferenceMs) > 5000) {
@@ -947,38 +891,11 @@ export default function CurrentQuestTimer({
     currentQuestForSync = sortedByStart[0]
   }
 
-  console.log(`📋 [ActiveQuestFilter] Total quests: ${quests.length}, Active quests: ${activeQuests.length}`)
-  console.log(`📋 [ActiveQuestFilter] Todos os quests com seus started_at:`, quests.map(q => ({
-    id: q.id,
-    order: q.order_index,
-    name: q.name,
-    started_at: q.started_at,
-    status: q.status
-  })))
-
   let currentQuestIndex = 0
   let currentQuest = currentQuestForSync || quests[0]
 
   if (currentQuestForSync) {
     currentQuestIndex = quests.findIndex(q => q.id === currentQuestForSync.id)
-
-    console.log(`[LiveDashboard] ✅ Quest atual encontrada:`, {
-      name: currentQuestForSync.name,
-      started_at: currentQuestForSync.started_at,
-      planned_deadline_minutes: currentQuestForSync.planned_deadline_minutes,
-      duration_minutes: currentQuestForSync.duration_minutes,
-      late_submission_window_minutes: currentQuestForSync.late_submission_window_minutes
-    })
-  } else {
-    console.log('[LiveDashboard] ⚠️ Nenhuma quest iniciada. Mostrando primeira quest.')
-    console.log('[LiveDashboard] 🔍 Quest details do fallback:', {
-      questId: quests[0]?.id,
-      questName: quests[0]?.name,
-      questStatus: quests[0]?.status,
-      questStartedAt: quests[0]?.started_at,
-      questOrder: quests[0]?.order_index,
-      reason: quests.length === 0 ? 'Nenhuma quest no array' : 'Nenhuma quest com started_at'
-    })
   }
 
   // Garantir que currentQuestIndex nunca ultrapassa quests.length - 1
@@ -986,9 +903,6 @@ export default function CurrentQuestTimer({
 
   // 🚨 PROTEÇÃO: Se a quest atual não tem started_at, NÃO mostrar timer
   const questHasStarted = currentQuest && currentQuest.started_at !== null && currentQuest.started_at !== undefined
-  if (!questHasStarted) {
-    console.warn(`[LiveDashboard] ⚠️ Quest ${currentQuest?.name} não tem started_at! Timer zerado.`)
-  }
 
   // 🎯 NOVO: Detectar se há quest ativa para mostrar status do timer
   // 🔥 CRÍTICO: Uma quest só conta como "ativa" se realmente está em andamento (não expirou)
@@ -1001,12 +915,6 @@ export default function CurrentQuestTimer({
     return now3 < questDeadline
   })
   const hasActiveQuest = activeQuestsNow.length > 0
-
-  // 🔍 DEBUG: Verificar se o badge deveria aparecer
-  console.log(`🔴 [Phase Badge Check] hasActiveQuest: ${hasActiveQuest}, activeQuestsNow.length: ${activeQuestsNow.length}, quests.length: ${quests.length}, statuses:`, quests.map(q => ({ name: q.name, status: q.status, started_at: q.started_at ? 'YES' : 'NO' })))
-  if (!hasActiveQuest && activeQuestsNow.length === 0) {
-    console.log(`✅ [Phase Badge] PAUSADO badge deveria aparecer! Quests:`, quests.map(q => ({ name: q.name, status: q.status, started_at: q.started_at })))
-  }
 
   const getProgressColor = () => {
     if (timeLeft.percentage > 66) return 'bg-green-500'

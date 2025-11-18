@@ -470,7 +470,11 @@ export function useRealtimePenalties() {
           const enriched = await enrichPenalties(initialData || [])
           setPenalties(enriched)
           previousPenaltyIdsRef.current = new Set(enriched.map((p: any) => p.id))
+          // ✅ FIX: Marcar primeira renderização como completa AGORA
+          // Isso permite que novos eventos de Realtime toquem som
+          isFirstRenderRef.current = false
           setLoading(false)
+          console.log(`✅ [useRealtimePenalties] Primeira renderização completa! Próximas penalidades tocarão som.`)
         }
 
         // Subscribe to penalties changes
@@ -543,10 +547,6 @@ export function useRealtimePenalties() {
                   }
 
                   previousPenaltyIdsRef.current = new Set(enriched.map((p: any) => p.id))
-                  if (isFirstRenderRef.current) {
-                    isFirstRenderRef.current = false
-                  }
-
                   setPenalties(enriched)
                 }
               } catch (err) {

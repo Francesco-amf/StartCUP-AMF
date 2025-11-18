@@ -136,11 +136,13 @@ export default function EventEndCountdownWrapper() {
 
   // FASE 2: Countdown Final (após avaliações)
   // Mostra se avaliações completaram OU tempo expirou
+  // ✅ FIX: Usar evaluation_period_end_time em vez de event_end_time para o countdown final
+  // evaluation_period_end_time é setado quando Quest 5.3 termina (20 minutos de avaliação)
   if (showFinalCountdown || allSubmissionsEvaluated) {
     console.log('🟠 [EventEndCountdownWrapper] Renderizando FASE 2: Final Countdown')
     return (
       <EventEndCountdown
-        eventEndTime={eventEndTime}
+        eventEndTime={evaluationPeriodEndTime || eventEndTime}
         onEventEnd={() => {
           console.log('⏹️ [EventEndCountdownWrapper] Countdown terminou, setando eventEnded = true')
           setEventEnded(true)

@@ -78,9 +78,17 @@ export function useSoundSystem() {
   /**
    * Play com fallback sintetizado para penalty se arquivo falhar
    * Agora com suporte a prioridade
+   * ✅ Adicionado log para debugar sons de avaliadores
    */
   const play = (type: AudioFileType, priority?: number) => {
-    console.log('📞 [useSoundSystem.play] Chamado com tipo:', type, 'prioridade:', priority)
+    console.log(`📞 [useSoundSystem.play] Chamado com tipo: "${type}", prioridade: ${priority}`)
+    console.log(`   Config atual:`, { enabled: soundConfig.enabled, volume: soundConfig.volume })
+
+    // Verificar se áudio está ativado
+    if (!soundConfig.enabled) {
+      console.warn(`🔇 [useSoundSystem.play] Áudio desabilitado! Som "${type}" não será tocado.`)
+      return
+    }
 
     // Para penalty especificamente, usar fallback synthesized
     if (type === 'penalty') {
@@ -114,8 +122,16 @@ export function useSoundSystem() {
           console.log('🔊 Penalty fallback synthesized tocando...')
         })
       })
+    } else if (type === 'evaluator-online' || type === 'evaluator-offline') {
+      // 🟢 / 🔴 Sons dos avaliadores com logging específico
+      console.log(`🎵 [useSoundSystem] Tocando som do avaliador: ${type}`)
+      playFile(type, priority).catch((err: any) => {
+        console.warn(`⚠️ Som do avaliador "${type}" falhou:`, err)
+        // Fallback silencioso (não precisamos de síntese para esses)
+      })
     } else {
       // Para outros sons, só tenta o arquivo
+      console.log(`🎵 [useSoundSystem] Tocando som padrão: ${type}`)
       playFile(type, priority)
     }
   }

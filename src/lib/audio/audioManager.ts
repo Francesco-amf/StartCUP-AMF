@@ -393,9 +393,11 @@ class AudioManager {
       // Verificar se arquivo existe
       const filePath = AUDIO_FILES[type]
       if (!filePath) {
-        console.warn(`⚠️ Arquivo de áudio não mapeado: ${type}`)
+        console.warn(`⚠️ [playFile] Arquivo de áudio não mapeado: ${type}`)
         return
       }
+
+      console.log(`🎵 [playFile] Iniciando reprodução: "${type}" em "${filePath}" (volume: ${this.config.volume})`)
 
       let audio = this.audioCache.get(type)
 

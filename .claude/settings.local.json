@@ -5,7 +5,8 @@
       "Bash(cmd /c git status)",
       "Bash(cmd /c git diff \"src/app/(team)/submit/page.tsx\")",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

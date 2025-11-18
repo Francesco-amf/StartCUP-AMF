@@ -6,8 +6,6 @@ import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
 export default function AudioAuthorizationBanner() {
   const [authorized, setAuthorized] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  // ✅ FIX: Remover isClient do useSoundSystem (não é mais exportado)
-  // O audioManager já valida se está no cliente internamente
   const { soundConfig, toggleSounds } = useSoundSystem()
 
   useEffect(() => {
@@ -18,20 +16,10 @@ export default function AudioAuthorizationBanner() {
     if (!isClient) return
 
     const handleInteraction = () => {
-      // Trigger audio context resume by attempting to play a sound
-      try {
-        const audioContext = typeof window !== 'undefined' ? (window as any).audioContext : null
-        if (audioContext?.resume) {
-          audioContext.resume().then(() => {
-            console.log('✅ Audio context resumed after user interaction')
-            setAuthorized(true)
-          })
-        }
-      } catch (err) {
-        console.log('Audio authorization triggered')
-      }
-
+      // Just mark as authorized after first user interaction
+      // The audioManager already handles audio context authorization
       setAuthorized(true)
+
       // Remove listener after first interaction
       window.removeEventListener('click', handleInteraction)
       window.removeEventListener('touchstart', handleInteraction)
@@ -86,7 +74,7 @@ export default function AudioAuthorizationBanner() {
           </p>
           {!authorized && (
             <p className="text-xs opacity-90 mt-1">
-              Isso é uma política de segurança do navegador para evitar áudio indesejado
+              Clique para autorizar áudio (política de segurança do navegador)
             </p>
           )}
         </div>

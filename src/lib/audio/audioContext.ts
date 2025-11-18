@@ -35,16 +35,10 @@ export function getAudioContext(): AudioContextType | null {
       try {
         sharedAudioContext = new AudioContextClass()
         contextCreationAttempts = 0
-        console.log('✅ [AudioContext] Criado com sucesso! Estado:', sharedAudioContext.state)
       } catch (e: any) {
         // NotAllowedError: AudioContext não pode ser criado ainda (browser policy)
         // Isto é NORMAL e esperado - será retentado após autorização
         contextCreationAttempts++
-
-        if (contextCreationAttempts > 1) {
-          // Log apenas uma vez para não poluir console
-          // console.log('⏳ AudioContext creation deferred until user interaction')
-        }
         return null
       }
     }
@@ -199,8 +193,6 @@ export function setupAutoAudioAuthorization(): void {
         // Silenciosamente ignora
       }
 
-      console.log(`✅ [audioContext] Áudio autorizado via interação real (${eventType})!`)
-      console.log('🎵 [audioContext] AudioContext será criado no primeiro playFile()')
     }
   }
 
@@ -214,15 +206,4 @@ export function setupAutoAudioAuthorization(): void {
   window.addEventListener('click', clickHandler, { passive: true })
   window.addEventListener('touchstart', touchHandler, { passive: true })
   window.addEventListener('keydown', keyHandler, { passive: true })
-
-  // ⏰ Log de debug: Avisar se não autorizar em 5 segundos
-  setTimeout(() => {
-    if (!authorizationAttempted) {
-      console.warn(
-        '⚠️ [audioContext] AVISO: Audio ainda não foi autorizado após 5s.\n' +
-        '   → Clique, toque ou pressione qualquer tecla para autorizar áudio.\n' +
-        '   → Isso é necessário por política de segurança do navegador.'
-      )
-    }
-  }, 5000)
 }

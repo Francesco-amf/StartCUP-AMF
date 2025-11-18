@@ -167,29 +167,25 @@ class AudioManager {
       'boss-spawn',       // ← Crítico: Sons épicos do jogo
       'game-over'         // ← Crítico: Fim do evento
     ]
-    console.log(`⏳ [AudioManager] Iniciando pré-carregamento de ${criticalAudios.length} sons críticos...`)
     criticalAudios.forEach((type) => {
       const filePath = AUDIO_FILES[type]
       if (filePath && !this.audioCache.has(type)) {
         try {
-          console.log(`📥 Iniciando pré-carregamento: ${type} (${filePath})`)
           const audio = new Audio(filePath)
           audio.preload = 'auto'
           audio.volume = this.config.volume
 
           // Adicionar listener para detectar quando está pronto
           const handleCanPlayThrough = () => {
-            console.log(`✅ Áudio pré-carregado: ${type} (duração: ${audio.duration}s, readyState: ${audio.readyState})`)
             audio.removeEventListener('canplaythrough', handleCanPlayThrough)
           }
 
           const handleError = (e: any) => {
-            console.warn(`⚠️ Erro ao pré-carregar: ${type} -`, e.target?.error?.message || e)
+            console.warn(`⚠️ Erro ao pré-carregar: ${type}`)
             audio.removeEventListener('error', handleError)
           }
 
           const handleLoadedMetadata = () => {
-            console.log(`📊 Metadata carregada: ${type} (duração: ${audio.duration}s)`)
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
           }
 
@@ -248,13 +244,9 @@ class AudioManager {
           volume: Math.max(0, Math.min(1, parsed.volume ?? 0.7)),
           enabled: parsed.enabled ?? true
         }
-        console.log(`🎵 [AudioManager] Config carregada do localStorage:`, this.config)
-      } else {
-        console.log(`🎵 [AudioManager] Nenhuma config no localStorage. Usando padrão:`, this.config)
       }
     } catch (error) {
       console.warn('⚠️ Erro ao carregar configuração de áudio:', error)
-      console.log(`🎵 [AudioManager] Usando config padrão após erro:`, this.config)
     }
   }
 
@@ -333,9 +325,7 @@ class AudioManager {
    * Alterna ativação/desativação de sons
    */
   toggleEnabled(): void {
-    const previous = this.config.enabled
     this.config.enabled = !this.config.enabled
-    console.log(`🔁 [AudioManager.toggleEnabled] previous=${previous} -> new=${this.config.enabled}`)
     this.saveConfigToStorage()
     this.notifyListeners()
   }
@@ -345,13 +335,9 @@ class AudioManager {
    */
   setEnabled(enabled: boolean): void {
     if (this.config.enabled !== enabled) {
-      const previous = this.config.enabled
       this.config.enabled = enabled
-      console.log(`🔁 [AudioManager.setEnabled] previous=${previous} -> new=${this.config.enabled}`)
       this.saveConfigToStorage()
       this.notifyListeners()
-    } else {
-      console.log(`🔁 [AudioManager.setEnabled] called but no change: enabled=${enabled}`)
     }
   }
 
@@ -391,7 +377,6 @@ class AudioManager {
    */
   async playFile(type: AudioFileType, priority?: number): Promise<void> {
     if (!this.config.enabled) {
-      console.warn(`🔇 [playFile] Áudio desabilitado! Som "${type}" não será tocado. Config:`, this.config)
       return
     }
 
@@ -399,11 +384,9 @@ class AudioManager {
       // Verificar se arquivo existe
       const filePath = AUDIO_FILES[type]
       if (!filePath) {
-        console.warn(`⚠️ [playFile] Arquivo de áudio não mapeado: ${type}`)
+        console.warn(`⚠️ Arquivo de áudio não mapeado: ${type}`)
         return
       }
-
-      console.log(`🎵 [playFile] Iniciando reprodução: "${type}" em "${filePath}" (volume: ${this.config.volume})`)
 
       let audio = this.audioCache.get(type)
 
@@ -413,7 +396,7 @@ class AudioManager {
         audio.addEventListener(
           'error',
           () => {
-            console.error(`❌ Erro ao carregar áudio: ${type} (${filePath})`)
+            console.error(`❌ Erro ao carregar áudio: ${type}`)
           },
           { once: true }
         )
@@ -448,7 +431,6 @@ class AudioManager {
 
       // Usar prioridade fornecida ou obter do mapa de prioridades
       const soundPriority = priority !== undefined ? priority : AUDIO_PRIORITIES[type]
-      console.log(`📀 Reproduzindo: ${type} (duração: ${duration}ms, prioridade: ${soundPriority}, readyState: ${audio.readyState})`)
 
       await this.enqueueSound({
         type: 'file',
@@ -469,13 +451,12 @@ class AudioManager {
 
             const handleEnd = () => {
               cleanup()
-              console.log(`✅ Áudio terminado: ${type}`)
               resolve()
             }
 
             const handleError = (e: Event) => {
               cleanup()
-              console.warn(`⚠️ Erro ao reproduzir áudio: ${type}`, e)
+              console.warn(`⚠️ Erro ao reproduzir áudio: ${type}`)
               resolve()
             }
 
@@ -485,22 +466,15 @@ class AudioManager {
             const attemptPlay = async () => {
               try {
                 playAttempts++
-                console.log(`▶️ Tentativa ${playAttempts}/${MAX_PLAY_ATTEMPTS} de tocar: ${type}`)
 
                 // Resumir AudioContext se suspenso (importante!)
                 const ctx = getAudioContext()
                 if (ctx && ctx.state === 'suspended') {
-                  console.log(`⏸️ AudioContext suspenso, retomando...`)
                   await ctx.resume()
-                  console.log(`✅ AudioContext retomado`)
                 }
 
                 await audio!.play()
-                console.log(`✅ Som tocando com sucesso: ${type}`)
               } catch (err: any) {
-                // Log detalhado do erro para facilitar diagnóstico de Promise rejeitada
-                console.error(`❌ Erro durante attemptPlay para ${type}:`, err, err?.stack)
-
                 // ✅ FIX #3: Retry automático com backoff exponencial
                 // Tenta novamente com delays crescentes: 100ms, 200ms, 400ms, 800ms
                 const BACKOFF_BASE = 100
@@ -508,10 +482,9 @@ class AudioManager {
 
                 if (shouldRetry) {
                   const delayMs = BACKOFF_BASE * Math.pow(2, playAttempts - 1)
-                  console.warn(`⚠️ Falha ao tocar ${type} (${err?.name || 'unknown error'}), retry ${playAttempts} em ${delayMs}ms...`)
                   setTimeout(attemptPlay, delayMs)
                 } else {
-                  console.warn(`❌ Falha ao tocar ${type} após ${MAX_PLAY_ATTEMPTS} tentativas: ${err?.name || 'unknown error'}`)
+                  console.warn(`❌ Falha ao tocar ${type} após ${MAX_PLAY_ATTEMPTS} tentativas`)
                   resolve()
                 }
               }
@@ -519,7 +492,6 @@ class AudioManager {
 
             const handleCanPlay = () => {
               audio!.removeEventListener('canplay', handleCanPlay)
-              console.log(`📀 Arquivo pronto (canplay): ${type}, tocando agora...`)
               attemptPlay()
             }
 
@@ -529,7 +501,6 @@ class AudioManager {
             // Timeout como fallback (em caso de arquivo corrompido ou problema)
             // Aumentado de 3000ms para 5000ms para redes mais lentas
             timeoutHandle = setTimeout(() => {
-              console.log(`⏱️ Timeout de áudio: ${type}, resolvendo...`)
               cleanup()
               resolve()
             }, Math.max(duration + 1000, 5000)) // Aumentado de 500ms para 1000ms de margem
@@ -537,18 +508,16 @@ class AudioManager {
             // Se já está carregado, tocar imediatamente
             if (audio!.readyState >= 2) {
               // HAVE_CURRENT_DATA ou mais
-              console.log(`▶️ Áudio já carregado (readyState >= 2): ${type}`)
               attemptPlay()
             } else {
               // Aguardar carregamento
-              console.log(`⏳ Aguardando carregamento (readyState: ${audio!.readyState}): ${type}`)
               audio!.addEventListener('canplay', handleCanPlay, { once: true })
             }
           })
         }
       })
     } catch (error: any) {
-      console.error(`❌ Erro ao reproduzir arquivo: ${type}`, error, error?.stack)
+      console.error(`❌ Erro ao reproduzir arquivo: ${type}`, error)
     }
   }
 
@@ -606,22 +575,12 @@ class AudioManager {
     // 🎯 FILTRO AGRESSIVO: Se é som de transição, SEMPRE remover quest-start
     // Independente do que estiver tocando, transições são prioritárias
     if (sound.id === 'phase-start' || sound.id === 'event-start') {
-      const beforeCount = this.soundQueue.length
       this.soundQueue = this.soundQueue.filter((s) => s.id !== 'quest-start')
-      const removedCount = beforeCount - this.soundQueue.length
-      if (removedCount > 0) {
-        console.log(`🔥 [EnqueueSound] Som de transição (${sound.id}) detectado! Removidas ${removedCount} instância(s) de quest-start.`)
-      }
     }
 
     // 🎯 FILTRO: Se é um boss-spawn de alta prioridade, remover quest-start também
     if (sound.id === 'boss-spawn' && sound.priority <= 2) {
-      const beforeCount = this.soundQueue.length
       this.soundQueue = this.soundQueue.filter((s) => s.id !== 'quest-start')
-      const removedCount = beforeCount - this.soundQueue.length
-      if (removedCount > 0) {
-        console.log(`🎵 [EnqueueSound] Boss-spawn detectado! Removidas ${removedCount} instância(s) de quest-start.`)
-      }
     }
 
     this.soundQueue.push(sound)
@@ -634,8 +593,6 @@ class AudioManager {
       }
       return a.timestamp - b.timestamp // Empate: ordem de chegada
     })
-
-    console.log(`🎵 Som adicionado à fila: ${sound.id} (prioridade: ${sound.priority}, fila agora tem ${this.soundQueue.length} sons)`)
 
     // Se não está tocando, começar
     if (!this.isPlaying) {

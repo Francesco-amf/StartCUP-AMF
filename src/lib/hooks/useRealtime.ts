@@ -469,7 +469,6 @@ export function useRealtimePenalties() {
           // Isso permite que novos eventos de Realtime toquem som
           isFirstRenderRef.current = false
           setLoading(false)
-          console.log(`✅ [useRealtimePenalties] Primeira renderização completa! Próximas penalidades tocarão som.`)
         }
 
         // Subscribe to penalties changes

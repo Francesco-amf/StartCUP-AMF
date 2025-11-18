@@ -360,8 +360,12 @@ export function useRealtimePenalties() {
 
   // Helper: Enrich penalties with teams and evaluators
   const enrichPenalties = async (penaltiesData: any[]) => {
-    if (!penaltiesData || penaltiesData.length === 0) return []
+    if (!penaltiesData || penaltiesData.length === 0) {
+      console.log(`⚠️ [enrichPenalties] Dados vazios`)
+      return []
+    }
 
+    console.log(`🔧 [enrichPenalties] Enriquecendo ${penaltiesData.length} penalidades...`)
     try {
       // Extract unique IDs
       const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
@@ -395,7 +399,7 @@ export function useRealtimePenalties() {
       )
 
       // Format with enrichment
-      return penaltiesData.map((p: any) => ({
+      const enriched = penaltiesData.map((p: any) => ({
         id: p.id,
         team_id: p.team_id,
         team_name: teamMap.get(p.team_id) || 'Equipe Desconhecida',
@@ -406,6 +410,9 @@ export function useRealtimePenalties() {
         evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
         created_at: p.created_at
       }))
+
+      console.log(`✅ [enrichPenalties] ${enriched.length} penalidades enriquecidas com sucesso`)
+      return enriched
     } catch (err) {
       DEBUG.error('useRealtimePenalties-enrichPenalties', 'Error:', err)
       return penaltiesData

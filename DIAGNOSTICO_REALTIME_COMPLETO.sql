@@ -6,13 +6,14 @@
 -- ============================================================================
 -- SEÇÃO 1: Verificar RLS habilitado em tabelas críticas
 -- ============================================================================
+-- Note: live_ranking is a VIEW, not a table - views inherit RLS from base tables
 SELECT
   schemaname,
   tablename,
   rowsecurity as rls_enabled
 FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('penalties', 'teams', 'event_config', 'live_ranking', 'quests')
+AND tablename IN ('penalties', 'teams', 'event_config', 'quests')
 ORDER BY tablename;
 
 -- ============================================================================
@@ -30,15 +31,16 @@ ORDER BY policyname;
 
 -- ============================================================================
 -- SEÇÃO 3: Verificar se há políticas que permitem Realtime
--- (Realtime precisa de SELECT access no serviço realtime)
+-- (Realtime precisa de SELECT access nas tabelas base)
 -- ============================================================================
 SELECT
   policyname,
+  tablename,
   roles::text,
   qual as policy_condition
 FROM pg_policies
-WHERE tablename IN ('penalties', 'live_ranking')
-AND qual::text LIKE '%anon%' OR qual::text LIKE '%authenticated%'
+WHERE tablename IN ('penalties', 'event_config', 'teams')
+AND (qual::text LIKE '%anon%' OR qual::text LIKE '%authenticated%')
 ORDER BY tablename, policyname;
 
 -- ============================================================================
@@ -69,12 +71,11 @@ AND event_object_table = 'penalties'
 ORDER BY trigger_name;
 
 -- ============================================================================
--- SEÇÃO 6: Verificar se existem triggers nas publicações (para Realtime)
+-- SEÇÃO 6: Verificar quais tabelas estão nas publicações (para Realtime)
 -- ============================================================================
 SELECT
   schemaname,
-  tablename,
-  column_name
+  tablename
 FROM pg_publication_tables
 WHERE schemaname = 'public'
 ORDER BY tablename;
@@ -102,7 +103,7 @@ WHERE pubname IN ('supabase_realtime', 'supabase_realtime_updates')
 ORDER BY pubname;
 
 -- ============================================================================
--- SEÇÃO 9: Verificar se está usando view ou tabela direta
+-- SEÇÃO 9: Verificar tipos de tabela/view
 -- ============================================================================
 SELECT
   table_schema,
@@ -110,4 +111,5 @@ SELECT
   table_type
 FROM information_schema.tables
 WHERE table_schema = 'public'
-AND table_name IN ('live_ranking', 'penalties', 'event_config');
+AND table_name IN ('live_ranking', 'penalties', 'event_config', 'teams')
+ORDER BY table_name;

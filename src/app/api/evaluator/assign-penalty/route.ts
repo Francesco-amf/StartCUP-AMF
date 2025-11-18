@@ -50,8 +50,8 @@ export async function POST(request: Request) {
     // Usar service_role client para bypassar RLS
     const { createClient } = await import('@supabase/supabase-js')
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+      (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
       {
         auth: {
           autoRefreshToken: false,
@@ -90,16 +90,31 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      console.error('Erro ao inserir penalidade:', insertError.message)
+      console.error('❌ Erro ao inserir penalidade:', insertError.message)
       return NextResponse.json(
         { error: 'Erro ao atribuir penalidade' },
         { status: 500 }
       )
     }
 
+    // 🔴 NOVO: Calcular novo total_points para atualização otimista no cliente
+    // Isso evita esperar pelo realtime - update imediato na UI
+    const { data: currentRanking, error: rankingError } = await supabaseAdmin
+      .from('live_ranking')
+      .select('total_points')
+      .eq('team_id', teamId)
+      .single()
+
+    const newTotalPoints = currentRanking?.total_points || 0
+
+    console.log(`✅ [Penalidade] Aplicada -${pointsDeduction} pontos ao time ${team.name}`)
+    console.log(`   Novo total_points: ${newTotalPoints}`)
+
     return NextResponse.json({
       success: true,
       penalty,
+      teamId,
+      newTotalPoints,  // ← Cliente pode usar para atualização otimista
       message: `Penalidade aplicada à ${team.name}: -${pointsDeduction} pontos`
     })
 

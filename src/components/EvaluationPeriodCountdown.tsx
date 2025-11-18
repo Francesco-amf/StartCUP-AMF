@@ -118,7 +118,14 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
 
       const endTime = new Date(cleanTimestamp).getTime()
       const remaining = Math.max(0, endTime - Date.now())
-      setTimeLeft(Math.floor(remaining / 1000))
+      const secondsLeft = Math.floor(remaining / 1000)
+
+      // ✅ Debug: Mostrar valores apenas cada 10 segundos para não poluir logs
+      if (secondsLeft % 10 === 0 || secondsLeft <= 5) {
+        console.log(`⏳ [EvaluationPeriodCountdown] Timer: ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')} (${secondsLeft} seg total)`)
+      }
+
+      setTimeLeft(secondsLeft)
 
       // Se tempo expirou mas ainda há pendentes, permitir prosseguir
       if (remaining === 0 && !allEvaluated) {
@@ -223,47 +230,62 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
             </p>
           </div>
 
-          {/* Timer gigante */}
+          {/* Timer gigante com validação de formato */}
           <div className="text-7xl md:text-9xl font-black text-white font-mono leading-none">
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+            {minutes >= 0 && seconds >= 0
+              ? `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+              : '00:00'
+            }
+          </div>
+
+          {/* Label do timer */}
+          <div className="text-xl md:text-2xl text-blue-100 font-semibold">
+            {minutes > 0 ? `${minutes} minuto${minutes !== 1 ? 's' : ''} e ${seconds} segundo${seconds !== 1 ? 's' : ''}` : `${seconds} segundo${seconds !== 1 ? 's' : ''}`}
           </div>
 
           {/* Card de status */}
           <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-2xl p-6 md:p-8">
+            {/* Porcentagem gigante e destacada */}
+            <div className="mb-8 text-center">
+              <p className="text-sm md:text-base text-gray-300 mb-2">PROGRESSO DE AVALIAÇÕES</p>
+              <p className="text-6xl md:text-7xl font-black text-green-400 drop-shadow-lg">
+                {progressPercentage}%
+              </p>
+            </div>
+
             {/* Estatísticas */}
             <div className="grid grid-cols-3 gap-4 md:gap-6 mb-6">
-              <div className="text-center">
-                <p className="text-sm md:text-base text-gray-300 mb-1">Total</p>
-                <p className="text-3xl md:text-4xl font-bold text-white">{status.total_submissions}</p>
+              <div className="text-center p-3 bg-white/5 rounded-lg">
+                <p className="text-xs md:text-sm text-gray-300 mb-1">Total</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">{status.total_submissions}</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm md:text-base text-gray-300 mb-1">Avaliadas</p>
-                <p className="text-3xl md:text-4xl font-bold text-green-400">{status.evaluated_submissions}</p>
+              <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+                <p className="text-xs md:text-sm text-green-300 mb-1">✅ Avaliadas</p>
+                <p className="text-2xl md:text-3xl font-bold text-green-400">{status.evaluated_submissions}</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm md:text-base text-gray-300 mb-1">Pendentes</p>
-                <p className="text-3xl md:text-4xl font-bold text-yellow-400">{status.pending_submissions}</p>
+              <div className="text-center p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                <p className="text-xs md:text-sm text-yellow-300 mb-1">⏳ Pendentes</p>
+                <p className="text-2xl md:text-3xl font-bold text-yellow-400">{status.pending_submissions}</p>
               </div>
             </div>
 
             {/* Barra de progresso */}
             <div>
-              <div className="w-full bg-gray-700 rounded-full h-4 md:h-6 overflow-hidden mb-3">
+              <div className="w-full bg-gray-700 rounded-full h-5 md:h-7 overflow-hidden mb-3 shadow-lg">
                 <div
-                  className="bg-gradient-to-r from-green-500 via-green-400 to-green-300 h-full transition-all duration-500 ease-out"
+                  className="bg-gradient-to-r from-green-500 via-green-400 to-green-300 h-full transition-all duration-500 ease-out flex items-center justify-center"
                   style={{ width: `${progressPercentage}%` }}
-                />
+                >
+                  {progressPercentage > 10 && (
+                    <span className="text-xs font-bold text-green-950">{progressPercentage}%</span>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <p className="text-base md:text-lg text-gray-300 font-semibold">
-                  {progressPercentage}% Concluído
+              {status.pending_submissions > 0 && (
+                <p className="text-sm md:text-base text-yellow-300 font-semibold text-center">
+                  ⏳ {status.pending_submissions} {status.pending_submissions === 1 ? 'submissão' : 'submissões'} ainda sendo avaliada{status.pending_submissions === 1 ? '' : 's'}...
                 </p>
-                {status.pending_submissions > 0 && (
-                  <p className="text-sm md:text-base text-yellow-400">
-                    {status.pending_submissions} {status.pending_submissions === 1 ? 'submissão' : 'submissões'} restante{status.pending_submissions === 1 ? '' : 's'}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
 

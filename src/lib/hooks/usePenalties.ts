@@ -13,6 +13,9 @@ export function usePenalties() {
   const supabase = createClient()
 
   useEffect(() => {
+    let isMounted = true
+    const subscriptionRef = { current: null as any }
+
     const fetchPenalties = async () => {
       try {
         const { data, error } = await supabase
@@ -20,9 +23,11 @@ export function usePenalties() {
           .select('team_id, points_deduction')
 
         if (error) {
-          console.error('Erro ao buscar penalidades:', error)
-          setPenalties(new Map())
-          setLoading(false)
+          console.error('❌ Erro ao buscar penalidades:', error)
+          if (isMounted) {
+            setPenalties(new Map())
+            setLoading(false)
+          }
           return
         }
 
@@ -35,19 +40,60 @@ export function usePenalties() {
           })
         }
 
-        setPenalties(penaltyMap)
+        if (isMounted) {
+          setPenalties(penaltyMap)
+          console.log(`✅ [usePenalties] Penalidades carregadas: ${penaltyMap.size} times`)
+        }
       } catch (error) {
-        console.error('Erro ao buscar penalidades:', error)
+        console.error('❌ Erro ao buscar penalidades:', error)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
+    // Fetch inicial
     fetchPenalties()
 
-    // Atualizar a cada 10 segundos
-    const interval = setInterval(fetchPenalties, 10000)
-    return () => clearInterval(interval)
+    // 🔴 NOVO: Realtime listener para mudanças em penalidades
+    const setupRealtimeListener = () => {
+      const channel = supabase
+        .channel('public:penalties')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'penalties'
+          },
+          (payload: any) => {
+            if (!isMounted) return
+
+            console.log(`🔴 [usePenalties] Mudança em penalidades detectada:`, {
+              event: payload.eventType,
+              team_id: payload.new?.team_id || payload.old?.team_id
+            })
+
+            // Refetch penalidades para garantir integridade
+            fetchPenalties()
+          }
+        )
+        .subscribe((status: any) => {
+          console.log(`📡 [usePenalties] Realtime status: ${status}`)
+        })
+
+      subscriptionRef.current = channel
+    }
+
+    setupRealtimeListener()
+
+    return () => {
+      isMounted = false
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe()
+      }
+    }
   }, [supabase])
 
   const getPenalty = (teamId: string): number => {

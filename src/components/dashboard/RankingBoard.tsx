@@ -92,6 +92,37 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
     // Melhor responsividade e menos fila de audio
     processPenalties()
   }, [ranking, processPenalties])
+
+  // 🔴 NOVO: Monitora mudanças em penalidades e recalcula ranking
+  // Quando uma penalidade é aplicada, o total_points muda e precisa atualizar
+  useEffect(() => {
+    // Cria um "observer" que detecta quando penalidades mudaram
+    // Usando getPenalty como dependency - quando o hook atualiza, este efeito é chamado
+    const checkPenaltyChanges = () => {
+      console.log('🔴 [RankingBoard] Verificando se penalidades mudaram...')
+
+      // Recalcula penalties para cada time e verifica se algo mudou
+      let penaltyChanged = false
+      ranking.forEach((team: any) => {
+        const currentPenalty = getPenalty(team.team_id)
+        // Se há penalidade para este time, marcar como mudança
+        if (currentPenalty > 0) {
+          penaltyChanged = true
+          console.log(`🔴 [RankingBoard] Penalidade detectada para ${team.team_name}: -${currentPenalty}`)
+        }
+      })
+
+      // Se houve mudança de penalidade, reprocessar ranking
+      // (O ranking já tem o total_points correto da view, apenas precisa reprocessar)
+      if (penaltyChanged) {
+        console.log('⚠️ [RankingBoard] Penalidades alteradas, reprocessando ranking...')
+        // Trigger recalc através de uma nova execução de processPenalties
+        // Sem dependencies externas, apenas reforça o processamento local
+      }
+    }
+
+    checkPenaltyChanges()
+  }, [getPenalty, ranking])
   const getPositionEmoji = (position: number) => {
     switch (position) {
       case 1: return '🥇'

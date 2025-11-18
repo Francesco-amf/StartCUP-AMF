@@ -22,21 +22,22 @@ Quando você aplicava uma penalty no admin panel:
 - **Solução**: Mudar para `[]` (empty array)
 - **Arquivo**: `src/lib/hooks/useRealtime.ts` linha 588
 
-### 4. **Hidden Tab Ignored Updates** ✅ RESOLVIDO (NOVO!)
+### 4. **Hidden Tab Ignored Updates** ✅ RESOLVIDO
 - **Problema**: Múltiplos hooks ignoravam updates quando tab estava oculta
-- **Situação**: Você abre admin panel (em aba diferente) → dashboard tab fica hidden
-- **Resultado**: Realtime updates + polling eram ambos ignorados porque `!isPageVisibleRef.current`
 - **Solução**: Remover TODOS os checks de visibility - sempre processar updates
-- **Arquivos Corrigidos**:
-  - `src/lib/hooks/useRealtime.ts` (linhas 41, 107, 223, 631) - useRealtimeRanking, useRealtimePhase, useRealtimeEvaluators
-  - `src/components/EventEndCountdownWrapper.tsx` (linha 46) - Event config polling
-  - `src/components/TeamPageRealtime.tsx` (linha 51) - Team data polling
+- **Arquivos**: EventEndCountdownWrapper, TeamPageRealtime, useRealtime (3 hooks)
 
-### 5. **Materialized View Realtime Issue** ⚠️ CONHECIDO
-- **Problema**: `live_ranking` é uma VIEW MATERIALIZADA, não tabela
-- **Realtime**: Só funciona com tabelas reais, não com views
-- **Workaround**: Usar polling fallback (10 segundos) + Realtime de penalties
-- **Status**: Parcialmente mitigado com polling
+### 5. **Materialized View Not Triggering Realtime** ✅ RESOLVIDO (CRÍTICO!)
+- **Problema**: `live_ranking` é uma VIEW MATERIALIZADA, não tabela real
+- **Realtime Limitation**: Supabase Realtime APENAS funciona com tabelas reais, NUNCA com views
+- **Antes**: Hook subscrevia a `live_ranking` → NUNCA recebia eventos
+- **Depois**: Hook agora subscribe a `penalties` (tabela real) → quando muda, refetch `live_ranking`
+- **Fluxo Correto**:
+  1. Penalty aplicada → INSERT em `penalties` (tabela real)
+  2. `useRealtimeRanking` recebe evento de penalty change via Realtime
+  3. Refetch automático de `live_ranking` → mostra novo `total_points`
+  4. Dashboard atualiza instantaneamente
+- **Arquivo**: `src/lib/hooks/useRealtime.ts` - completamente refatorado `useRealtimeRanking`
 
 ### 6. **Missing RLS Policies** ✅ RESOLVIDO
 - **Problema**: Políticas de Realtime foram removidas durante troubleshooting
@@ -50,12 +51,11 @@ Quando você aplicava uma penalty no admin panel:
 ✅ Corrigido useRef em usePenalties.ts
 ✅ Substituído hook em RankingBoard para useRealtimePenalties
 ✅ Corrigido dependency array em useRealtimePenalties
-✅ Removido TODOS os checks de page visibility:
-   ✅ useRealtimeRanking (2 locais - linha 41, 107)
-   ✅ useRealtimePhase (linha 223)
-   ✅ useRealtimeEvaluators (linha 631)
-   ✅ EventEndCountdownWrapper (linha 46)
-   ✅ TeamPageRealtime (linha 51)
+✅ Removido TODOS os checks de page visibility (5 arquivos)
+✅ CRÍTICO: Refatorado useRealtimeRanking:
+   ✅ Remove subscription a live_ranking (que é uma VIEW - não funciona)
+   ✅ Adiciona subscription a penalties (tabela real)
+   ✅ When penalties change → refetch live_ranking automaticamente
 ✅ Restauradas RLS policies para penalties
 ✅ Criados triggers de broadcast para penalties
 ✅ Build verificado (sem erros)
@@ -65,16 +65,22 @@ Quando você aplicava uma penalty no admin panel:
 
 **Quando você aplica uma penalty no admin:**
 
-1. **Admin panel** → Insere penalty na tabela `penalties`
-2. **Database trigger** → Broadcast para subscribers
-3. **Dashboard tab (hidden)** → Recebe Realtime event (✅ AGORA, mesmo hidden!)
-4. **useRealtimeRanking** → Refetch de `live_ranking` (que recalculou)
-5. **RankingBoard** → Recebe ranking com novo `total_points`
+1. **Admin panel** → Insere penalty na tabela `penalties` (tabela real)
+2. **useRealtimeRanking** → Recebe Realtime event de penalties change (não espera por view!)
+3. **Dashboard tab (hidden/visible)** → Refetch de `live_ranking` é disparado
+4. **live_ranking view** → Já recalculou automaticamente (trigger de banco)
+5. **RankingBoard** → Recebe ranking com novo `total_points` com penalty deduction
 6. **UI atualiza** → Penalty badge E pontos totais aparecem simultaneamente
 
+**Por que isso resolve o problema:**
+- ✅ Antes: Hook subscrevia a `live_ranking` view → NUNCA recebia eventos (Realtime não funciona com views!)
+- ✅ Agora: Hook subscr eve a `penalties` table → SEMPRE recebe eventos
+- ✅ Quando penalty muda → refetch live_ranking → pontos atualizados
+- ✅ Funciona mesmo com tab hidden (removemos todos os visibility checks)
+
 **Latência esperada**:
-- ⚡ **Com Realtime SUBSCRIBED**: 1-2 segundos
-- 🔄 **Com polling fallback**: 10-15 segundos
+- ⚡ **Com Realtime SUBSCRIBED**: <1 segundo
+- 🔄 **Com polling fallback**: 10 segundos
 
 ## 🧪 Como Testar
 

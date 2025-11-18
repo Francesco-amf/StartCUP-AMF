@@ -196,7 +196,7 @@ export function useRealtimePhase() {
   const supabase = createClient()
   const isPageVisibleRef = useRef(true)
   const rpcCacheRef = useRef<{ data: any; timestamp: number } | null>(null)
-  const RPC_CACHE_DURATION_MS = 5000 // Cache RPC results for 5 seconds
+  const RPC_CACHE_DURATION_MS = 1000 // Cache RPC results for 1 second (faster updates for live dashboard)
 
   useEffect(() => {
     // Detectar quando a aba está visível ou oculta
@@ -220,25 +220,26 @@ export function useRealtimePhase() {
         const now = Date.now()
         const cachedRPC = rpcCacheRef.current
         if (cachedRPC && now - cachedRPC.timestamp < RPC_CACHE_DURATION_MS) {
-          DEBUG.log('useRealtimePhase', `✅ Usando cache RPC (válido por mais ${RPC_CACHE_DURATION_MS - (now - cachedRPC.timestamp)}ms)`)
+          const remaining = RPC_CACHE_DURATION_MS - (now - cachedRPC.timestamp)
+          console.log(`[useRealtimePhase] 📦 Usando cache RPC (válido por mais ${remaining}ms)`)
           eventConfig = cachedRPC.data.event_config
           activeQuest = cachedRPC.data.active_quest
         } else {
           // Tentar RPC primeiro
           try {
-            DEBUG.log('useRealtimePhase', `📡 Chamando RPC...`)
+            console.log(`[useRealtimePhase] 📡 Chamando RPC para dados da fase...`)
             const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_phase_data')
             if (!rpcError && rpcData?.event_config) {
-              DEBUG.log('useRealtimePhase', `✅ RPC success`)
+              console.log(`[useRealtimePhase] ✅ RPC sucesso - Fase: ${rpcData.event_config.current_phase}, Status: ${rpcData.event_config.event_status}`)
               eventConfig = rpcData.event_config
               activeQuest = rpcData.active_quest
               // ✅ Cachear resultado de RPC
               rpcCacheRef.current = { data: rpcData, timestamp: now }
             } else {
-              DEBUG.warn('useRealtimePhase', `⚠️ RPC failed, using fallback queries`)
+              console.warn(`[useRealtimePhase] ⚠️ RPC falhou, usando fallback`)
             }
           } catch (rpcErr) {
-            DEBUG.warn('useRealtimePhase', `⚠️ RPC error: ${rpcErr}`)
+            console.warn(`[useRealtimePhase] ⚠️ Erro RPC:`, rpcErr)
             // Continue to fallback
           }
         }
@@ -309,12 +310,11 @@ export function useRealtimePhase() {
     // Buscar imediatamente
     fetchPhase()
 
-    // 🔄 Polling a cada 5 segundos (RPC cacheia por 5s anyway)
-    // IMPORTANTE: 500ms era muito agressivo
-    // 5s = 12 req/min (matches RPC cache duration)
+    // 🔄 Polling a cada 2 segundos para atualizações rápidas no dashboard ao vivo
+    // 2s = 30 req/min (acceptable for live dashboard, user needs fast updates)
     let pollInterval: NodeJS.Timeout
     const timeoutId = setTimeout(() => {
-      pollInterval = setInterval(fetchPhase, 5000)
+      pollInterval = setInterval(fetchPhase, 2000)
     }, 0)
 
     // Cleanup

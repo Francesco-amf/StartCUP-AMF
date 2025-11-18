@@ -16,13 +16,12 @@ import DebugSoundTester from '@/components/DebugSoundTester'
 export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
   const { phase } = useRealtimePhase()
-  const supabase = useRef(createClient())
-  const penaltyChannelRef = useRef<any>(null)
   const [showAudioTester, setShowAudioTester] = useState(false)
 
-  // 🔴 NOVO: Monitorar mudanças em penalidades e refetch ranking
-  // Quando uma penalidade é adicionada, o live_ranking view precisa ser refetched
-  // para que o total_points seja atualizado no cliente
+  // ✅ REMOVED: Penalty listener moved to useRealtimePenalties hook
+  // Having multiple subscriptions to 'public:penalties' channel was causing
+  // the penalty sound callback to not fire. Now using useRealtimePenalties exclusively
+  // for penalty detection and sound playback.
   useEffect(() => {
     // Mostrar DebugSoundTester apenas se query param debug_audio=1 estiver presente
     try {
@@ -32,61 +31,6 @@ export default function LiveDashboard() {
       }
     } catch (e) {
       // ignore
-    }
-
-    let isMounted = true
-
-    const setupPenaltyListener = () => {
-      // Cancelar listener anterior se existir
-      if (penaltyChannelRef.current) {
-        supabase.current.removeChannel(penaltyChannelRef.current)
-        penaltyChannelRef.current = null
-      }
-
-      // Criar novo listener
-      const channel = supabase.current
-        .channel('public:penalties')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT', // Apenas ouvir INSERTs (novas penalidades)
-            schema: 'public',
-            table: 'penalties'
-          },
-          (payload: any) => {
-            if (!isMounted) return
-
-            console.log(`🔴 [LiveDashboard] Nova penalidade detectada para team: ${payload.new?.team_id}`)
-
-            // Força refetch da live_ranking fazendo uma query vazia que trigga cache invalidation
-            // Isso garante que o total_points seja atualizado no cliente
-            supabase.current
-              .from('live_ranking')
-              .select('*')
-              .eq('team_id', payload.new?.team_id)
-              .then(({ data, error }: { data: any; error: any }) => {
-                if (!error && data) {
-                  console.log(`✅ [LiveDashboard] Ranking sincronizado para ${payload.new?.team_id}`)
-                  // O realtime listener do useRealtimeRanking fará o refetch global
-                }
-              })
-          }
-        )
-        .subscribe((status: any) => {
-          console.log(`📡 [LiveDashboard-PenaltyListener] Status: ${status}`)
-        })
-
-      penaltyChannelRef.current = channel
-    }
-
-    setupPenaltyListener()
-
-    return () => {
-      isMounted = false
-      if (penaltyChannelRef.current) {
-        supabase.current.removeChannel(penaltyChannelRef.current)
-        penaltyChannelRef.current = null
-      }
     }
   }, [])
 

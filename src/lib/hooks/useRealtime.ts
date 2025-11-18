@@ -621,7 +621,8 @@ export function useRealtimePenalties() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (subscriptionRef.current) {
         DEBUG.log('useRealtimePenalties', '🧹 Limpando subscription...')
-        supabase.removeChannel(subscriptionRef.current)
+        // ✅ FIX: Use .unsubscribe() instead of removeChannel() for proper Realtime cleanup
+        subscriptionRef.current.unsubscribe()
         subscriptionRef.current = null
       }
       if (pollingIntervalRef.current) {

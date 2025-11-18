@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   audioManager,
   type SoundConfig,
@@ -79,8 +79,9 @@ export function useSoundSystem() {
    * Play com fallback sintetizado para penalty se arquivo falhar
    * Agora com suporte a prioridade
    * ✅ Adicionado log para debugar sons de avaliadores
+   * ✅ Memoizado com useCallback para evitar re-subscrições desnecessárias em hooks dependentes
    */
-  const play = (type: AudioFileType, priority?: number) => {
+  const play = useCallback((type: AudioFileType, priority?: number) => {
     console.log(`📞 [useSoundSystem.play] Chamado com tipo: "${type}", prioridade: ${priority}`)
     console.log(`   Config atual:`, { enabled: soundConfig.enabled, volume: soundConfig.volume })
 
@@ -92,6 +93,7 @@ export function useSoundSystem() {
 
     // Para penalty especificamente, usar fallback synthesized
     if (type === 'penalty') {
+      console.log(`🎵 [useSoundSystem] Attempting to play sound: ${type}`)
       audioManager.playFile(type, priority).catch((err: any) => {
         console.warn(`⚠️ Penalty.mp3 falhou, usando fallback synthesized...`, err)
 
@@ -131,7 +133,7 @@ export function useSoundSystem() {
       console.log(`🎵 [useSoundSystem] Tocando som padrão: ${type}`)
       playFile(type, priority)
     }
-  }
+  }, [soundConfig.enabled])
 
   /**
    * Define volume (0-1)

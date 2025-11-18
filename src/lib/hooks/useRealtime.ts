@@ -38,7 +38,9 @@ export function useRealtimeRanking() {
 
   // 🔄 POLLING FALLBACK: When Realtime is unavailable
   const fetchRankingFallback = async () => {
-    if (!isPageVisibleRef.current) return
+    // ✅ REMOVED: if (!isPageVisibleRef.current) return
+    // Reason: When applying penalty in admin tab, dashboard tab is hidden
+    // Polling MUST continue even when tab is hidden to fetch updates
 
     try {
       DEBUG.log('useRealtimeRanking-Fallback', '⏳ Polling fallback...')
@@ -104,7 +106,13 @@ export function useRealtimeRanking() {
             async (payload: any) => {
               DEBUG.log('useRealtimeRanking', `📡 Mudança detectada:`, payload.eventType)
 
-              if (!mounted || !isPageVisibleRef.current) return
+              if (!mounted) return
+
+              // ✅ FIX: REMOVED !isPageVisibleRef.current check
+              // Reason: When applying penalty in admin panel (different tab),
+              // dashboard tab is hidden, so updates were being ignored
+              // Now we update regardless of page visibility
+              // This ensures ranking updates immediately when penalties are applied
 
               try {
                 const { data: allRanking, error } = await supabase
@@ -212,7 +220,9 @@ export function useRealtimePhase() {
 
     // Buscar dados com fallback (RPC se existir, caso contrário direct query)
     const fetchPhase = async () => {
-      if (isFetching || !isPageVisibleRef.current) return // Skip se já buscando OU página oculta
+      if (isFetching) return // ✅ REMOVED: !isPageVisibleRef.current check
+      // Reason: Phase data MUST be fetched even when tab is hidden
+      // Otherwise dashboard shows outdated phase info
 
       isFetching = true
       try {
@@ -585,7 +595,7 @@ export function useRealtimePenalties() {
         pollingDebounceRef.current = null
       }
     }
-  }, [supabase]) // ✅ FIX: Removed 'play' from dependency - now using playRef instead
+  }, []) // ✅ FIX: Empty dependency array - supabase is from useRef, play uses playRef
 
   return { penalties, loading }
 }
@@ -618,7 +628,9 @@ export function useRealtimeEvaluators() {
 
   // 🔄 POLLING FALLBACK: When Realtime is unavailable
   const fetchEvaluatorsFallback = async () => {
-    if (!isPageVisibleRef.current) return
+    // ✅ REMOVED: if (!isPageVisibleRef.current) return
+    // Reason: Evaluator status MUST be fetched even when tab is hidden
+    // This ensures we show accurate online/offline status
 
     try {
       DEBUG.log('useRealtimeEvaluators-Fallback', '⏳ Polling fallback...')

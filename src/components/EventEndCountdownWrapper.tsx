@@ -43,8 +43,9 @@ export default function EventEndCountdownWrapper() {
     const fetchEventConfig = async () => {
       // ✅ FIX: Evitar fetch simultâneos
       if (isFetching) return
-      // ✅ FIX: Não fazer fetch se página está oculta
-      if (!isPageVisibleRef.current) return
+      // ✅ REMOVED: if (!isPageVisibleRef.current) return
+      // Reason: Event config MUST be fetched even when tab is hidden
+      // Otherwise, event end condition is ignored and countdown doesn't update
       isFetching = true
 
       try {

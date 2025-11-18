@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useSoundSystem } from '@/lib/hooks/useSoundSystem'
-import { usePenalties } from '@/lib/hooks/usePenalties'
+import { useRealtimePenalties } from '@/lib/hooks/useRealtime'
 
 interface RankingItem {
   team_id: string
@@ -22,9 +22,15 @@ interface RankingBoardProps {
 
 export default function RankingBoard({ ranking }: RankingBoardProps) {
   const { play } = useSoundSystem()
-  const { getPenalty } = usePenalties()
+  const { penalties } = useRealtimePenalties()
   const previousRankingRef = useRef<Record<string, { position: number; points: number }>>({})
   const processingRef = useRef(false) // Evitar duplicação
+
+  // Helper function to get penalty for a team
+  const getPenalty = useCallback((teamId: string): number => {
+    const teamPenalties = penalties.filter(p => p.team_id === teamId)
+    return teamPenalties.reduce((total, p) => total + (p.points_deduction || 0), 0)
+  }, [penalties])
 
   // Função estável para processar ranking usando useCallback
   const processPenalties = useCallback(() => {

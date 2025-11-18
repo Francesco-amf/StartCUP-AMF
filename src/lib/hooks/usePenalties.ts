@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface PenaltyData {
@@ -10,7 +10,8 @@ export interface PenaltyData {
 export function usePenalties() {
   const [penalties, setPenalties] = useState<Map<string, number>>(new Map())
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
 
   useEffect(() => {
     let isMounted = true
@@ -94,7 +95,7 @@ export function usePenalties() {
         subscriptionRef.current.unsubscribe()
       }
     }
-  }, [supabase])
+  }, [])
 
   const getPenalty = (teamId: string): number => {
     return penalties.get(teamId) || 0

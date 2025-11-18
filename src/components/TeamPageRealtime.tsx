@@ -47,11 +47,9 @@ export default function TeamPageRealtime({
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     const checkForUpdates = async () => {
-      // ✅ Novo: Não fazer polling se página está oculta (economiza 60% de queries quando abas escondidas)
-      if (!isPageVisibleRef.current) {
-        console.log('[TeamPageRealtime] Page is hidden, skipping check')
-        return
-      }
+      // ✅ REMOVED: Page visibility check
+      // Reason: Team data MUST be fetched even when tab is hidden
+      // Otherwise, team updates are missed while admin panel is open
       try {
         // Buscar dados atualizados
         const response = await fetch(endpoint, {

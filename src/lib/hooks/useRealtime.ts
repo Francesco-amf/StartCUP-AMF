@@ -28,22 +28,18 @@ export function useRealtimeRanking() {
   const [ranking, setRanking] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabaseRef = useRef(createClient())
-  const subscriptionRef = useRef<any>(null)
+  const channelsRef = useRef<any[]>([]) // Store multiple channel subscriptions
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const pollingDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const subscriptionHealthRef = useRef<boolean>(false)
   const isPageVisibleRef = useRef(true)
   const supabase = supabaseRef.current
-  const POLLING_DEBOUNCE_MS = 5000 // Wait 5s of Realtime inactivity before activating polling
+  const POLLING_DEBOUNCE_MS = 5000
 
-  // 🔄 POLLING FALLBACK: When Realtime is unavailable
-  const fetchRankingFallback = async () => {
-    // ✅ REMOVED: if (!isPageVisibleRef.current) return
-    // Reason: When applying penalty in admin tab, dashboard tab is hidden
-    // Polling MUST continue even when tab is hidden to fetch updates
-
+  // Fetch ranking from view
+  const fetchRanking = async () => {
     try {
-      DEBUG.log('useRealtimeRanking-Fallback', '⏳ Polling fallback...')
+      DEBUG.log('useRealtimeRanking', '⏳ Fetching ranking...')
       const { data, error } = await supabase
         .from('live_ranking')
         .select('*')
@@ -51,14 +47,16 @@ export function useRealtimeRanking() {
 
       if (!error && data) {
         setRanking(data)
+        return true
       }
+      return false
     } catch (err) {
-      DEBUG.error('useRealtimeRanking-Fallback', 'Error:', err)
+      DEBUG.error('useRealtimeRanking', 'Error fetching ranking:', err)
+      return false
     }
   }
 
   useEffect(() => {
-    // Detectar cuando la aba está visível ou oculta
     const handleVisibilityChange = () => {
       isPageVisibleRef.current = !document.hidden
     }
@@ -66,125 +64,83 @@ export function useRealtimeRanking() {
     document.addEventListener('visibilitychange', handleVisibilityChange)
     let mounted = true
 
-    // 📡 REALTIME SUBSCRIPTION
-    const setupRealtimeRanking = async () => {
-      try {
-        DEBUG.log('useRealtimeRanking', '📡 Initial load...')
-        const { data: initialData, error: initialError } = await supabase
-          .from('live_ranking')
-          .select('*')
-          .order('total_points', { ascending: false })
+    const setup = async () => {
+      // Initial load
+      DEBUG.log('useRealtimeRanking', '📡 Initial load...')
+      const success = await fetchRanking()
+      if (!success && mounted) {
+        setLoading(false)
+        if (!pollingIntervalRef.current) {
+          pollingIntervalRef.current = setInterval(fetchRanking, 10000)
+        }
+        return
+      }
 
-        if (initialError) {
-          DEBUG.error('useRealtimeRanking', 'Initial load error:', initialError)
-          setLoading(false)
-          // Fallback to polling if initial load fails
-          if (mounted && !pollingIntervalRef.current) {
-            pollingIntervalRef.current = setInterval(fetchRankingFallback, 10000)
+      if (mounted) {
+        setLoading(false)
+      }
+
+      if (!mounted) return
+
+      // 🔴 CRITICAL: live_ranking is a MATERIALIZED VIEW
+      // Realtime only works with TABLES, not views
+      // So we subscribe to penalties changes instead
+      // When penalties change → live_ranking recalculates → we refetch
+      DEBUG.log('useRealtimeRanking', '🔴 Subscribing to penalties (since live_ranking is a view)...')
+
+      const penaltiesChannel = supabase
+        .channel('public:penalties:ranking-trigger')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'penalties'
+          },
+          async () => {
+            DEBUG.log('useRealtimeRanking', '🔴 Penalty changed! Refetching ranking...')
+            if (mounted) {
+              await fetchRanking()
+            }
           }
-          return
-        }
+        )
+        .subscribe((status: any) => {
+          DEBUG.log('useRealtimeRanking', `🔴 Penalties subscription status: ${status}`)
+          subscriptionHealthRef.current = status === 'SUBSCRIBED'
 
-        if (mounted) {
-          setRanking(initialData || [])
-          setLoading(false)
-        }
-
-        // Subscribe to ranking changes
-        if (!mounted) return
-
-        DEBUG.log('useRealtimeRanking', '🔔 Configurando Realtime subscription...')
-        const channel = supabase
-          .channel('public:live_ranking')
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // INSERT, UPDATE, DELETE
-              schema: 'public',
-              table: 'live_ranking'
-            },
-            async (payload: any) => {
-              DEBUG.log('useRealtimeRanking', `📡 Mudança detectada:`, payload.eventType)
-
-              if (!mounted) return
-
-              // ✅ FIX: REMOVED !isPageVisibleRef.current check
-              // Reason: When applying penalty in admin panel (different tab),
-              // dashboard tab is hidden, so updates were being ignored
-              // Now we update regardless of page visibility
-              // This ensures ranking updates immediately when penalties are applied
-
-              try {
-                const { data: allRanking, error } = await supabase
-                  .from('live_ranking')
-                  .select('*')
-                  .order('total_points', { ascending: false })
-
-                if (!error && allRanking && mounted) {
-                  setRanking(allRanking)
+          if (status === 'SUBSCRIBED') {
+            // Penalties Realtime working - stop polling
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+            }
+          } else if (status !== 'SUBSCRIBED' && !pollingIntervalRef.current && mounted) {
+            // Penalties Realtime not working - activate polling
+            DEBUG.log('useRealtimeRanking', '🔄 Ativando polling fallback (penalties Realtime down)...')
+            if (!pollingDebounceRef.current) {
+              pollingDebounceRef.current = setTimeout(() => {
+                if (!pollingIntervalRef.current && mounted) {
+                  pollingIntervalRef.current = setInterval(fetchRanking, 10000)
                 }
-              } catch (err) {
-                DEBUG.error('useRealtimeRanking', 'Error fetching updated ranking:', err)
-              }
-            }
-          )
-          .subscribe((status: any) => {
-            console.log(`📡 [useRealtimeRanking] Subscription status: ${status}`)
-            DEBUG.log('useRealtimeRanking', `🔔 Subscription status: ${status}`)
-
-            subscriptionHealthRef.current = status === 'SUBSCRIBED'
-
-            if (status === 'SUBSCRIBED') {
-              console.log(`✅ [useRealtimeRanking] Realtime subscription ativa!`)
-              DEBUG.log('useRealtimeRanking', '✅ Realtime subscription ativa!')
-
-              // WebSocket working: stop polling
-              if (pollingDebounceRef.current) {
-                clearTimeout(pollingDebounceRef.current)
                 pollingDebounceRef.current = null
-              }
-              if (pollingIntervalRef.current) {
-                clearInterval(pollingIntervalRef.current)
-                pollingIntervalRef.current = null
-              }
-            } else {
-              console.warn(`⚠️ [useRealtimeRanking] Realtime inativo (${status}), ativando fallback...`)
-              DEBUG.warn('useRealtimeRanking', `⚠️ Realtime inativo (${status}), ativando fallback...`)
-
-              // WebSocket not working: activate polling fallback
-              if (!pollingDebounceRef.current && mounted) {
-                pollingDebounceRef.current = setTimeout(() => {
-                  if (subscriptionHealthRef.current === false && !pollingIntervalRef.current) {
-                    DEBUG.log('useRealtimeRanking', '🔄 Ativando polling fallback...')
-                    // Poll every 10 seconds (less aggressive than before)
-                    pollingIntervalRef.current = setInterval(fetchRankingFallback, 10000)
-                  }
-                  pollingDebounceRef.current = null
-                }, POLLING_DEBOUNCE_MS)
-              }
+              }, POLLING_DEBOUNCE_MS)
             }
-          })
+          }
+        })
 
-        subscriptionRef.current = channel
-      } catch (err) {
-        DEBUG.error('useRealtimeRanking', 'Realtime setup error:', err)
-        // If Realtime fails, activate polling
-        if (mounted && !pollingIntervalRef.current) {
-          pollingIntervalRef.current = setInterval(fetchRankingFallback, 10000)
-        }
+      if (mounted) {
+        channelsRef.current.push(penaltiesChannel)
       }
     }
 
-    setupRealtimeRanking()
+    setup()
 
-    // 🧹 CLEANUP
     return () => {
       mounted = false
-      if (subscriptionRef.current) {
-        DEBUG.log('useRealtimeRanking', '🧹 Limpando subscription...')
-        subscriptionRef.current.unsubscribe()
-        subscriptionRef.current = null
-      }
+      channelsRef.current.forEach(channel => {
+        channel.unsubscribe()
+      })
+      channelsRef.current = []
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
         pollingIntervalRef.current = null
@@ -195,7 +151,7 @@ export function useRealtimeRanking() {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [supabase])
+  }, [])
 
   return { ranking, loading }
 }

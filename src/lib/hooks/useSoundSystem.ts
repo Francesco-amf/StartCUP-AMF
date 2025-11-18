@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   audioManager,
   type SoundConfig,
@@ -32,6 +32,7 @@ export function useSoundSystem() {
     volume: 0.7,
     enabled: true
   })
+  const soundConfigRef = useRef(soundConfig) // ✅ FIX: Store soundConfig in ref to avoid closure issues
 
   // Inicializar no lado do cliente
   useEffect(() => {
@@ -47,6 +48,11 @@ export function useSoundSystem() {
       unsubscribe()
     }
   }, [])
+
+  // ✅ FIX: Update soundConfigRef whenever soundConfig changes
+  useEffect(() => {
+    soundConfigRef.current = soundConfig
+  }, [soundConfig])
 
   /**
    * Reproduz um arquivo de áudio (MP3, WAV) com suporte a prioridade opcional
@@ -80,16 +86,17 @@ export function useSoundSystem() {
    * Agora com suporte a prioridade
    * ✅ Adicionado log para debugar sons de avaliadores
    * ✅ Memoizado com useCallback para evitar re-subscrições desnecessárias em hooks dependentes
+   * ✅ FIX: Usa soundConfigRef para evitar closure stale reference quando soundConfig muda
    */
   const play = useCallback((type: AudioFileType, priority?: number) => {
     console.log(`📞 [useSoundSystem.play] Chamado com tipo: "${type}", prioridade: ${priority}`)
-    console.log(`   Config atual:`, { enabled: soundConfig.enabled, volume: soundConfig.volume })
+    console.log(`   Config atual:`, { enabled: soundConfigRef.current.enabled, volume: soundConfigRef.current.volume })
     console.trace(`📍 Call stack para play("${type}")`)
 
-    // Verificar se áudio está ativado
-    if (!soundConfig.enabled) {
+    // ✅ FIX: Verificar usando soundConfigRef.current em vez de closure-captured soundConfig
+    if (!soundConfigRef.current.enabled) {
       console.warn(`🔇 [useSoundSystem.play] Áudio desabilitado! Som "${type}" não será tocado.`)
-      console.log(`   soundConfig.enabled = ${soundConfig.enabled}`)
+      console.log(`   soundConfigRef.current.enabled = ${soundConfigRef.current.enabled}`)
       return
     }
 
@@ -135,7 +142,7 @@ export function useSoundSystem() {
       console.log(`🎵 [useSoundSystem] Tocando som padrão: ${type}`)
       playFile(type, priority)
     }
-  }, [soundConfig.enabled])
+  }, []) // ✅ FIX: Empty deps - uses soundConfigRef.current which always has latest value
 
   /**
    * Define volume (0-1)

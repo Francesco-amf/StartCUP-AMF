@@ -62,14 +62,14 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
           quest_id,
           final_points,
           status,
-          created_at,
+          submitted_at,
           quests!inner (
             name
           )
         `)
         .eq('team_id', teamId)
         .eq('status', 'evaluated')
-        .order('created_at', { ascending: false })
+        .order('submitted_at', { ascending: false })
 
       if (subsError) {
         console.error('❌ [AMFCoinsHistory] Erro ao buscar submissions:', subsError)
@@ -93,7 +93,7 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
           quest_name: s.quests?.name,
           final_points: s.final_points || 0,
           status: s.status,
-          created_at: s.created_at,
+          created_at: s.submitted_at,
         }))
       )
       setPenalties(pens || [])

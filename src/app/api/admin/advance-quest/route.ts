@@ -179,15 +179,14 @@ export async function POST(request: Request) {
         )
       }
 
-      // ✅ FIX: Separar UPDATE e SELECT para evitar array vazio
-      console.log(`📝 UPDATE separado: ativando quest ${nextQuest.id}`)
+      // ✅ FIX: Apenas atualizar status - started_at é preenchido automaticamente por trigger
+      // PROBLEMA: Atualizar started_at manualmente causa erro "UPDATE requires WHERE clause"
+      // SOLUÇÃO: Trigger auto_set_quest_started_at preenche started_at automaticamente quando status='active'
+      console.log(`📝 UPDATE: ativando quest ${nextQuest.id} (started_at será preenchido automaticamente por trigger)`)
 
       const { error: startNextQuestError, count: activateCount } = await supabaseAdmin
         .from('quests')
-        .update({
-          status: 'active',
-          started_at: updateTime
-        })
+        .update({ status: 'active' })
         .eq('id', nextQuest.id)
 
       console.log(`📊 ACTIVATE UPDATE resultado: error=${startNextQuestError ? 'sim' : 'não'}, count=${activateCount}`)
@@ -417,12 +416,11 @@ export async function POST(request: Request) {
         console.warn('Nenhuma quest encontrada para a próxima fase:', firstQuestError)
       } else if (firstQuestOfNewPhase && firstQuestOfNewPhase.id) {
         console.log(`📝 Tentando ativar primeira quest da nova fase: ${firstQuestOfNewPhase.id} (${firstQuestOfNewPhase.name})`)
+        
+        // ✅ FIX: Apenas atualizar status - started_at preenchido automaticamente por trigger
         const { data: activatedFirstQuests, error: startError } = await supabaseAdmin
           .from('quests')
-          .update({
-            status: 'active',
-            started_at: getUTCTimestamp()
-          })
+          .update({ status: 'active' })
           .eq('id', firstQuestOfNewPhase.id)
           .select('id, name, status, started_at')
 

@@ -200,14 +200,15 @@ export function useRealtimePhase() {
             const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_phase_data')
 
             // ✅ Validar que RPC retornou dados válidos
-            if (!rpcError && rpcData?.event_config && rpcData.event_config.current_phase >= 0 && rpcData.event_config.event_status) {
-              console.log(`[useRealtimePhase] ✅ RPC sucesso - Fase: ${rpcData.event_config.current_phase}, Status: ${rpcData.event_config.event_status}`)
+            // Nota: event_status não existe no RPC, é computado depois de event_started/event_ended
+            if (!rpcError && rpcData?.event_config && rpcData.event_config.current_phase >= 0 && typeof rpcData.event_config.event_started === 'boolean') {
+              console.log(`[useRealtimePhase] ✅ RPC sucesso - Fase: ${rpcData.event_config.current_phase}`)
               eventConfig = rpcData.event_config
               activeQuest = rpcData.active_quest
               // ✅ Cachear resultado de RPC
               rpcCacheRef.current = { data: rpcData, timestamp: now }
             } else {
-              console.warn(`[useRealtimePhase] ⚠️ RPC retornou dados inválidos (fase=${rpcData?.event_config?.current_phase}, status=${rpcData?.event_config?.event_status}), usando fallback`)
+              console.warn(`[useRealtimePhase] ⚠️ RPC retornou dados inválidos (fase=${rpcData?.event_config?.current_phase}, event_started=${rpcData?.event_config?.event_started}), usando fallback`)
             }
           } catch (rpcErr) {
             console.warn(`[useRealtimePhase] ⚠️ Erro RPC:`, rpcErr)

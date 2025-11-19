@@ -196,14 +196,15 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
       }
     }
 
-    // Aviso: se a quest anterior não foi submetida e expirou totalmente, informamos que avançou
+    // ✅ Aviso: APENAS se quest anterior não foi submetida E expirou totalmente
     if (index === currentIndex && notSubmittedIndexes.length > 0) {
-      // Avisar se havia uma anterior não-submetida expirada
       const currentPos = notSubmittedIndexes.indexOf(index)
       if (currentPos > 0) {
         const prevIdx = notSubmittedIndexes[currentPos - 1]
         const prev = sortedQuests[prevIdx]
-        if (isFullyExpired(prev)) {
+        // Só mostrar mensagem se a quest anterior NÃO foi submetida e expirou
+        const prevWasNotSubmitted = !submittedQuestIds.includes(prev.id)
+        if (prevWasNotSubmitted && isFullyExpired(prev)) {
           autoAdvancedFromExpired = { fromName: prev.name, toName: quest.name }
         }
       }

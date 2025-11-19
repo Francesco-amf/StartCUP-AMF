@@ -1,249 +1,119 @@
--- ==================================================
--- AUTO-ADVANCE PHASE SYSTEM - VERSÃO MELHORADA
--- ==================================================
--- MELHORIA: Fecha automaticamente quests expiradas
---           Inicia próxima quest quando a atual expira
---           Permite fluxo totalmente automático
--- ==================================================
+-- =================================================================
+-- AUTO-ADVANCE SYSTEM (TRIGGER-BASED) - v2.0
+-- =================================================================
+-- Replaces the cron-based function with a more reactive trigger-based system.
+-- This function is called automatically ONLY when a quest is completed.
+-- INCLUDES the requested 20-minute evaluation period after Phase 5.
+-- =================================================================
 
--- PASSO 1: Remover função antiga (se existir)
+-- Drop the old cron-based function and any existing trigger
 DROP FUNCTION IF EXISTS auto_advance_phase();
+DROP TRIGGER IF EXISTS on_quest_completion_trigger ON public.quests;
+DROP FUNCTION IF EXISTS manage_phase_transition();
 
--- PASSO 2: Criar função MELHORADA
-CREATE OR REPLACE FUNCTION auto_advance_phase()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- Create the new trigger-based function
+CREATE OR REPLACE FUNCTION manage_phase_transition()
+RETURNS TRIGGER AS $$
 DECLARE
-  v_current_phase INT;
-  v_phase_id UUID;
-  v_all_expired BOOLEAN;
-  v_total_quests INT;
-  v_expired_quests INT;
-  v_submitted_quests INT;
-  v_not_started_quests INT;
-  v_next_phase INT;
-  v_active_quest_id UUID;
-  v_active_quest_index INT;
+    v_current_phase_id UUID;
+    v_current_phase_sequence INT;
+    v_is_final_quest_of_phase BOOLEAN;
+    v_event_config RECORD;
 BEGIN
-  -- Buscar fase atual do evento
-  SELECT current_phase INTO v_current_phase
-  FROM event_config
-  LIMIT 1;
+    -- Get info from the quest that was just updated
+    SELECT phase_id INTO v_current_phase_id FROM public.quests WHERE id = NEW.id;
+    SELECT sequence INTO v_current_phase_sequence FROM public.phases WHERE id = v_current_phase_id;
 
-  IF v_current_phase IS NULL THEN
-    RAISE NOTICE 'Nenhuma fase configurada no event_config';
-    RETURN;
-  END IF;
-
-  RAISE NOTICE '========================================';
-  RAISE NOTICE 'Verificando Fase %', v_current_phase;
-
-  -- Buscar phase_id da fase atual
-  SELECT id INTO v_phase_id
-  FROM phases
-  WHERE order_index = v_current_phase
-  LIMIT 1;
-
-  IF v_phase_id IS NULL THEN
-    RAISE NOTICE '⚠️ Fase % não encontrada no banco', v_current_phase;
-    RETURN;
-  END IF;
-
-  -- Contar total de quests da fase atual
-  SELECT COUNT(*) INTO v_total_quests
-  FROM quests
-  WHERE phase_id = v_phase_id;
-
-  IF v_total_quests = 0 THEN
-    RAISE NOTICE '⚠️ Fase % não possui quests configuradas', v_current_phase;
-    RETURN;
-  END IF;
-
-  RAISE NOTICE 'Total de quests na Fase %: %', v_current_phase, v_total_quests;
-
-  -- ✅ MELHORIA 1: Fechar automaticamente quests expiradas
-  RAISE NOTICE '🔄 Verificando quests expiradas para fechar...';
-
-  UPDATE quests
-  SET status = 'closed',
-      updated_at = NOW()
-  WHERE phase_id = v_phase_id
-    AND status = 'active'
-    AND started_at IS NOT NULL
-    AND NOW() > (
-      started_at +
-      (planned_deadline_minutes * INTERVAL '1 minute') +
-      (COALESCE(late_submission_window_minutes, 0) * INTERVAL '1 minute')
-    );
-
-  GET DIAGNOSTICS v_expired_quests = ROW_COUNT;
-
-  IF v_expired_quests > 0 THEN
-    RAISE NOTICE '✅ Fechadas % quest(s) expirada(s)', v_expired_quests;
-  END IF;
-
-  -- ✅ MELHORIA 2: Iniciar automaticamente a próxima quest quando há expirada
-  IF v_expired_quests > 0 THEN
-    RAISE NOTICE '▶️ Iniciando próxima quest automaticamente...';
-
-    -- Encontrar a quest ativa (que foi antes expirada)
-    SELECT id, order_index INTO v_active_quest_id, v_active_quest_index
-    FROM quests
-    WHERE phase_id = v_phase_id
-      AND status = 'closed'
-    ORDER BY order_index DESC
-    LIMIT 1;
-
-    -- Se encontrou uma quest fechada, iniciar a próxima
-    IF v_active_quest_id IS NOT NULL THEN
-      UPDATE quests
-      SET status = 'active',
-          started_at = NOW(),
-          updated_at = NOW()
-      WHERE id = (
-        SELECT id FROM quests
-        WHERE phase_id = v_phase_id
-          AND order_index = v_active_quest_index + 1
-          AND status = 'scheduled'
-        LIMIT 1
-      );
-
-      GET DIAGNOSTICS v_expired_quests = ROW_COUNT;
-
-      IF v_expired_quests > 0 THEN
-        RAISE NOTICE '🎯 Quest % iniciada automaticamente', v_active_quest_index + 1;
-      END IF;
+    -- Check if the event is active
+    SELECT * INTO v_event_config FROM public.event_config WHERE id = 1 LIMIT 1;
+    IF NOT v_event_config.event_started OR v_event_config.event_ended THEN
+        RAISE NOTICE '[Transition] Ignored: Event not active.';
+        RETURN NEW;
     END IF;
-  END IF;
 
-  -- ========================================
-  -- Recount after closing/opening quests
-  -- ========================================
+    -- Check if all quests in the current phase are now completed
+    SELECT bool_and(status = 'completed') INTO v_is_final_quest_of_phase
+    FROM public.quests
+    WHERE phase_id = v_current_phase_id;
 
-  -- Contar quests NÃO INICIADAS (started_at IS NULL)
-  SELECT COUNT(*) INTO v_not_started_quests
-  FROM quests
-  WHERE phase_id = v_phase_id
-    AND started_at IS NULL;
+    -- Only proceed if the entire phase is complete
+    IF NOT v_is_final_quest_of_phase THEN
+        RAISE NOTICE '[Transition] Phase % not yet complete. Waiting for other quests.', v_current_phase_sequence;
+        RETURN NEW;
+    END IF;
 
-  RAISE NOTICE 'Quests não iniciadas: %', v_not_started_quests;
+    RAISE NOTICE '[Transition] Phase % is complete. Processing transition...', v_current_phase_sequence;
+    
+    -- Mark current phase as 'completed'
+    UPDATE public.phases SET status = 'completed' WHERE id = v_current_phase_id;
 
-  -- ✅ VERIFICAÇÃO: Se há quests não iniciadas, NÃO avançar a fase
-  IF v_not_started_quests > 0 THEN
-    RAISE NOTICE '⏳ Fase % ainda tem % quest(s) não iniciada(s). Aguardando.',
-                 v_current_phase, v_not_started_quests;
-    RETURN;
-  END IF;
+    -- ==================================================
+    -- MAIN TRANSITION LOGIC
+    -- ==================================================
+    IF v_current_phase_sequence = 5 THEN
+        -- PHASE 5 END: Start the 20-minute evaluation period
+        RAISE NOTICE '[Transition] Final quest of Phase 5 completed. Starting 20-min evaluation period.';
+        
+        UPDATE public.phases
+        SET duration = interval '20 minutes',
+            status = 'evaluation_period'
+        WHERE id = v_current_phase_id;
 
-  -- Contar quests totalmente expiradas/fechadas
-  SELECT COUNT(*) INTO v_expired_quests
-  FROM quests
-  WHERE phase_id = v_phase_id
-    AND status = 'closed';
-
-  RAISE NOTICE 'Quests fechadas/expiradas: %/%', v_expired_quests, v_total_quests;
-
-  -- Contar quests com submissões (considerar como "concluídas")
-  SELECT COUNT(DISTINCT q.id) INTO v_submitted_quests
-  FROM quests q
-  WHERE q.phase_id = v_phase_id
-    AND EXISTS (
-      SELECT 1 FROM submissions s WHERE s.quest_id = q.id
-    );
-
-  RAISE NOTICE 'Quests com submissões: %', v_submitted_quests;
-
-  -- ✅ LÓGICA: Só avançar a FASE se TODAS as quests foram processadas
-  -- "Processadas" = fechadas OU submetidas
-  v_all_expired := (v_expired_quests + v_submitted_quests) >= v_total_quests;
-
-  RAISE NOTICE 'Soma (fechadas + submetidas): % >= % (total)',
-               (v_expired_quests + v_submitted_quests), v_total_quests;
-
-  IF v_all_expired THEN
-    RAISE NOTICE '✅ Condição atendida: Fase % pode avançar', v_current_phase;
-
-    -- Calcular próxima fase
-    v_next_phase := v_current_phase + 1;
-
-    -- Verificar se próxima fase existe
-    IF EXISTS (SELECT 1 FROM phases WHERE order_index = v_next_phase) THEN
-      RAISE NOTICE '➡️ Próxima fase (%) encontrada. Avançando...', v_next_phase;
-
-      -- Avançar para próxima fase e setar timestamp de início
-      EXECUTE format(
-        'UPDATE event_config
-         SET current_phase = $1,
-             phase_%s_start_time = NOW(),
-             updated_at = NOW()
-         WHERE current_phase = $2',
-        v_next_phase
-      ) USING v_next_phase, v_current_phase;
-
-      RAISE NOTICE '🎉 Fase % → Fase % (AVANÇADO COM SUCESSO)',
-                   v_current_phase, v_next_phase;
-
-      -- Iniciar primeira quest da próxima fase
-      UPDATE quests
-      SET started_at = NOW(),
-          status = 'active',
-          updated_at = NOW()
-      WHERE id = (
-        SELECT q.id
-        FROM quests q
-        JOIN phases p ON q.phase_id = p.id
-        WHERE p.order_index = v_next_phase
-          AND q.order_index = 1
-        LIMIT 1
-      );
-
-      RAISE NOTICE '▶️ Quest 1 da Fase % iniciada automaticamente', v_next_phase;
+        -- Schedule the event to truly end after 20 minutes using pg_cron
+        PERFORM pg_cron.schedule(
+            'end-event-after-evaluation',
+            '20 minutes',
+            $$ UPDATE public.event_config SET event_ended = true WHERE id = 1 $$
+        );
+        RAISE NOTICE '[Transition] Cron job scheduled to end event in 20 minutes.';
 
     ELSE
-      RAISE NOTICE '🏁 Fase % completa, mas não há próxima fase. Evento finalizado.', v_current_phase;
+        -- OTHER PHASES END: Advance to the next phase immediately
+        DECLARE
+            next_phase_id UUID;
+            next_phase_sequence INT;
+            first_quest_of_next_phase_id UUID;
+        BEGIN
+            SELECT id, sequence INTO next_phase_id, next_phase_sequence
+            FROM public.phases
+            WHERE sequence > v_current_phase_sequence
+            ORDER BY sequence
+            LIMIT 1;
+
+            IF next_phase_id IS NOT NULL THEN
+                RAISE NOTICE '[Transition] Advancing from phase % to %.', v_current_phase_sequence, next_phase_sequence;
+                UPDATE public.phases SET status = 'active', started_at = now() WHERE id = next_phase_id;
+
+                -- Automatically start the first quest of the new phase
+                SELECT id INTO first_quest_of_next_phase_id
+                FROM public.quests
+                WHERE phase_id = next_phase_id
+                ORDER BY sequence
+                LIMIT 1;
+
+                IF first_quest_of_next_phase_id IS NOT NULL THEN
+                    RAISE NOTICE '[Transition] Activating first quest of new phase: %', first_quest_of_next_phase_id;
+                    UPDATE public.quests SET status = 'active', started_at = now() WHERE id = first_quest_of_next_phase_id;
+                ELSE
+                    RAISE NOTICE '[Transition] Warning: Next phase % has no quests to start.', next_phase_sequence;
+                END IF;
+            ELSE
+                RAISE NOTICE '[Transition] Final phase completed, but it was not phase 5. No next phase found.';
+            END IF;
+        END;
     END IF;
-  ELSE
-    RAISE NOTICE '⏳ Fase % ainda ativa. Processadas: %/% (fechadas: %, sub: %). Aguardando.',
-                 v_current_phase,
-                 (v_expired_quests + v_submitted_quests),
-                 v_total_quests,
-                 v_expired_quests,
-                 v_submitted_quests;
-  END IF;
 
-  RAISE NOTICE '========================================';
+    RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
--- ==================================================
--- PASSO 3: Testar a função ANTES de usar
--- ==================================================
--- Execute manualmente para ver os logs:
+-- Create the trigger to call the function AFTER a quest is marked as 'completed'
+CREATE OR REPLACE TRIGGER on_quest_completion_trigger
+AFTER UPDATE ON public.quests
+FOR EACH ROW
+WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'completed')
+EXECUTE FUNCTION manage_phase_transition();
 
--- SELECT auto_advance_phase();
-
--- Veja os logs no painel "Messages" do SQL Editor
-
--- ==================================================
--- PASSO 4: Ver estado atual após teste
--- ==================================================
-
--- Ver fase e quests:
-SELECT
-  p.order_index as fase,
-  q.order_index as quest,
-  q.name,
-  q.status,
-  q.started_at,
-  CASE
-    WHEN q.started_at IS NULL THEN 'NÃO INICIADA'
-    WHEN q.status = 'closed' THEN 'FECHADA'
-    WHEN NOW() > (q.started_at + (q.planned_deadline_minutes * INTERVAL '1 minute') + (COALESCE(q.late_submission_window_minutes, 0) * INTERVAL '1 minute')) THEN 'EXPIRADA'
-    ELSE 'ATIVA'
-  END as situacao
-FROM quests q
-JOIN phases p ON q.phase_id = p.id
-WHERE p.order_index = (SELECT current_phase FROM event_config LIMIT 1)
-ORDER BY q.order_index;
+RAISE NOTICE 'SUCCESS: Trigger-based auto-advance system has been created.';
+RAISE NOTICE 'The old auto_advance_phase() function is now removed.';
+RAISE NOTICE 'The system will now advance automatically when a quest status changes to completed.';

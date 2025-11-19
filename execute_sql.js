@@ -7,7 +7,7 @@ const path = require('path');
 // Configuration
 const SUPABASE_URL = 'scmyfwhhjwlmsoobqjyk.supabase.co';
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbXlmd2hvandsbXNvb2JxanlrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTg0NTAwOSwiZXhwIjoyMDc3NDIxMDA5fQ.aSzcF8hbo9j_dJpuQ2joqxa1n4efDCHuEKJHXagkJ3c';
-const SQL_FILE = path.join(__dirname, 'ADD_EVALUATORS_AND_UPDATE_TEAM.sql');
+const SQL_FILE = path.join(__dirname, 'diagnose_quest_5_3.sql');
 
 console.log('==========================================');
 console.log('Executing SQL via Supabase API');
@@ -50,8 +50,10 @@ const req = https.request(options, (res) => {
     try {
       const parsed = JSON.parse(data);
       console.log(JSON.stringify(parsed, null, 2));
+      fs.writeFileSync('sql_output.log', JSON.stringify(parsed, null, 2));
     } catch (e) {
       console.log(data);
+      fs.writeFileSync('sql_output.log', data);
     }
 
     console.log('\n==========================================');

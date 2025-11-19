@@ -1,20 +1,20 @@
 -- =================================================================
--- SCRIPT CORRIGIDO E SEGURO PARA AJUSTAR QUESTS E SUBMISSÕES
+-- SCRIPT CORRIGIDO E SEGURO PARA CONFIGURAR QUESTS (v2)
 -- =================================================================
 -- OBJETIVO: Corrigir quests sem `started_at` ou `planned_deadline_minutes`
 -- e ajustar as submissões atrasadas de forma segura e idempotente.
 -- IDEMPOTENTE: Seguro para executar múltiplas vezes.
 --
--- CORREÇÕES APLICADAS:
--- 1. `quests.created_at` -> Removido. Usa `NOW()` como fallback para `started_at` apenas se for nulo.
--- 2. `evaluations.score` -> Corrigido para `evaluations.points`.
+-- MOTIVO DA CORREÇÃO: A versão anterior falhou porque tentou usar
+-- a coluna `created_at`, que não existe na tabela `quests`.
+-- Esta versão usa uma abordagem segura inspirada em outros scripts do projeto.
 -- =================================================================
 
 BEGIN; -- Inicia uma transação. Se algo der errado, podemos reverter tudo.
 
 -- PASSO 1: Diagnóstico (Apenas Leitura)
 -- Identificar as quests que serão corrigidas.
--- Removida a coluna "created_at" que não existe.
+-- A coluna 'created_at' foi removida pois não existe.
 SELECT
   id,
   name,
@@ -22,24 +22,25 @@ SELECT
   started_at,
   planned_deadline_minutes,
   CASE
-    WHEN started_at IS NULL THEN '⚠️ SEM started_at (será corrigido com NOW())'
+    WHEN started_at IS NULL THEN '⚠️ SEM started_at (será corrigido)'
     WHEN planned_deadline_minutes IS NULL OR planned_deadline_minutes = 0 THEN '⚠️ SEM deadline (será corrigido)'
     ELSE '✅ OK'
   END as status_correcao
 FROM quests
 WHERE started_at IS NULL OR planned_deadline_minutes IS NULL OR planned_deadline_minutes = 0
-ORDER BY phase_id;
+ORDER BY id DESC; -- Alterado de created_at para id
 
 
 -- PASSO 2: Corrigir as Quests na Raiz
 -- Define valores padrão seguros para `started_at` e `planned_deadline_minutes`.
 -- LÓGICA:
--- 1. Se `started_at` for nulo, usa o tempo atual (`NOW()`). Isso só será executado uma vez por quest.
+-- 1. Se `started_at` for nulo, usa a data atual MENOS 1 HORA como um padrão seguro.
+--    Isso evita que a quest comece "agora" e marque imediatamente as submissões como atrasadas.
 -- 2. Se `planned_deadline_minutes` for nulo ou zero, define um padrão de 30 minutos.
 -- 3. Habilita `allow_late_submissions` para garantir que o fluxo de atraso funcione.
 UPDATE quests
 SET
-  started_at = COALESCE(started_at, NOW()),
+  started_at = COALESCE(started_at, NOW() - INTERVAL '1 hour'),
   planned_deadline_minutes = COALESCE(NULLIF(planned_deadline_minutes, 0), 30),
   allow_late_submissions = TRUE
 WHERE
@@ -63,7 +64,7 @@ SET
     WHEN (EXTRACT(EPOCH FROM (s.submitted_at - qd.deadline)) / 60) <= 5 THEN 5
     WHEN (EXTRACT(EPOCH FROM (s.submitted_at - qd.deadline)) / 60) <= 10 THEN 10
     WHEN (EXTRACT(EPOCH FROM (s.submitted_at - qd.deadline)) / 60) <= 15 THEN 15
-    ELSE 0
+    ELSE 0 -- Ou outra penalidade máxima
   END
 FROM quest_deadlines qd
 WHERE
@@ -73,12 +74,13 @@ WHERE
 
 
 -- PASSO 4: Recalcular Pontuação Final (Forma Segura e Idempotente)
--- Recalcula a pontuação final para submissões avaliadas e atrasadas.
--- CORREÇÃO: Usa `points` em vez de `score`.
+-- Recalcula a pontuação final para submissões avaliadas e atrasadas,
+-- subtraindo a penalidade da média das notas das avaliações.
+-- Isso evita o bug de dupla dedução de penalidade.
 WITH evaluation_avg_scores AS (
   SELECT
     submission_id,
-    AVG(points) as avg_score -- CORRIGIDO DE 'score' PARA 'points'
+    AVG(score) as avg_score
   FROM evaluations
   GROUP BY submission_id
 )
@@ -113,8 +115,6 @@ WHERE s.is_late = TRUE AND s.status = 'evaluated'
 ORDER BY s.submitted_at DESC
 LIMIT 20;
 
--- Se tudo parecer correto, você pode confirmar a transação com 'COMMIT;'.
--- Se algo der errado, você pode reverter com 'ROLLBACK;'.
--- Por segurança, este script não executa COMMIT automaticamente.
-
-COMMIT; -- Confirma todas as alterações no banco de dados.
+-- A transação será concluída (COMMIT) se o script for executado sem erros.
+-- Se ocorrer algum erro, todas as alterações serão desfeitas (ROLLBACK).
+COMMIT;

@@ -51,88 +51,88 @@ UPDATE phases SET duration_minutes = 90 WHERE order_index = 5;  -- 1h30min
 -- Fase 1 (2h30min total)
 -- Quest 1.1: 60min, 1.2: 50min, 1.3: 30min, 1.4 BOSS: 10min
 UPDATE quests
-SET duration_minutes = 60, planned_deadline_minutes = 60
+SET duration_minutes = 60, planned_deadline_minutes = 60, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 1)
   AND order_index = 1;
 
 UPDATE quests
-SET duration_minutes = 50, planned_deadline_minutes = 50
+SET duration_minutes = 50, planned_deadline_minutes = 50, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 1)
   AND order_index = 2;
 
 UPDATE quests
-SET duration_minutes = 30, planned_deadline_minutes = 30
+SET duration_minutes = 30, planned_deadline_minutes = 30, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 1)
   AND order_index = 3;
 
 UPDATE quests
-SET duration_minutes = 10, planned_deadline_minutes = 10
+SET duration_minutes = 10, planned_deadline_minutes = 10, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 1)
   AND order_index = 4;  -- BOSS
 
 -- Fase 2 (3h30min total)
 -- Quest 2.1: 50min, 2.2: 30min, 2.3: 120min, 2.4 BOSS: 10min
 UPDATE quests
-SET duration_minutes = 50, planned_deadline_minutes = 50
+SET duration_minutes = 50, planned_deadline_minutes = 50, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 2)
   AND order_index = 1;
 
 UPDATE quests
-SET duration_minutes = 30, planned_deadline_minutes = 30
+SET duration_minutes = 30, planned_deadline_minutes = 30, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 2)
   AND order_index = 2;
 
 UPDATE quests
-SET duration_minutes = 120, planned_deadline_minutes = 120
+SET duration_minutes = 120, planned_deadline_minutes = 120, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 2)
   AND order_index = 3;
 
 UPDATE quests
-SET duration_minutes = 10, planned_deadline_minutes = 10
+SET duration_minutes = 10, planned_deadline_minutes = 10, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 2)
   AND order_index = 4;  -- BOSS
 
 -- Fase 3 (2h30min total)
 -- Quest 3.1: 40min, 3.2: 30min, 3.3: 70min, 3.4 BOSS: 10min
 UPDATE quests
-SET duration_minutes = 40, planned_deadline_minutes = 40
+SET duration_minutes = 40, planned_deadline_minutes = 40, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 3)
   AND order_index = 1;
 
 UPDATE quests
-SET duration_minutes = 30, planned_deadline_minutes = 30
+SET duration_minutes = 30, planned_deadline_minutes = 30, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 3)
   AND order_index = 2;
 
 UPDATE quests
-SET duration_minutes = 70, planned_deadline_minutes = 70
+SET duration_minutes = 70, planned_deadline_minutes = 70, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 3)
   AND order_index = 3;
 
 UPDATE quests
-SET duration_minutes = 10, planned_deadline_minutes = 10
+SET duration_minutes = 10, planned_deadline_minutes = 10, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 3)
   AND order_index = 4;  -- BOSS
 
 -- Fase 4 (2h total)
 -- Quest 4.1: 40min, 4.2: 40min, 4.3: 30min, 4.4 BOSS: 10min
 UPDATE quests
-SET duration_minutes = 40, planned_deadline_minutes = 40
+SET duration_minutes = 40, planned_deadline_minutes = 40, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 4)
   AND order_index = 1;
 
 UPDATE quests
-SET duration_minutes = 40, planned_deadline_minutes = 40
+SET duration_minutes = 40, planned_deadline_minutes = 40, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 4)
   AND order_index = 2;
 
 UPDATE quests
-SET duration_minutes = 30, planned_deadline_minutes = 30
+SET duration_minutes = 30, planned_deadline_minutes = 30, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 4)
   AND order_index = 3;
 
 UPDATE quests
-SET duration_minutes = 10, planned_deadline_minutes = 10
+SET duration_minutes = 10, planned_deadline_minutes = 10, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 4)
   AND order_index = 4;  -- BOSS
 
@@ -144,17 +144,17 @@ WHERE phase_id = (SELECT id FROM phases WHERE order_index = 4)
 -- Distribuição: Quest 1 (20 min), Quest 2 (40 min), Quest 3 (30 min)
 
 UPDATE quests
-SET duration_minutes = 20, planned_deadline_minutes = 20
+SET duration_minutes = 20, planned_deadline_minutes = 20, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5)
   AND order_index = 1;
 
 UPDATE quests
-SET duration_minutes = 40, planned_deadline_minutes = 40
+SET duration_minutes = 40, planned_deadline_minutes = 40, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5)
   AND order_index = 2;
 
 UPDATE quests
-SET duration_minutes = 30, planned_deadline_minutes = 30
+SET duration_minutes = 30, planned_deadline_minutes = 30, late_submission_window_minutes = 15
 WHERE phase_id = (SELECT id FROM phases WHERE order_index = 5)
   AND order_index = 3;
 

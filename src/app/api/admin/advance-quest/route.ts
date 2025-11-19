@@ -184,7 +184,10 @@ export async function POST(request: Request) {
 
       const { error: startNextQuestError, count: activateCount } = await supabaseAdmin
         .from('quests')
-        .update({ status: 'active', started_at: updateTime })
+        .update({
+          status: 'active',
+          started_at: updateTime
+        })
         .eq('id', nextQuest.id)
 
       console.log(`📊 ACTIVATE UPDATE resultado: error=${startNextQuestError ? 'sim' : 'não'}, count=${activateCount}`)

@@ -92,11 +92,18 @@ BEGIN
     IF EXISTS (SELECT 1 FROM phases WHERE order_index = v_next_phase) THEN
       RAISE NOTICE 'Próxima fase (%) encontrada. Avançando...', v_next_phase;
       
-      -- Avançar para próxima fase
+      -- Avançar para próxima fase, mas apenas se a próxima fase for maior que a atual
       UPDATE event_config
       SET current_phase = v_next_phase,
           updated_at = NOW()
-      WHERE current_phase = v_current_phase;
+      WHERE current_phase = v_current_phase AND v_next_phase > v_current_phase;
+
+      -- Ativar a primeira quest da nova fase, se não estiver ativa
+      UPDATE quests
+      SET started_at = NOW()
+      WHERE phase_id = (SELECT id FROM phases WHERE order_index = v_next_phase)
+        AND order_index = 1
+        AND started_at IS NULL;
 
       RAISE NOTICE '🎉 Fase % → Fase % (AVANÇADO COM SUCESSO)', v_current_phase, v_next_phase;
     ELSE

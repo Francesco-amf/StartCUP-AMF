@@ -16,6 +16,7 @@ export default function QuestAutoAdvancer() {
   const router = useRouter()
   const [eventConfig, setEventConfig] = useState<EventConfig | null>(null)
   const [allQuests, setAllQuests] = useState<Quest[]>([])
+  const [isLoading, setIsLoading] = useState(true) // ✅ ADDED: Loading state
   const supabase = createClient()
   const zeroTimeQuestDetectionRef = useRef<{ questId: string; detectedAt: number } | null>(null)
 
@@ -41,6 +42,11 @@ export default function QuestAutoAdvancer() {
 
     if (!questsError && questsData) {
       setAllQuests(questsData as Quest[])
+    }
+
+    // ✅ ADDED: Turn off loading state after first successful fetch
+    if (!configError && !questsError) {
+      setIsLoading(false)
     }
   }, [supabase])
 
@@ -105,7 +111,7 @@ export default function QuestAutoAdvancer() {
 
   // Auto-advance logic
   useEffect(() => {
-    if (!eventConfig || !eventConfig.event_started) {
+    if (isLoading || !eventConfig || !eventConfig.event_started) {
       return
     }
 
@@ -201,7 +207,7 @@ export default function QuestAutoAdvancer() {
       zeroTimeQuestDetectionRef.current = null
     }
 
-  }, [eventConfig, allQuests, fetchEventData, retryAdvanceQuest, router])
+  }, [isLoading, eventConfig, allQuests, fetchEventData, retryAdvanceQuest, router])
 
   // This component renders nothing - it's purely background logic
   return null

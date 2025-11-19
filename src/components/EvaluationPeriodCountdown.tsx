@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getAudioManager } from '@/lib/audio/audioManager'
 
 interface EvaluationStatus {
   total_submissions: number
@@ -20,6 +21,7 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
   const [evaluationPeriodEndTime, setEvaluationPeriodEndTime] = useState<string | null>(null)
   const [allEvaluated, setAllEvaluated] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const countdownMusicStarted = useRef(false)
   const supabase = createClient()
 
   // Buscar dados do período de avaliação
@@ -72,8 +74,9 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
             console.log('✅ [EvaluationPeriodCountdown] RPC retornou all_evaluated = true')
             setAllEvaluated(true)
             setTimeout(() => {
+              console.log('✅ Avançando para próxima fase após tela de sucesso')
               onEvaluationsComplete()
-            }, 3000) // Aguardar 3 segundos antes de prosseguir
+            }, 5000) // ✅ Aumentado para 5 segundos para dar tempo de visualizar a tela verde
           } else {
             console.log('⏳ [EvaluationPeriodCountdown] Aguardando avaliações:', {
               total: result.total_submissions,
@@ -129,9 +132,10 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
 
       // Se tempo expirou mas ainda há pendentes, permitir prosseguir
       if (remaining === 0 && !allEvaluated) {
+        console.log('⏰ [EvaluationPeriodCountdown] Tempo expirado! Prosseguindo em 3 segundos...')
         setTimeout(() => {
           onEvaluationsComplete() // Forçar prosseguimento mesmo com pendências
-        }, 2000)
+        }, 3000) // ✅ Unificado: mesmo delay de 3s usado quando all_evaluated
       }
     }
 
@@ -139,6 +143,13 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [evaluationPeriodEndTime, allEvaluated, onEvaluationsComplete])
+
+  // 🧹 Cleanup: Resetar flag quando sair dos últimos 10 segundos
+  useEffect(() => {
+    if (timeLeft > 10) {
+      countdownMusicStarted.current = false
+    }
+  }, [timeLeft])
 
   // ✅ FIX: Não renderizar NADA até estar inicializado
   // Isso previne que dados stale apareçam brevemente
@@ -179,7 +190,10 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
 
           {/* Próximo passo */}
           <p className="text-xl md:text-2xl text-green-300 animate-pulse">
-            🏆 Preparando resultado final...
+            🏆 Preparando revelação do vencedor...
+          </p>
+          <p className="text-base md:text-lg text-green-400/70">
+            Avançando em instantes...
           </p>
         </div>
 
@@ -196,16 +210,94 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     )
   }
 
-  // ✅ FIX: Validar que evaluationPeriodEndTime é um timestamp futuro válido
-  const isValidFutureTime = evaluationPeriodEndTime && new Date(evaluationPeriodEndTime).getTime() > Date.now()
-
   // Se período de avaliação está ativo (e há pendências)
-  if (evaluationPeriodEndTime && status && !status.all_evaluated && isValidFutureTime) {
+  // ✅ FIX: Removida validação isValidFutureTime para evitar que página suma quando tempo expira
+  // O timer continuará mostrando 00:00 até onEvaluationsComplete() ser chamado
+  if (evaluationPeriodEndTime && status && !status.all_evaluated) {
     const minutes = Math.floor(timeLeft / 60)
     const seconds = timeLeft % 60
     const progressPercentage = status.total_submissions > 0
       ? Math.round((status.evaluated_submissions / status.total_submissions) * 100)
       : 0
+
+    // 🎯 COUNTDOWN GRANDE NOS ÚLTIMOS 10 SEGUNDOS
+    if (timeLeft <= 10 && timeLeft > 0) {
+      // 🔊 Tocar música de countdown UMA vez (game-over.mp3 dura ~11s, perfeito para cobrir os 10s)
+      if (!countdownMusicStarted.current) {
+        countdownMusicStarted.current = true
+        const audioManager = getAudioManager()
+        // Tocar uma única vez com prioridade alta
+        audioManager.playFile('game-over', 10)
+        console.log('🔊 Música de countdown iniciada (game-over.mp3 - 11s)')
+      }
+
+      return (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-red-900 via-red-800 to-red-950 flex items-center justify-center overflow-hidden">
+          {/* Efeito de fundo pulsante */}
+          <div className="absolute inset-0 bg-red-500/20 animate-pulse-fast" />
+          
+          <div className="relative text-center space-y-6 p-8">
+            {/* Título de alerta */}
+            <h1 className="text-4xl md:text-6xl font-black text-red-400 animate-pulse">
+              ⏰ EVENTO TERMINANDO
+            </h1>
+
+            {/* CONTADOR GIGANTE */}
+            <div className="text-[150px] md:text-[250px] lg:text-[300px] font-black text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.5)] animate-countdown-pulse leading-none">
+              {timeLeft}
+            </div>
+
+            {/* Mensagem de urgência */}
+            <p className="text-3xl md:text-5xl text-yellow-400 font-bold animate-bounce-slow">
+              ÚLTIMOS SEGUNDOS! 🚨
+            </p>
+
+            {/* Barra de tempo visual */}
+            <div className="w-full max-w-2xl mx-auto bg-gray-800 h-4 rounded-full overflow-hidden border-2 border-red-500">
+              <div
+                className="bg-gradient-to-r from-red-600 to-red-400 h-full transition-all duration-1000 ease-linear"
+                style={{ width: `${(timeLeft / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <style jsx>{`
+            @keyframes countdown-pulse {
+              0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+              }
+              50% { 
+                transform: scale(1.1);
+                opacity: 0.9;
+              }
+            }
+
+            @keyframes pulse-fast {
+              0%, 100% { opacity: 0.2; }
+              50% { opacity: 0.4; }
+            }
+
+            @keyframes bounce-slow {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-10px); }
+            }
+
+            .animate-countdown-pulse {
+              animation: countdown-pulse 1s ease-in-out infinite;
+            }
+
+            .animate-pulse-fast {
+              animation: pulse-fast 1s ease-in-out infinite;
+            }
+
+            .animate-bounce-slow {
+              animation: bounce-slow 1s ease-in-out infinite;
+            }
+          `}</style>
+        </div>
+      )
+    }
 
     return (
       <div className="fixed inset-0 z-50 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-950 flex items-center justify-center overflow-hidden">
@@ -240,7 +332,13 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
 
           {/* Label do timer */}
           <div className="text-xl md:text-2xl text-blue-100 font-semibold">
-            {minutes > 0 ? `${minutes} minuto${minutes !== 1 ? 's' : ''} e ${seconds} segundo${seconds !== 1 ? 's' : ''}` : `${seconds} segundo${seconds !== 1 ? 's' : ''}`}
+            {timeLeft === 0 ? (
+              <span className="text-yellow-400 animate-pulse">⏰ Tempo esgotado! Prosseguindo...</span>
+            ) : minutes > 0 ? (
+              `${minutes} minuto${minutes !== 1 ? 's' : ''} e ${seconds} segundo${seconds !== 1 ? 's' : ''}`
+            ) : (
+              `${seconds} segundo${seconds !== 1 ? 's' : ''}`
+            )}
           </div>
 
           {/* Card de status */}

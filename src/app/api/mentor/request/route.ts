@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     // Verificar se mentor existe na tabela evaluators
     const { data: mentor, error: mentorError } = await supabase
       .from('evaluators')
-      .select('id, name, is_online')
+      .select('id, name')
       .eq('id', mentorId)
       .eq('role', 'mentor')
       .single()
@@ -61,13 +61,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verificar se mentor está online
-    if (!mentor.is_online) {
-      return NextResponse.json(
-        { error: 'Mentor não está disponível no momento' },
-        { status: 400 }
-      )
-    }
+    // ✅ REMOVIDO: Verificação de is_online
+    // Avaliadores com role='mentor' podem atuar como mentores
+    // independente do campo is_online
 
     // Chamar função PostgreSQL para criar solicitação
     const { data, error } = await supabase.rpc('request_mentor', {

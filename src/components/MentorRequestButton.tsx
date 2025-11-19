@@ -43,12 +43,13 @@ export default function MentorRequestButton({ currentPhase, teamCoins }: MentorR
     setError(null)
 
     try {
-      // 1. Buscar mentores online da tabela evaluators
+      // 1. Buscar mentores da tabela evaluators (online ou não)
       const { data: mentorsData, error: mentorsError } = await supabase
         .from('evaluators')
         .select('id, name, email, specialty, is_online')
         .eq('role', 'mentor')
-        .eq('is_online', true)  // Apenas mentores online
+        // ✅ REMOVIDO: .eq('is_online', true) - mostra todos os mentores
+        // Avaliadores podem atuar como mentores mesmo se is_online não estiver setado
         .order('name')
 
       if (mentorsError) throw mentorsError

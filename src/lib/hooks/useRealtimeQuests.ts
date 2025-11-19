@@ -61,14 +61,18 @@ export function useRealtimeQuests(phaseId: string | null) {
         DEBUG.log('useRealtimeQuests-Polling', `⏳ Buscando quests via HTTP fallback...`)
         const { data, error: fetchError } = await supabase
           .from('quests')
-          .select('*')
           .eq('phase_id', phaseId)
           .order('order_index', { ascending: true })
 
         if (!fetchError && data && mounted) {
-          setQuests(data)
-          setError(null)
-          DEBUG.log('useRealtimeQuests-Polling', `✅ Quests atualizadas via polling: ${data.length} items`)
+          // ✅ FIX: Só atualizar se houver dados válidos (evita limpar durante transição de fase)
+          if (data.length > 0) {
+            setQuests(data)
+            setError(null)
+            DEBUG.log('useRealtimeQuests-Polling', `✅ Quests atualizadas via polling: ${data.length} items`)
+          } else {
+            DEBUG.warn('useRealtimeQuests-Polling', `⚠️ Polling retornou 0 quests - mantendo dados anteriores durante transição`)
+          }
         }
       } catch (err) {
         DEBUG.error('useRealtimeQuests-Polling', `❌ Error:`, err)
@@ -104,9 +108,21 @@ export function useRealtimeQuests(phaseId: string | null) {
         }
 
         if (mounted) {
-          DEBUG.log('useRealtimeQuests', `✅ Initial load completo: ${initialData?.length || 0} quests`)
-          setQuests(initialData || [])
-          initialLoadRef.current = true
+          // ✅ FIX: Só atualizar se houver dados válidos OU se é primeira carga
+          // Durante transição de fase, initial load pode retornar [] temporariamente
+          if (initialData && initialData.length > 0) {
+            DEBUG.log('useRealtimeQuests', `✅ Initial load completo: ${initialData.length} quests`)
+            setQuests(initialData)
+            initialLoadRef.current = true
+          } else if (!initialLoadRef.current) {
+            // Primeira carga e não há dados - ok definir vazio
+            DEBUG.log('useRealtimeQuests', `⚠️ Initial load retornou 0 quests (primeira carga)`)
+            setQuests([])
+            initialLoadRef.current = true
+          } else {
+            // Não é primeira carga e retornou vazio - manter dados anteriores
+            DEBUG.warn('useRealtimeQuests', `⚠️ Initial load retornou 0 quests - mantendo dados anteriores durante transição de fase`)
+          }
         }
 
         // 2️⃣ SUBSCRIBE: Configurar listener para mudanças em tempo real

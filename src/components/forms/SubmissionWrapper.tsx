@@ -30,7 +30,13 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   // Isso evita múltiplos refreshes que causam piscar (flashing) em abas simultâneas
   // useEffect(...) // ← Removido intencionalmente
 
-  const submittedQuestIds = submissions?.map(s => s.quest_id) || []
+  // ✅ FIX: Incluir completedQuestId para evitar bug de Quest 1.1 travada após submit atrasado
+  // Quando submete Quest 1.1 atrasada (mas Quest 1.2 já ativa), o polling demora para atualizar
+  // Então incluímos o ID da quest recém-completada para liberar a próxima imediatamente
+  const baseSubmittedIds = submissions?.map(s => s.quest_id) || []
+  const submittedQuestIds = completedQuestId && !baseSubmittedIds.includes(completedQuestId)
+    ? [...baseSubmittedIds, completedQuestId]
+    : baseSubmittedIds
   const evaluatedQuestIds = submissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []
 
   const hasNotice = (n: any): n is { fromName: string; toName: string } => {

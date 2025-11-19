@@ -76,15 +76,17 @@ export async function POST(request: Request) {
     }
     console.log(`✅ Quest ID validado: "${questId}" (type: ${typeof questId}, length: ${questId.length})`)
 
-    // ✅ FIX: Separar UPDATE e SELECT para evitar array vazio
-    // Supabase às vezes não retorna dados em .update().select()
-    // Então fazemos UPDATE primeiro, depois SELECT
-    const { error: updateError, count: updateCount } = await supabaseAdmin
-      .from('quests')
-      .update({ status: 'closed', ended_at: getUTCTimestamp() })
-      .eq('id', questId)
+    // ✅ FIX: Usar função RPC para contornar problema de UPDATE via client
+    // PROBLEMA: Supabase client .update() falha com "UPDATE requires WHERE clause" mesmo com WHERE válido
+    // SOLUÇÃO: Função RPC close_quest() executa UPDATE diretamente no servidor com SECURITY DEFINER
+    console.log(`📝 RPC: fechando quest ${questId} usando close_quest()`)
 
-    console.log(`📊 UPDATE resultado: error=${updateError ? 'sim' : 'não'}, count=${updateCount}`)
+    const { error: updateError } = await supabaseAdmin
+      .rpc('close_quest', { 
+        p_quest_id: questId 
+      })
+
+    console.log(`📊 CLOSE RPC resultado: error=${updateError ? 'sim' : 'não'}`)
 
     if (updateError) {
       console.error('❌ Erro ao fechar quest atual:', {
@@ -117,8 +119,7 @@ export async function POST(request: Request) {
       console.error('❌ Erro ao recuperar dados da quest fechada:', {
         selectError: selectError ? { code: selectError.code, message: selectError.message, details: selectError.details } : null,
         data: closedQuestArray,
-        questId,
-        updateCount
+        questId
       })
       return NextResponse.json(
         { error: 'Erro ao fechar quest - não conseguiu recuperar dados.', code: selectError?.code },
@@ -179,17 +180,17 @@ export async function POST(request: Request) {
         )
       }
 
-      // ✅ FIX: Apenas atualizar status - started_at é preenchido automaticamente por trigger
-      // PROBLEMA: Atualizar started_at manualmente causa erro "UPDATE requires WHERE clause"
-      // SOLUÇÃO: Trigger auto_set_quest_started_at preenche started_at automaticamente quando status='active'
-      console.log(`📝 UPDATE: ativando quest ${nextQuest.id} (started_at será preenchido automaticamente por trigger)`)
+      // ✅ FIX: Usar função RPC para contornar problema de UPDATE via client
+      // PROBLEMA: Supabase client .update() falha com "UPDATE requires WHERE clause" mesmo com WHERE válido
+      // SOLUÇÃO: Função RPC activate_quest() executa UPDATE diretamente no servidor com SECURITY DEFINER
+      console.log(`📝 RPC: ativando quest ${nextQuest.id} usando activate_quest()`)
 
-      const { error: startNextQuestError, count: activateCount } = await supabaseAdmin
-        .from('quests')
-        .update({ status: 'active' })
-        .eq('id', nextQuest.id)
+      const { error: startNextQuestError } = await supabaseAdmin
+        .rpc('activate_quest', { 
+          p_quest_id: nextQuest.id 
+        })
 
-      console.log(`📊 ACTIVATE UPDATE resultado: error=${startNextQuestError ? 'sim' : 'não'}, count=${activateCount}`)
+      console.log(`📊 ACTIVATE RPC resultado: error=${startNextQuestError ? 'sim' : 'não'}`)
 
       if (startNextQuestError) {
         console.error('❌ Erro ao ativar próxima quest:', {
@@ -228,8 +229,7 @@ export async function POST(request: Request) {
         console.error('❌ Erro ao recuperar dados da quest ativada:', {
           selectActivatedError: selectActivatedError ? { code: selectActivatedError.code, message: selectActivatedError.message, details: selectActivatedError.details } : null,
           data: activatedQuestData,
-          questId: nextQuest.id,
-          activateCount
+          questId: nextQuest.id
         })
         return NextResponse.json(
           {

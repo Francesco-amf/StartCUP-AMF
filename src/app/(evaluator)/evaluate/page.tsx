@@ -162,6 +162,22 @@ export default async function EvaluatorDashboard() {
 
       <div className="container mx-auto p-6">
         <div className="grid gap-6">
+          {/* Botão Boss Battle */}
+          <Link href="/evaluate/boss">
+            <Card className="p-4 bg-gradient-to-br from-[#5A0A0A]/90 to-[#3A0A0A]/90 border-4 border-[#FF6B6B] hover:border-[#FF6B6B]/80 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🔥</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#FF6B6B]">Avaliar Boss Battles</h3>
+                    <p className="text-sm text-[#FF6B6B]/70">Avalie apresentações presenciais</p>
+                  </div>
+                </div>
+                <span className="text-[#FF6B6B] text-2xl">→</span>
+              </div>
+            </Card>
+          </Link>
+
           {/* Estatísticas */}
           <div className="grid gap-6 md:grid-cols-3">
             <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">

@@ -55,7 +55,7 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
         .order('created_at', { ascending: false })
 
       // Buscar submissions avaliadas
-      const { data: subs } = await supabase
+      const { data: subs, error: subsError } = await supabase
         .from('submissions')
         .select(`
           id,
@@ -63,7 +63,7 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
           final_points,
           status,
           created_at,
-          quests (
+          quests!inner (
             name
           )
         `)
@@ -71,12 +71,20 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
         .eq('status', 'evaluated')
         .order('created_at', { ascending: false })
 
+      if (subsError) {
+        console.error('❌ [AMFCoinsHistory] Erro ao buscar submissions:', subsError)
+      }
+
       // Buscar penalidades
-      const { data: pens } = await supabase
+      const { data: pens, error: pensError } = await supabase
         .from('penalties')
         .select('*')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
+
+      if (pensError) {
+        console.error('❌ [AMFCoinsHistory] Erro ao buscar penalidades:', pensError)
+      }
 
       setTransactions(adjustments || [])
       setSubmissions(

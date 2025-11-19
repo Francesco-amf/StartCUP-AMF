@@ -32,8 +32,7 @@ SELECT
   'Ajustes de Coins' as tipo,
   ca.created_at,
   ca.amount,
-  ca.reason,
-  ca.description
+  ca.reason
 FROM coin_adjustments ca
 JOIN teams t ON ca.team_id = t.id
 WHERE t.name = 'Código Sentencial (CS)' -- Substitua pelo nome da sua equipe

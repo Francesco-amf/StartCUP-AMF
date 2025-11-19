@@ -909,6 +909,27 @@ export default function CurrentQuestTimer({
     currentQuestForSync = sortedByStart[0]
   }
 
+  // ✅ FIX: Se não há quest ativa, procurar próxima quest scheduled ou a primeira não-closed
+  if (!currentQuestForSync) {
+    // Tentar encontrar próxima quest agendada (status='scheduled')
+    const scheduledQuests = quests.filter(q => q.status === 'scheduled')
+      .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+    
+    if (scheduledQuests.length > 0) {
+      currentQuestForSync = scheduledQuests[0]
+      console.log(`🔄 [CurrentQuestTimer] Nenhuma quest ativa, usando próxima scheduled: ${currentQuestForSync.name}`)
+    } else {
+      // Fallback: primeira quest não-closed
+      const nonClosedQuests = quests.filter(q => q.status !== 'closed')
+        .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+      
+      if (nonClosedQuests.length > 0) {
+        currentQuestForSync = nonClosedQuests[0]
+        console.log(`🔄 [CurrentQuestTimer] Nenhuma quest ativa/scheduled, usando primeira não-closed: ${currentQuestForSync.name}`)
+      }
+    }
+  }
+
   let currentQuestIndex = 0
   let currentQuest = currentQuestForSync || quests[0]
 
@@ -1005,20 +1026,34 @@ export default function CurrentQuestTimer({
                 <span className="text-xs md:text-sm font-mono">
                   {questHasStarted 
                     ? `${Math.floor(questTimeRemaining / 60)}:${formatNumber(Math.floor(questTimeRemaining % 60))}`
+                    : currentQuest.status === 'scheduled'
+                    ? '⏳ Iniciando em breve...'
                     : 'Aguardando início...'
                   }
                 </span>
               </div>
               <div className="w-full bg-[#0A1E47]/20 rounded-full h-2 md:h-3 overflow-hidden">
                 <div
-                  className="bg-[#0A1E47] h-full transition-all duration-1000"
+                  className={`h-full transition-all duration-1000 ${
+                    currentQuest.status === 'scheduled' ? 'animate-pulse bg-[#FFD700]' : 'bg-[#0A1E47]'
+                  }`}
                   style={{
                     width: questHasStarted 
                       ? `${Math.max(0, (questTimeRemaining / (getQuestDurationMs(currentQuestIndex) / 1000)) * 100)}%`
+                      : currentQuest.status === 'scheduled'
+                      ? '50%' // Barra pulsante no meio indicando "carregando"
                       : '0%'
                   }}
                 />
               </div>
+              
+              {/* 🆕 Indicador de transição */}
+              {currentQuest.status === 'scheduled' && (
+                <p className="text-xs text-[#FFD700] mt-2 animate-pulse flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-[#FFD700] rounded-full animate-ping"></span>
+                  Quest anterior finalizada. Próxima quest iniciando automaticamente...
+                </p>
+              )}
             </div>
 
             {/* AMF Coins info */}

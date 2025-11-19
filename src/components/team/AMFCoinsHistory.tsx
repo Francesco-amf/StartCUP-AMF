@@ -89,6 +89,14 @@ export default function AMFCoinsHistory({ teamId, currentTotalCoins }: Props) {
         }))
       )
       setPenalties(pens || [])
+      
+      // Debug: Verificar dados recebidos
+      console.log('📊 [AMFCoinsHistory] Dados carregados:', {
+        adjustments: adjustments?.length || 0,
+        submissions: subs?.length || 0,
+        penalties: pens?.length || 0
+      })
+      
       setLoading(false)
     }
 

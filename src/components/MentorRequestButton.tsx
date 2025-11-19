@@ -118,10 +118,9 @@ export default function MentorRequestButton({ currentPhase, teamCoins }: MentorR
       setSelectedMentor(null)
       setNotes('')
 
-      // Fechar modal após 2s
+      // Recarregar página após 2s para atualizar total de coins
       setTimeout(() => {
-        setIsOpen(false)
-        setSuccess(null)
+        window.location.reload()
       }, 2000)
 
     } catch (err: any) {

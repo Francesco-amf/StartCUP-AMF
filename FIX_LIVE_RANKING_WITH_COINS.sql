@@ -49,18 +49,37 @@ SELECT
   t.id as team_id,
   t.name as team_name,
   t.course,
-  COALESCE(SUM(CASE WHEN s.status = 'evaluated' THEN s.final_points ELSE 0 END), 0) 
-    - COALESCE(SUM(p.points_deduction), 0) 
-    + COALESCE(SUM(ca.amount), 0) as total_points,
-  COUNT(DISTINCT CASE WHEN s.status = 'evaluated' THEN s.id END) as quests_completed,
+  COALESCE(submissions_points.total, 0) 
+    - COALESCE(penalties_points.total, 0) 
+    + COALESCE(adjustments_points.total, 0) as total_points,
+  COALESCE(submissions_points.count, 0) as quests_completed,
   0 as power_ups_used
 FROM teams t
-LEFT JOIN submissions s ON t.id = s.team_id
-LEFT JOIN penalties p ON t.id = p.team_id
-LEFT JOIN coin_adjustments ca ON t.id = ca.team_id
+LEFT JOIN (
+  SELECT 
+    team_id, 
+    SUM(final_points) as total,
+    COUNT(*) as count
+  FROM submissions 
+  WHERE status = 'evaluated'
+  GROUP BY team_id
+) submissions_points ON t.id = submissions_points.team_id
+LEFT JOIN (
+  SELECT 
+    team_id, 
+    SUM(points_deduction) as total
+  FROM penalties
+  GROUP BY team_id
+) penalties_points ON t.id = penalties_points.team_id
+LEFT JOIN (
+  SELECT 
+    team_id, 
+    SUM(amount) as total
+  FROM coin_adjustments
+  GROUP BY team_id
+) adjustments_points ON t.id = adjustments_points.team_id
 WHERE t.email NOT IN ('admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com')
   AND t.course NOT IN ('Administration', 'Avaliação')
-GROUP BY t.id, t.name, t.course
 ORDER BY total_points DESC;
 
 GRANT SELECT ON live_ranking TO anon;

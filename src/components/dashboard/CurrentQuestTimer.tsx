@@ -890,16 +890,9 @@ export default function CurrentQuestTimer({
 
   // 🎯 CORRIGIDO: Detectar quest atual baseado em started_at do DB
   // 🔥 Uma quest só conta se: status='active' && started_at !== null && ainda não expirou
-  // ✅ NOVO: NUNCA mostrar Boss (presentation) como quest atual no live dash
   const now2 = new Date().getTime()
   const activeQuests = quests.filter(q => {
     if (q.status !== 'active' || !q.started_at) return false
-    
-    // 🛑 NOVO: Bloquear Boss (presentation) de aparecer no live dashboard
-    const isBoss = typeof q.deliverable_type === 'string' 
-      ? q.deliverable_type.includes('presentation')
-      : Array.isArray(q.deliverable_type) && q.deliverable_type.includes('presentation')
-    if (isBoss) return false
     
     const questStartTime = new Date(q.started_at).getTime()
     const questDurationMs = (q.planned_deadline_minutes ?? q.duration_minutes ?? 60) * 60 * 1000

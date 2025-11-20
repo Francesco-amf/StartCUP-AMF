@@ -111,33 +111,13 @@ BEGIN
   WHERE p.order_index = v_current_phase
     AND q.order_index = v_next_quest_order;
 
-  -- ✅ VALIDAÇÃO: Não ativar BOSS automaticamente
-  IF v_next_quest_deliverable_type IS NOT NULL THEN
-    DECLARE
-      v_is_boss BOOLEAN := FALSE;
-    BEGIN
-      IF v_next_quest_deliverable_type::jsonb ? 'presentation' THEN
-        v_is_boss := TRUE;
-      ELSIF v_next_quest_deliverable_type = 'presentation' THEN
-        v_is_boss := TRUE;
-      ELSIF v_next_quest_deliverable_type LIKE '%presentation%' THEN
-        v_is_boss := TRUE;
-      END IF;
-
-      IF v_is_boss THEN
-        RAISE NOTICE '🛑 Quest % é BOSS. Não será ativada automaticamente.', v_next_quest_order;
-        RETURN;
-      END IF;
-    END;
-  END IF;
-
   -- Verificar se já foi iniciada
   IF EXISTS (SELECT 1 FROM quests WHERE id = v_quest_to_start_id AND started_at IS NOT NULL) THEN
     RAISE NOTICE '⚠️ Quest % já foi iniciada anteriormente', v_next_quest_order;
     RETURN;
   END IF;
 
-  -- Iniciar próxima quest (apenas quando prazo anterior expirou)
+  -- ✅ CORREÇÃO: Iniciar próxima quest (INCLUINDO Boss - é automático também)
   UPDATE quests
   SET started_at = NOW(),
       status = 'active'

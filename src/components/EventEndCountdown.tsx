@@ -50,39 +50,8 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   const gameOverTimerRef = useRef<NodeJS.Timeout | null>(null)
   const manuallyAdvancedRef = useRef(false)
 
-  // ✅ Cleanup de todos os áudios globais ao montar/desmontar componente
+  // ✅ Cleanup APENAS ao desmontar componente
   useEffect(() => {
-    console.log('🎵 [EventEndCountdown] Componente montado - limpando áudios globais')
-    
-    // Limpar todos os áudios globais ao montar
-    if (globalCountdownAudio) {
-      globalCountdownAudio.pause()
-      globalCountdownAudio.currentTime = 0
-      globalCountdownAudio = null
-    }
-    if (globalSuspenseAudio) {
-      globalSuspenseAudio.pause()
-      globalSuspenseAudio.currentTime = 0
-      globalSuspenseAudio = null
-    }
-    if (globalWinnerMusicAudio) {
-      globalWinnerMusicAudio.pause()
-      globalWinnerMusicAudio.currentTime = 0
-      globalWinnerMusicAudio = null
-    }
-    if (globalWinSoundAudio) {
-      globalWinSoundAudio.pause()
-      globalWinSoundAudio.currentTime = 0
-      globalWinSoundAudio = null
-    }
-
-    // Resetar flags
-    audioStartedRef.current = false
-    suspenseStartedRef.current = false
-    winnerMusicStartedRef.current = false
-    winSoundPlayedRef.current = false
-
-    // Cleanup ao desmontar
     return () => {
       console.log('🎵 [EventEndCountdown] Componente desmontado - parando todos os áudios')
       
@@ -417,8 +386,9 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
             if (globalSuspenseAudio) {
               globalSuspenseAudio.pause()
               globalSuspenseAudio.currentTime = 0
+              globalSuspenseAudio = null
             }
-            globalSuspenseAudio = null
+            suspenseStartedRef.current = false
             clearInterval(fadeOutInterval)
             console.log('🔇 Suspense parado completamente após fade out')
           }
@@ -426,8 +396,10 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
             globalSuspenseAudio.volume = fadeOutVolume
           }
         }, 100)
+      } else {
+        // Se suspense não está tocando, resetar flag
+        suspenseStartedRef.current = false
       }
-      suspenseStartedRef.current = false
 
       // Tocar música do vencedor durante o countdown
       console.log(`🎵 Tocando música do vencedor durante countdown`)

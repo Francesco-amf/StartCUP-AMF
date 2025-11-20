@@ -63,6 +63,9 @@ export default async function EvaluatorDashboard() {
     .from('submissions')
     .select(`
       *,
+      is_late,
+      late_minutes,
+      late_penalty_applied,
       team:team_id (
         name,
         course
@@ -257,6 +260,16 @@ export default async function EvaluatorDashboard() {
                         <p className="text-xs text-[#00E5FF]/60 mt-1">
                           ⏰ Enviado em: {new Date(submission.submitted_at).toLocaleString('pt-BR')}
                         </p>
+                        
+                        {/* Badge de atraso */}
+                        {submission.is_late && (
+                          <div className="mt-2 p-2 bg-red-500/20 border border-red-500 rounded">
+                            <p className="text-red-400 text-xs font-bold">
+                              ⚠️ ATRASADA: -{submission.late_penalty_applied} pts ({submission.late_minutes} min)
+                            </p>
+                          </div>
+                        )}
+                        
                         <p className="text-xs text-[#00E5FF]/50 font-mono mt-1">
                           ID: {submission.id}
                         </p>

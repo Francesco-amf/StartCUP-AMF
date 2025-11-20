@@ -39,11 +39,16 @@ export default async function EvaluateSubmissionPage({
 
   console.log('🔍 Evaluator lookup:', { evaluator, evaluatorError })
 
-  // Buscar a submission
+  // Buscar a submission (incluindo campos de atraso)
   const { data: submission, error: submissionError } = await supabase
     .from('submissions')
     .select(`
       *,
+      is_late,
+      late_minutes,
+      late_penalty_applied,
+      submitted_at,
+      quest_deadline,
       team:team_id (
         id,
         name,
@@ -204,6 +209,27 @@ export default async function EvaluateSubmissionPage({
                 <div className="pt-3 border-t border-[#00E5FF]/20">
                   <p className="text-sm text-[#00E5FF]/70">Data de Envio</p>
                   <p className="font-medium text-white">{new Date(submission.submitted_at).toLocaleString('pt-BR')}</p>
+                  
+                  {/* Badge de atraso */}
+                  {submission.is_late && (
+                    <div className="mt-3 p-3 bg-red-500/20 border-2 border-red-500 rounded-lg">
+                      <p className="text-red-400 font-bold flex items-center gap-2">
+                        <span className="text-xl">⚠️</span>
+                        SUBMISSÃO ATRASADA
+                      </p>
+                      <p className="text-red-300 text-sm mt-1">
+                        Atraso: <strong>{submission.late_minutes} minutos</strong>
+                      </p>
+                      <p className="text-red-200 text-sm">
+                        Penalidade aplicada: <strong className="text-red-400">-{submission.late_penalty_applied} pontos</strong>
+                      </p>
+                      {submission.quest_deadline && (
+                        <p className="text-red-300/70 text-xs mt-2">
+                          Deadline era: {new Date(submission.quest_deadline).toLocaleString('pt-BR')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>

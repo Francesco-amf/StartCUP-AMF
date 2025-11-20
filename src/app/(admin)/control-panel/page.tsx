@@ -119,9 +119,16 @@ export default async function AdminControlPanel() {
             <p className="text-4xl font-bold text-[#00FF88]">
               {submissions?.length || 0}
             </p>
-            <p className="text-sm text-[#00FF88]/70 mt-2">
-              {pendingCount > 0 && `${pendingCount} pendente${pendingCount !== 1 ? 's' : ''} de avaliação`}
-            </p>
+            {pendingCount > 0 && (
+              <p className="text-sm text-[#00FF88]/70 mt-2">
+                {pendingCount} pendente{pendingCount !== 1 ? 's' : ''}
+              </p>
+            )}
+            {pendingCount === 0 && submissions && submissions.length > 0 && (
+              <p className="text-sm text-green-400 mt-2">
+                ✓ Todas avaliadas
+              </p>
+            )}
           </Card>
 
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-l-4 border-[#FF9800]/60">

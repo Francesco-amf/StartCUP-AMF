@@ -77,9 +77,9 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
 
       // Tocar ranking-up SÓ UMA VEZ se houve qualquer mudança de posição
       if (hasRankingChange) {
-        console.log(`🎵 [RankingBoard] Houve mudança de ranking, tocando som UMA VEZ com prioridade 2`)
-        // Ranking-up com prioridade 2 (terceira mais alta, após quest-complete e coins)
-        play('ranking-up', 2)
+        console.log(`🎵 [RankingBoard] Houve mudança de ranking, tocando som UMA VEZ`)
+        // Ranking-up usa prioridade padrão do audioManager (3)
+        play('ranking-up')
       }
 
       if (!hasRankingChange && soundsTriggered === 0) {

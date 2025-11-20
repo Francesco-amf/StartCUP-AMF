@@ -157,15 +157,12 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     if (isInitialized && !suspenseMusicStarted.current && !allEvaluated) {
       const audioManager = getAudioManager()
       
-      // Tentar autorizar áudio se ainda não foi
-      audioManager.enableAutoplay()
-      
-      // Aguardar um momento para garantir que autoplay foi configurado
+      // Aguardar um momento para garantir que sistema de áudio está pronto
       setTimeout(() => {
         console.log('🎵 [EvaluationPeriodCountdown] Tocando suspense.mp3...')
         audioManager.playFile('suspense')
         suspenseMusicStarted.current = true
-      }, 500) // Delay de 500ms para garantir autorização
+      }, 500)
     }
   }, [isInitialized, allEvaluated])
 

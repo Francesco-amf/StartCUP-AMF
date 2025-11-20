@@ -135,11 +135,19 @@ export default async function EvaluateSubmissionPage({
                         href={submission.file_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-[#00FF88] hover:text-[#00E5FF] underline break-all text-sm font-medium flex items-center gap-2"
+                        className="inline-flex items-center gap-2 text-[#00FF88] hover:text-[#00E5FF] underline text-sm font-medium px-3 py-2 bg-[#00FF88]/10 rounded-lg hover:bg-[#00FF88]/20 transition-colors"
                       >
-                        🔗 {submission.file_url}
-                        <span className="text-xs bg-[#00FF88]/20 px-2 py-1 rounded">Abrir em nova aba</span>
+                        🔗 {new URL(submission.file_url).hostname}
+                        <span className="text-xs bg-[#00FF88]/30 px-2 py-1 rounded font-semibold">Abrir ↗</span>
                       </a>
+                      <details className="mt-3">
+                        <summary className="text-xs text-[#00E5FF]/50 cursor-pointer hover:text-[#00E5FF]/80">
+                          Ver URL completa
+                        </summary>
+                        <p className="text-xs font-mono text-[#00E5FF]/60 mt-2 break-all bg-[#0A1E47]/40 p-2 rounded border border-[#00E5FF]/20">
+                          {submission.file_url}
+                        </p>
+                      </details>
                       
                       {/* Aviso para links externos (YouTube, Figma, etc) */}
                       {(submission.file_url.includes('youtube.com') || 

@@ -118,14 +118,14 @@ export default async function EvaluateSubmissionPage({
         showLogout={true}
       />
 
-      <div className="container mx-auto p-6">
-        <div className="grid gap-6 lg:grid-cols-2">
+      <div className="container mx-auto p-4 md:p-6">
+        <div className="grid gap-4 md:gap-6 xl:grid-cols-2">
           {/* Informações da Entrega */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Card de Visualização do Arquivo/URL */}
             {(submission.file_url || submission.content) && (
-              <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00FF88]/40">
-                <h2 className="text-2xl font-bold mb-4 text-[#00FF88]">📦 Entrega Submetida</h2>
+              <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00FF88]/40">
+                <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#00FF88]">📦 Entrega Submetida</h2>
                 
                 {submission.file_url && (
                   <div className="space-y-3">
@@ -177,8 +177,8 @@ export default async function EvaluateSubmissionPage({
               </Card>
             )}
 
-            <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
-              <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📋 Informações</h2>
+            <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+              <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#00E5FF]">📋 Informações</h2>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-[#00E5FF]/70">Equipe</p>
@@ -236,9 +236,9 @@ export default async function EvaluateSubmissionPage({
 
             {/* Formulário de Avaliação */}
             {existingEvaluation ? (
-              <div className="space-y-4">
-                <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
-                  <h2 className="text-2xl font-bold mb-4 text-[#00E676]">✅ Já Avaliado</h2>
+              <div className="space-y-3 md:space-y-4">
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
+                  <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#00E676]">✅ Já Avaliado</h2>
                   <div className="space-y-2">
                     <p className="text-[#00E676]">
                       <strong>AMF Coins:</strong> {existingEvaluation.points} / {submission.quest?.max_points}
@@ -253,8 +253,8 @@ export default async function EvaluateSubmissionPage({
                 </Card>
 
                 {/* Permitir reavaliação */}
-                <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
-                  <h3 className="text-lg font-bold mb-2 text-[#FF9800]">🔄 Reavaliar</h3>
+                <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
+                  <h3 className="text-lg md:text-xl font-bold mb-2 text-[#FF9800]">🔄 Reavaliar</h3>
                   <p className="text-sm text-[#FF9800] mb-4">
                     Você pode revisar e atualizar sua avaliação abaixo:
                   </p>
@@ -275,8 +275,8 @@ export default async function EvaluateSubmissionPage({
                 </Card>
               </div>
             ) : (
-              <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
-                <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">⭐ Avaliar</h2>
+              <Card className="p-4 md:p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+                <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#00E5FF]">⭐ Avaliar</h2>
                 <div className="space-y-4">
                   <div className="p-3 bg-[#0A1E47]/40 border-2 border-[#00E5FF]/30 rounded-lg">
                     <p className="text-sm font-medium text-[#00E5FF]">
@@ -297,12 +297,12 @@ export default async function EvaluateSubmissionPage({
           </div>
 
           {/* Visualização do PDF */}
-          <div>
-            <Card className="p-6 h-full bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
-              <h2 className="text-2xl font-bold mb-4 text-[#00E5FF]">📄 Documento</h2>
+          <div className="hidden xl:block">
+            <Card className="p-4 md:p-6 h-full bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+              <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#00E5FF]">📄 Documento</h2>
               {submission.file_url ? (
                 <>
-                  <div className="bg-[#0A1E47]/40 rounded-lg overflow-hidden border-2 border-[#00E5FF]/20" style={{ height: '800px' }}>
+                  <div className="bg-[#0A1E47]/40 rounded-lg overflow-hidden border-2 border-[#00E5FF]/20" style={{ height: '700px' }}>
                     <iframe
                       src={submission.file_url}
                       className="w-full h-full"

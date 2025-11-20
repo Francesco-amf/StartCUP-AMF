@@ -347,17 +347,21 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   // Também fazer fade out da música de suspense anterior
   useEffect(() => {
     if (currentPhase === 'suspense') {
-      // Parar som de suspense em loop do Game Over com fade out
-      // Usar variável global em vez de ref
-      if (globalSuspenseAudio) {
+      // ✅ Fazer fade out gradual do som de suspense (2 segundos)
+      console.log('🎭 Iniciando fade out do suspense...')
+      if (globalSuspenseAudio && !globalSuspenseAudio.paused) {
         let fadeOutVolume = globalSuspenseAudio.volume || 0.8
         const fadeOutInterval = setInterval(() => {
-          fadeOutVolume -= 0.8 / 10 // Fade out em 1 segundo (10 steps de 100ms)
+          fadeOutVolume -= 0.8 / 20 // Fade out em 2 segundos (20 steps de 100ms)
           if (fadeOutVolume <= 0) {
             fadeOutVolume = 0
-            globalSuspenseAudio?.pause()
+            if (globalSuspenseAudio) {
+              globalSuspenseAudio.pause()
+              globalSuspenseAudio.currentTime = 0
+            }
             globalSuspenseAudio = null
             clearInterval(fadeOutInterval)
+            console.log('🔇 Suspense parado completamente após fade out')
           }
           if (globalSuspenseAudio) {
             globalSuspenseAudio.volume = fadeOutVolume
@@ -372,18 +376,9 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
     }
   }, [currentPhase, playWinnerMusic])
 
-  // Countdown da fase de suspense com fade out nos últimos 4 segundos
+  // Countdown da fase de suspense
   useEffect(() => {
     if (currentPhase === 'suspense' && suspenseCountdown > 0) {
-      // Aplicar fade out durante os últimos 4 segundos
-      // Usar variável global em vez de ref
-      if (suspenseCountdown <= 4 && globalSuspenseAudio) {
-        // Calcular volume: de 0.8 em 4s para 0 em 0s
-        const volumePercentage = suspenseCountdown / 4
-        globalSuspenseAudio.volume = 0.8 * volumePercentage
-        console.log(`🔊 Fade out: ${suspenseCountdown}s - Volume: ${(0.8 * volumePercentage).toFixed(2)}`)
-      }
-
       const timer = setTimeout(() => {
         setSuspenseCountdown(prev => prev - 1)
       }, 1000)

@@ -16,7 +16,6 @@ export function AudioInitializer() {
   useEffect(() => {
     // Inicializar sistema de áudio apenas uma vez
     setupAutoAudioAuthorization()
-    console.log('🎵 Sistema de áudio inicializado')
   }, [])
 
   // Componente não renderiza nada visualmente

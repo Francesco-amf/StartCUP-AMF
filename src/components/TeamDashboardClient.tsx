@@ -27,14 +27,7 @@ export default function TeamDashboardClient({
 
   // ✅ Initialize sound system ONCE on mount
   useEffect(() => {
-    console.log('🎵 [TeamDashboardClient] Inicializando sound system...')
-
-    // Ensure audio authorization is set up
-    console.log('🎵 [TeamDashboardClient] Configurando auto audio authorization...')
     setupAutoAudioAuthorization()
-
-    const state = getState()
-    console.log('🎵 [TeamDashboardClient] Sound system state:', state)
   }, []) // ✅ Empty dependency array - run once on mount only
 
   // ✅ Track if we're currently checking to avoid race conditions

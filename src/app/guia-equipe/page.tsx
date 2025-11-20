@@ -322,9 +322,6 @@ export default function GuiaEquipePage() {
               <h3 className="font-bold text-[#FF6B35] mb-3">🎯 Estratégia de Power-ups</h3>
               <ul className="text-[#FF6B35]/85 text-sm space-y-2">
                 <li>• <span className="font-bold text-[#FF6B35]">Mentoria:</span> Use na fase onde tem maior dúvida</li>
-                <li>• <span className="font-bold text-[#FF6B35]">Dica:</span> Quando está travado em um problema</li>
-                <li>• <span className="font-bold text-[#FF6B35]">Validação:</span> Antes de submeter algo importante</li>
-                <li>• <span className="font-bold text-[#FF6B35]">Checkpoint:</span> Após um trabalho que fez bem</li>
               </ul>
             </div>
           </Card>
@@ -346,9 +343,6 @@ export default function GuiaEquipePage() {
                 <h3 className="font-bold text-[#FFEB3B] mb-3">Como Gastar</h3>
                 <ul className="text-[#FFEB3B]/80 text-sm space-y-2">
                   <li>🎯 Solicitar Mentoria: custo variável e cresce a cada chamada (ver exemplo no card de mentoria)</li>
-                  <li>💡 Pedir Dica: custo configurável</li>
-                  <li>✨ Validar Conceito: custo configurável</li>
-                  <li>🏁 Usar Checkpoint: custo configurável</li>
                 </ul>
               </div>
             </div>

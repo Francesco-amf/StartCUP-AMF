@@ -22,6 +22,7 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
   const [allEvaluated, setAllEvaluated] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const countdownMusicStarted = useRef(false)
+  const suspenseMusicStarted = useRef(false) // ✅ NOVO: Flag para suspense.mp3
   const supabase = createClient()
 
   // Buscar dados do período de avaliação
@@ -150,6 +151,16 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
       countdownMusicStarted.current = false
     }
   }, [timeLeft])
+
+  // 🎵 NOVO: Tocar suspense.mp3 quando componente carregar
+  useEffect(() => {
+    if (isInitialized && !suspenseMusicStarted.current && !allEvaluated) {
+      const audioManager = getAudioManager()
+      console.log('🎵 [EvaluationPeriodCountdown] Tocando suspense.mp3...')
+      audioManager.playSound('suspense')
+      suspenseMusicStarted.current = true
+    }
+  }, [isInitialized, allEvaluated])
 
   // ✅ FIX: Não renderizar NADA até estar inicializado
   // Isso previne que dados stale apareçam brevemente

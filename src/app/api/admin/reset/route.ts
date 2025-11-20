@@ -176,6 +176,8 @@ export async function POST(request: Request) {
         phase_5_start_time: null,
         event_start_time: null,
         event_end_time: null,
+        evaluation_period_end_time: null,
+        all_submissions_evaluated: false,
         updated_at: new Date().toISOString()
       })
       .eq('id', eventConfigId)

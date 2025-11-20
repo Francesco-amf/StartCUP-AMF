@@ -73,7 +73,7 @@ export default function TeamMentorHistory({ teamId }: TeamMentorHistoryProps) {
         .from('mentor_requests')
         .select(`
           *,
-          mentor:mentor_id (
+          evaluators!mentor_id (
             name,
             specialty
           )
@@ -84,7 +84,14 @@ export default function TeamMentorHistory({ teamId }: TeamMentorHistoryProps) {
       console.log('📦 [TeamMentorHistory] Resultado:', { data, error, count: data?.length })
 
       if (error) throw error
-      setRequests(data || [])
+      
+      // Transformar para o formato esperado
+      const transformedData = (data || []).map((request: any) => ({
+        ...request,
+        mentor: request.evaluators
+      }))
+      
+      setRequests(transformedData)
     } catch (error) {
       console.error('❌ Erro ao buscar histórico de mentorias:', error)
     } finally {

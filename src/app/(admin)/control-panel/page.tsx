@@ -62,6 +62,14 @@ export default async function AdminControlPanel() {
     totalEvaluations: evaluations?.length || 0
   })
 
+  // Debug visual para verificar dados
+  const debugInfo = {
+    submissionsRaw: submissions?.length || 0,
+    pendingRaw: pendingSubmissions?.length || 0,
+    pendingCount: pendingCount,
+    evaluationsRaw: evaluations?.length || 0
+  }
+
   return (
     <div className="min-h-screen gradient-startcup">
       <Header
@@ -70,6 +78,15 @@ export default async function AdminControlPanel() {
         backHref="/"
         showLogout={true}
       />
+
+      {/* DEBUG: Mostrar dados brutos */}
+      <div className="container mx-auto p-2">
+        <details className="bg-red-900/20 border border-red-500 rounded p-2 text-xs text-white">
+          <summary className="cursor-pointer font-bold">🐛 DEBUG: Dados brutos da query</summary>
+          <pre className="mt-2">{JSON.stringify(debugInfo, null, 2)}</pre>
+          <pre className="mt-2">pendingSubmissions sample: {JSON.stringify(pendingSubmissions?.slice(0, 2), null, 2)}</pre>
+        </details>
+      </div>
 
       <div className="container mx-auto p-6">
         {/* Status do Evento */}

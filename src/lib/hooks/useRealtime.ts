@@ -88,10 +88,22 @@ export function useRealtimeRanking() {
 
       // 🔴 CRITICAL: live_ranking is a MATERIALIZED VIEW
       // Realtime only works with TABLES, not views
-      // So we subscribe to penalties changes instead
-      // When penalties change → live_ranking recalculates → we refetch
-      DEBUG.log('useRealtimeRanking', '🔴 Subscribing to penalties (since live_ranking is a view)...')
+      // We need to subscribe to BOTH penalties AND submissions
+      // When either change → live_ranking recalculates → we refetch
+      
+      // ✅ FIX: Attivare polling immediato (500ms) per garantire aggiornamenti rapidi
+      // Il polling è essenziale per live dashboard perché:
+      // 1. Boss evaluations creano submissions, non penalties
+      // 2. View live_ranking non supporta Realtime diretto
+      // 3. 500ms polling = 120 req/min è accettabile per dashboard live
+      DEBUG.log('useRealtimeRanking', '🔄 Attivando polling 500ms per aggiornamenti rapidi...')
+      if (!pollingIntervalRef.current && mounted) {
+        pollingIntervalRef.current = setInterval(fetchRanking, 500)
+      }
 
+      DEBUG.log('useRealtimeRanking', '🔴 Subscribing to penalties and submissions...')
+
+      // Subscribe to penalties
       const penaltiesChannel = supabase
         .channel('public:penalties:ranking-trigger')
         .on(
@@ -110,30 +122,31 @@ export function useRealtimeRanking() {
         )
         .subscribe((status: any) => {
           DEBUG.log('useRealtimeRanking', `🔴 Penalties subscription status: ${status}`)
-          subscriptionHealthRef.current = status === 'SUBSCRIBED'
+        })
 
-          if (status === 'SUBSCRIBED') {
-            // Penalties Realtime working - stop polling
-            if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current)
-              pollingIntervalRef.current = null
-            }
-          } else if (status !== 'SUBSCRIBED' && !pollingIntervalRef.current && mounted) {
-            // Penalties Realtime not working - activate polling
-            DEBUG.log('useRealtimeRanking', '🔄 Ativando polling fallback (penalties Realtime down)...')
-            if (!pollingDebounceRef.current) {
-              pollingDebounceRef.current = setTimeout(() => {
-                if (!pollingIntervalRef.current && mounted) {
-                  pollingIntervalRef.current = setInterval(fetchRanking, 10000)
-                }
-                pollingDebounceRef.current = null
-              }, POLLING_DEBOUNCE_MS)
+      // Subscribe to submissions (for Boss evaluations)
+      const submissionsChannel = supabase
+        .channel('public:submissions:ranking-trigger')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'submissions'
+          },
+          async () => {
+            DEBUG.log('useRealtimeRanking', '📝 Submission changed! Refetching ranking...')
+            if (mounted) {
+              await fetchRanking()
             }
           }
+        )
+        .subscribe((status: any) => {
+          DEBUG.log('useRealtimeRanking', `📝 Submissions subscription status: ${status}`)
         })
 
       if (mounted) {
-        channelsRef.current.push(penaltiesChannel)
+        channelsRef.current.push(penaltiesChannel, submissionsChannel)
       }
     }
 

@@ -338,6 +338,7 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   // O som do countdown continua tocando enquanto suspense entra com fade in
   useEffect(() => {
     if (currentPhase === 'gameOver') {
+      console.log('🎭 [EventEndCountdown] Fase Game Over detectada - iniciando som de suspense')
       playSuspenseLoopSound()
     }
   }, [currentPhase, playSuspenseLoopSound])
@@ -450,12 +451,6 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
 
   useEffect(() => {
     if (!eventEndTime) return
-    
-    // ✅ FIX: Parar timer se não estiver na fase countdown
-    if (currentPhase !== 'countdown') {
-      console.log('⏹️ Timer parado - fase atual:', currentPhase)
-      return
-    }
 
     const calculateTimeLeft = () => {
       const now = Date.now()
@@ -468,8 +463,8 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       const seconds = calculateTimeLeft()
       setTimeLeft(seconds)
 
-      // Mostrar contagem regressiva nos últimos 10 segundos
-      if (seconds <= 10 && seconds > 0) {
+      // ✅ Tocar countdown beep nos últimos 10 segundos (independente da fase)
+      if (seconds <= 10 && seconds > 0 && currentPhase === 'countdown') {
         // Tocar som apenas se mudou de segundo
         if (lastPlayedSecond !== seconds) {
           setLastPlayedSecond(seconds)
@@ -491,7 +486,7 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
     const interval = setInterval(updateTimer, 1000)
 
     return () => clearInterval(interval)
-  }, [eventEndTime, onEventEnd, currentPhase])
+  }, [eventEndTime, onEventEnd, currentPhase, playCountdownSound])
 
   // FASE 1: Contagem regressiva final (10 segundos)
   if (currentPhase === 'countdown' && timeLeft !== null && timeLeft > 0) {

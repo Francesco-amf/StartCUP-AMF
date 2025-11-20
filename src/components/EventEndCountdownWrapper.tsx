@@ -62,6 +62,20 @@ export default function EventEndCountdownWrapper() {
             evaluation_period_end_time: eventConfig.evaluation_period_end_time,
             all_submissions_evaluated: eventConfig.all_submissions_evaluated
           })
+          
+          // ✅ DETECÇÃO DE RESET: Se todos os campos voltaram a null/false, evento foi resetado
+          const wasReset = 
+            !eventConfig.event_ended && 
+            !eventConfig.event_end_time && 
+            !eventConfig.evaluation_period_end_time &&
+            (eventEnded || eventEndTime || evaluationPeriodEndTime)
+          
+          if (wasReset) {
+            console.log('🔄 [EventEndCountdownWrapper] RESET DETECTADO! Recarregando página...')
+            window.location.reload()
+            return
+          }
+          
           setEventEnded(eventConfig.event_ended)
           setEventEndTime(eventConfig.event_end_time)
           setEvaluationPeriodEndTime(eventConfig.evaluation_period_end_time)

@@ -5,8 +5,9 @@ export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
 
-    // Buscar Boss ativo (quest com order_index=4 e status='active')
-    const { data: quest, error } = await supabase
+    // Buscar Boss ativo OU fechado recentemente (nas últimas 2 horas)
+    // Isso permite avaliadores avaliarem mesmo após o prazo expirar
+    const { data: quests, error } = await supabase
       .from('quests')
       .select(`
         id,
@@ -15,29 +16,54 @@ export async function GET() {
         deliverable_type,
         order_index,
         status,
+        started_at,
+        planned_deadline_minutes,
         phase:phase_id(
           name,
           order_index
         )
       `)
-      .eq('status', 'active')
       .eq('order_index', 4)
-      .maybeSingle()
+      .or('status.eq.active,status.eq.closed')
+      .order('started_at', { ascending: false })
 
-    console.log('[active-boss] Query result:', { quest, error })
+    console.log('[active-boss] Query result:', { quests, error })
 
     if (error) {
       console.error('[active-boss] Error:', error)
       return NextResponse.json({ quest: null })
     }
 
-    if (!quest) {
-      console.log('[active-boss] No active boss found')
+    if (!quests || quests.length === 0) {
+      console.log('[active-boss] No boss found (active or recent)')
       return NextResponse.json({ quest: null })
     }
 
-    console.log('[active-boss] Found active boss:', quest.name)
-    return NextResponse.json({ quest })
+    // Priorizar Boss ativo, senão pegar o mais recente fechado (últimas 2 horas)
+    const activeBoss = quests.find(q => q.status === 'active')
+    
+    if (activeBoss) {
+      console.log('[active-boss] Found active boss:', activeBoss.name)
+      return NextResponse.json({ quest: activeBoss })
+    }
+
+    // Se não há Boss ativo, verificar se há Boss fechado recentemente (últimas 2 horas)
+    const recentBoss = quests.find(q => {
+      if (!q.started_at) return false
+      const startTime = new Date(q.started_at).getTime()
+      const now = Date.now()
+      const twoHoursInMs = 2 * 60 * 60 * 1000
+      const timeSinceStart = now - startTime
+      return timeSinceStart <= twoHoursInMs
+    })
+
+    if (recentBoss) {
+      console.log('[active-boss] Found recent closed boss:', recentBoss.name)
+      return NextResponse.json({ quest: recentBoss })
+    }
+
+    console.log('[active-boss] No boss found within evaluation window')
+    return NextResponse.json({ quest: null })
   } catch (error) {
     console.error('[active-boss] Exception:', error)
     return NextResponse.json({ quest: null })

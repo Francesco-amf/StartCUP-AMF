@@ -45,19 +45,22 @@ export default async function AdminControlPanel() {
   // Buscar submissões pendentes de avaliação (submetidas mas sem avaliação)
   const { data: pendingSubmissions } = await supabase
     .from('submissions')
-    .select(`
-      id,
-      evaluations (id)
-    `)
+    .select('id, evaluations!left(id)')
 
   // Contar submissões sem avaliação
   const pendingCount = pendingSubmissions?.filter(
-    sub => !sub.evaluations || sub.evaluations.length === 0
+    (sub: any) => !sub.evaluations || sub.evaluations.length === 0
   ).length || 0
 
   const { data: evaluations } = await supabase
     .from('evaluations')
     .select('*')
+
+  console.log('📊 [Admin Panel] Estatísticas:', {
+    totalSubmissions: submissions?.length || 0,
+    pendingSubmissions: pendingCount,
+    totalEvaluations: evaluations?.length || 0
+  })
 
   return (
     <div className="min-h-screen gradient-startcup">

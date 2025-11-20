@@ -152,12 +152,9 @@ export default function EventEndCountdownWrapper() {
     )
   }
 
-  // FASE 3: GAME OVER (evento oficialmente terminado)
-  if (eventEnded) {
-    console.log('🏁 [EventEndCountdownWrapper] Renderizando FASE 3: GAME OVER')
-    
-    // ✅ Parar TODOS os áudios quando evento termina
-    useEffect(() => {
+  // ✅ Parar todos os áudios quando GAME OVER é exibido
+  useEffect(() => {
+    if (eventEnded) {
       // Parar todos os áudios globais que possam estar tocando
       const allAudios = document.querySelectorAll('audio')
       allAudios.forEach(audio => {
@@ -165,7 +162,12 @@ export default function EventEndCountdownWrapper() {
         audio.currentTime = 0
       })
       console.log('🔇 [EventEndCountdownWrapper] Todos os áudios parados (GAME OVER)')
-    }, [])
+    }
+  }, [eventEnded])
+
+  // FASE 3: GAME OVER (evento oficialmente terminado)
+  if (eventEnded) {
+    console.log('🏁 [EventEndCountdownWrapper] Renderizando FASE 3: GAME OVER')
     
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-black via-red-950 to-black">

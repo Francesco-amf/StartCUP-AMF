@@ -12,6 +12,8 @@ interface FAQItem {
 
 export default function GuiaAvaliadorPage() {
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null)
+  const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
+  const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
 
   const faqItems: FAQItem[] = [
     {
@@ -171,253 +173,636 @@ export default function GuiaAvaliadorPage() {
           </Card>
 
           {/* Seção: Detalhes das Quests por Fase */}
-          <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#9C27B0]/40">
-            <h2 className="text-2xl font-bold mb-6 text-[#9C27B0]">🎯 Critérios de Avaliação por Quest</h2>
-            <p className="text-[#9C27B0]/80 mb-6">
-              Use estes critérios como guia ao avaliar as submissões. Cada quest tem características específicas que devem ser consideradas.
+          <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/40">
+            <h2 className="text-2xl font-bold mb-6 text-[#00E5FF]">🎯 Critérios de Avaliação por Quest</h2>
+            <p className="text-[#00E5FF]/90 mb-6 text-sm">
+              Clique em cada fase para expandir e ver todas as quests com seus critérios de avaliação detalhados.
             </p>
 
-            {/* FASE 1: PREPARAÇÃO */}
-            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🚀 FASE 1: PREPARAÇÃO</h3>
+            <div className="space-y-3">
+              {/* FASE 1: DESCOBERTA */}
+              <div className="border-2 border-[#00E5FF]/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedPhase(expandedPhase === 1 ? null : 1)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:from-[#667eea]/90 hover:to-[#764ba2]/90 transition-colors text-left flex items-center justify-between"
+                >
+                  <span className="font-bold text-white text-lg">🧭 FASE 1: DESCOBERTA (2h30min)</span>
+                  <span className="text-white text-2xl font-bold">{expandedPhase === 1 ? '−' : '+'}</span>
+                </button>
+                {expandedPhase === 1 && (
+                  <div className="p-6 bg-[#0A1E47]/30 space-y-4">
+                    <p className="text-[#00E5FF] mb-4">🎯 <span className="font-bold">Objetivo:</span> Entender o mercado e o cliente</p>
+                    
+                    {/* Quest 1.1 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '1.1' ? null : '1.1')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 1.1 - 'Conhecendo o Terreno'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 60 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '1.1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '1.1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Análise do mercado através da técnica TAM (Total Addressable Market), SAM (Serviceable Available Market) e SOM (Serviceable Obtainable Market)</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Mapa visual com o mercado potencial e as estimativas de tamanho do mercado em faturamento</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Definição clara de TAM, SAM e SOM com dados realistas</li>
+                            <li>Estimativas de faturamento fundamentadas</li>
+                            <li>Visualização clara e profissional do mapa de mercado</li>
+                            <li>Fontes de dados citadas</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
 
-              {/* Quest 1.1 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 1.1: Configuração de Ambiente</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 100</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Repositório Git configurado corretamente</li>
-                    <li>README com instruções claras de setup</li>
-                    <li>Dependências documentadas</li>
-                    <li>Ambiente de desenvolvimento funcional</li>
-                  </ul>
-                </div>
+                    {/* Quest 1.2 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '1.2' ? null : '1.2')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 1.2 - 'A Persona Secreta'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 50 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '1.2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '1.2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Definir o público-alvo da startup por meio da definição da persona</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Card visual da persona com pain points (pontos de dor) + Contatos de 10 pessoas a serem acionadas na fase de validação</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Persona bem definida com dados demográficos e comportamentais</li>
+                            <li>Pain points identificados e relevantes</li>
+                            <li>Lista de 10 contatos reais fornecida</li>
+                            <li>Card visual atrativo e informativo</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 1.3 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '1.3' ? null : '1.3')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 1.3 - 'Construindo Pontes'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 30 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '1.3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '1.3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Desenvolver a estratégia de relacionamento com o público-alvo e estabelecimento dos canais de distribuição</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Mapa da jornada do cliente</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Jornada do cliente bem mapeada (awareness → purchase → loyalty)</li>
+                            <li>Touchpoints identificados em cada etapa</li>
+                            <li>Canais de distribuição definidos e justificados</li>
+                            <li>Estratégia de relacionamento clara</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BOSS 1 */}
+                    <div className="border-2 border-[#FF3D00] rounded-lg overflow-hidden bg-gradient-to-r from-[#FF3D00]/20 to-[#DC2626]/20">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === 'boss1' ? null : 'boss1')}
+                        className="w-full px-4 py-3 bg-[#FF3D00]/60 hover:bg-[#FF3D00]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-white">🏆 BOSS DA FASE - Pitch de Descoberta</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full">⏱️ 10 min</span>
+                        </div>
+                        <span className="text-white text-xl font-bold">{expandedQuest === 'boss1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === 'boss1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-white text-sm space-y-2">
+                          <p><span className="font-bold">Tarefa:</span> Pitch de 2 minutos sobre "Para quem você está resolvendo e por quê?"</p>
+                          <p className="font-bold text-[#FFD700]">⚠️ IMPORTANTE: Boss Battles não usam multiplicador! (0-100 pontos fixos)</p>
+                          <p className="pt-2"><span className="font-bold">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Clareza na definição do público-alvo</li>
+                            <li>Argumentação convincente sobre o "por quê"</li>
+                            <li>Uso de dados e insights da pesquisa</li>
+                            <li>Apresentação profissional e dentro do tempo</li>
+                            <li>Capacidade de convencer sobre a relevância do problema</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Quest 1.2 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 1.2: Primeiro Prototype</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 150</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Protótipo funcional (mesmo que básico)</li>
-                    <li>Código organizado e comentado</li>
-                    <li>Demonstração de funcionalidade core</li>
-                    <li>Documentação de decisões técnicas</li>
-                  </ul>
-                </div>
+              {/* FASE 2: CRIAÇÃO */}
+              <div className="border-2 border-[#00E5FF]/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedPhase(expandedPhase === 2 ? null : 2)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#a855f7] to-[#ec4899] hover:from-[#a855f7]/90 hover:to-[#ec4899]/90 transition-colors text-left flex items-center justify-between"
+                >
+                  <span className="font-bold text-white text-lg">💡 FASE 2: CRIAÇÃO (3h30min)</span>
+                  <span className="text-white text-2xl font-bold">{expandedPhase === 2 ? '−' : '+'}</span>
+                </button>
+                {expandedPhase === 2 && (
+                  <div className="p-6 bg-[#0A1E47]/30 space-y-4">
+                    <p className="text-[#00E5FF] mb-4">🎯 <span className="font-bold">Objetivo:</span> Desenvolver a solução</p>
+                    
+                    {/* Quest 2.1 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '2.1' ? null : '2.1')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 2.1 - 'A Grande Ideia'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 50 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '2.1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '2.1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Proposta de valor única + Canvas preenchido</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Canvas completo + tagline</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Business Model Canvas completamente preenchido</li>
+                            <li>Proposta de valor clara e diferenciada</li>
+                            <li>Tagline memorável e alinhado com a proposta</li>
+                            <li>Coerência entre todos os blocos do canvas</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 2.2 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '2.2' ? null : '2.2')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 2.2 - 'Identidade Secreta'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 30 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '2.2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '2.2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Nome e logotipo da startup</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Identidade visual básica</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Nome da startup relevante e memorável</li>
+                            <li>Logotipo profissional e adequado ao negócio</li>
+                            <li>Identidade visual coerente (cores, tipografia)</li>
+                            <li>Aplicabilidade em diferentes contextos</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 2.3 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '2.3' ? null : '2.3')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 2.3 - 'Prova de Conceito'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">150 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 120 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '2.3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '2.3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Desenvolver o protótipo navegável da solução (Figma/slides/demo)</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Protótipo funcional</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Protótipo navegável e funcional</li>
+                            <li>Features principais implementadas</li>
+                            <li>UX/UI intuitivo e profissional</li>
+                            <li>Demonstra claramente a proposta de valor</li>
+                            <li>Qualidade visual e atenção aos detalhes</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BOSS 2 */}
+                    <div className="border-2 border-[#FF3D00] rounded-lg overflow-hidden bg-gradient-to-r from-[#FF3D00]/20 to-[#DC2626]/20">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === 'boss2' ? null : 'boss2')}
+                        className="w-full px-4 py-3 bg-[#FF3D00]/60 hover:bg-[#FF3D00]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-white">🏆 BOSS DA FASE - Demo do Protótipo</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full">⏱️ 10 min</span>
+                        </div>
+                        <span className="text-white text-xl font-bold">{expandedQuest === 'boss2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === 'boss2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-white text-sm space-y-2">
+                          <p><span className="font-bold">Tarefa:</span> Demo de 2 minutos do protótipo em funcionamento</p>
+                          <p className="font-bold text-[#FFD700]">⚠️ IMPORTANTE: Boss Battles não usam multiplicador! (0-100 pontos fixos)</p>
+                          <p className="pt-2"><span className="font-bold">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Demonstração clara das funcionalidades principais</li>
+                            <li>Fluidez na navegação do protótipo</li>
+                            <li>Explicação concisa e objetiva</li>
+                            <li>Protótipo realmente funciona conforme demonstrado</li>
+                            <li>Impacto visual e profissionalismo</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* FASE 3: ESTRATÉGIA */}
+              <div className="border-2 border-[#00E5FF]/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedPhase(expandedPhase === 3 ? null : 3)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#f97316] to-[#ef4444] hover:from-[#f97316]/90 hover:to-[#ef4444]/90 transition-colors text-left flex items-center justify-between"
+                >
+                  <span className="font-bold text-white text-lg">🎯 FASE 3: ESTRATÉGIA (2h30min)</span>
+                  <span className="text-white text-2xl font-bold">{expandedPhase === 3 ? '−' : '+'}</span>
+                </button>
+                {expandedPhase === 3 && (
+                  <div className="p-6 bg-[#0A1E47]/30 space-y-4">
+                    <p className="text-[#00E5FF] mb-4">🎯 <span className="font-bold">Objetivo:</span> Planejar a operação</p>
+                    
+                    {/* Quest 3.1 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '3.1' ? null : '3.1')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 3.1 - 'Montando o Exército'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 40 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '3.1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '3.1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Identificar as atividades-chave e os recursos necessários para operação da startup</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Mapa de operações</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Atividades-chave bem identificadas e justificadas</li>
+                            <li>Recursos necessários mapeados (humanos, físicos, tecnológicos)</li>
+                            <li>Fluxo operacional claro</li>
+                            <li>Viabilidade operacional demonstrada</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 3.2 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '3.2' ? null : '3.2')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 3.2 - 'Aliados Estratégicos'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 30 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '3.2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '3.2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Definir 2 parceiros-chave</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Proposta de valor para parceiros</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Dois parceiros-chave identificados e relevantes</li>
+                            <li>Proposta de valor win-win para cada parceiro</li>
+                            <li>Justificativa estratégica das parcerias</li>
+                            <li>Benefícios mútuos claramente articulados</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 3.3 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '3.3' ? null : '3.3')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 3.3 - 'Show Me The Money'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 70 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '3.3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '3.3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Estrutura de custos e receitas + Indicadores financeiros + Estratégia de precificação</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Dashboard financeiro simplificado</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Estrutura de custos detalhada e realista</li>
+                            <li>Fluxos de receita bem definidos</li>
+                            <li>Estratégia de precificação fundamentada</li>
+                            <li>Indicadores financeiros (break-even, margem, etc.)</li>
+                            <li>Dashboard visual e compreensível</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BOSS 3 */}
+                    <div className="border-2 border-[#FF3D00] rounded-lg overflow-hidden bg-gradient-to-r from-[#FF3D00]/20 to-[#DC2626]/20">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === 'boss3' ? null : 'boss3')}
+                        className="w-full px-4 py-3 bg-[#FF3D00]/60 hover:bg-[#FF3D00]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-white">🏆 BOSS DA FASE - Defesa do Modelo de Negócio</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full">⏱️ 10 min</span>
+                        </div>
+                        <span className="text-white text-xl font-bold">{expandedQuest === 'boss3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === 'boss3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-white text-sm space-y-2">
+                          <p><span className="font-bold">Tarefa:</span> Defender o modelo de negócio em 3 minutos</p>
+                          <p className="font-bold text-[#FFD700]">⚠️ IMPORTANTE: Boss Battles não usam multiplicador! (0-100 pontos fixos)</p>
+                          <p className="pt-2"><span className="font-bold">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Explicação clara do modelo de negócio</li>
+                            <li>Viabilidade financeira demonstrada</li>
+                            <li>Argumentação convincente sobre escalabilidade</li>
+                            <li>Capacidade de defender números e projeções</li>
+                            <li>Confiança e profissionalismo na apresentação</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* FASE 4: REFINAMENTO */}
+              <div className="border-2 border-[#00E5FF]/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedPhase(expandedPhase === 4 ? null : 4)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#10b981] to-[#14b8a6] hover:from-[#10b981]/90 hover:to-[#14b8a6]/90 transition-colors text-left flex items-center justify-between"
+                >
+                  <span className="font-bold text-white text-lg">✨ FASE 4: REFINAMENTO (2h)</span>
+                  <span className="text-white text-2xl font-bold">{expandedPhase === 4 ? '−' : '+'}</span>
+                </button>
+                {expandedPhase === 4 && (
+                  <div className="p-6 bg-[#0A1E47]/30 space-y-4">
+                    <p className="text-[#00E5FF] mb-4">🎯 <span className="font-bold">Objetivo:</span> Polir e validar</p>
+                    
+                    {/* Quest 4.1 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '4.1' ? null : '4.1')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 4.1 - 'Teste de Fogo'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 40 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '4.1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '4.1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Simular o uso do produto + Identificar falhas e melhorar</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Versão 2.0 do protótipo</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Melhorias visíveis em relação à versão anterior</li>
+                            <li>Falhas identificadas e corrigidas</li>
+                            <li>Simulação de uso documentada</li>
+                            <li>Refinamento de UX/UI</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 4.2 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '4.2' ? null : '4.2')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 4.2 - 'Validação de Mercado'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 40 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '4.2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '4.2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Pesquisa rápida (Validar com 5+ pessoas)</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Relatório de validação</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Validação realizada com pelo menos 5 pessoas</li>
+                            <li>Metodologia de pesquisa aplicada</li>
+                            <li>Feedback documentado e analisado</li>
+                            <li>Insights e ajustes propostos</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 4.3 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '4.3' ? null : '4.3')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 4.3 - 'Números que Convencem'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 30 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '4.3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '4.3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Refinar projeções financeiras</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Planilha de viabilidade</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Projeções financeiras refinadas e realistas</li>
+                            <li>Cenários otimista, realista e pessimista</li>
+                            <li>Indicadores de viabilidade claros</li>
+                            <li>Planilha bem estruturada e profissional</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BOSS 4 */}
+                    <div className="border-2 border-[#FF3D00] rounded-lg overflow-hidden bg-gradient-to-r from-[#FF3D00]/20 to-[#DC2626]/20">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === 'boss4' ? null : 'boss4')}
+                        className="w-full px-4 py-3 bg-[#FF3D00]/60 hover:bg-[#FF3D00]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-white">🏆 BOSS DA FASE - Simulação de Pitch</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full font-bold">100 pts</span>
+                          <span className="text-xs bg-white text-[#FF3D00] px-2 py-1 rounded-full">⏱️ 10 min</span>
+                        </div>
+                        <span className="text-white text-xl font-bold">{expandedQuest === 'boss4' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === 'boss4' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-white text-sm space-y-2">
+                          <p><span className="font-bold">Tarefa:</span> Simulação de pitch com jurado surpresa</p>
+                          <p className="font-bold text-[#FFD700]">⚠️ IMPORTANTE: Boss Battles não usam multiplicador! (0-100 pontos fixos)</p>
+                          <p className="pt-2"><span className="font-bold">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Estrutura do pitch bem organizada</li>
+                            <li>Clareza e objetividade na comunicação</li>
+                            <li>Capacidade de responder perguntas</li>
+                            <li>Demonstração de confiança e preparação</li>
+                            <li>Impacto e persuasão da apresentação</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* FASE 5: O PITCH */}
+              <div className="border-2 border-[#00E5FF]/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedPhase(expandedPhase === 5 ? null : 5)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#ec4899] to-[#f43f5e] hover:from-[#ec4899]/90 hover:to-[#f43f5e]/90 transition-colors text-left flex items-center justify-between"
+                >
+                  <span className="font-bold text-white text-lg">🚀 FASE 5: O PITCH DEFINITIVO (1h30min)</span>
+                  <span className="text-white text-2xl font-bold">{expandedPhase === 5 ? '−' : '+'}</span>
+                </button>
+                {expandedPhase === 5 && (
+                  <div className="p-6 bg-[#0A1E47]/30 space-y-4">
+                    <p className="text-[#00E5FF] mb-4">🎯 <span className="font-bold">Objetivo:</span> Criar apresentação matadora</p>
+                    
+                    {/* Quest 5.1 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '5.1' ? null : '5.1')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 5.1 - 'A História Épica'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">75 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 20 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '5.1' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '5.1' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Estruturar narrativa do pitch + storytelling da solução (Pitch de 5 minutos)</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Storyline do pitch</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Narrativa envolvente e bem estruturada</li>
+                            <li>Storytelling aplicado de forma efetiva</li>
+                            <li>Sequência lógica e convincente</li>
+                            <li>Conexão emocional com a audiência</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 5.2 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '5.2' ? null : '5.2')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 5.2 - 'Slides de Impacto'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">50 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 40 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '5.2' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '5.2' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Criar apresentação visual, sequência de slides: Capa → Dor/Necessidade → Solução → Mercado → Faturamento → Livre</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Deck completo</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Deck com todos os slides obrigatórios</li>
+                            <li>Design visual profissional e impactante</li>
+                            <li>Informações claras e objetivas</li>
+                            <li>Identidade visual consistente</li>
+                            <li>Slides adicionais relevantes e bem pensados</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quest 5.3 */}
+                    <div className="border-2 border-[#00E5FF]/40 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedQuest(expandedQuest === '5.3' ? null : '5.3')}
+                        className="w-full px-4 py-3 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#00E5FF]">Quest 5.3 - 'Ensaio Geral'</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-bold">25 pts</span>
+                          <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">⏱️ 30 min</span>
+                        </div>
+                        <span className="text-[#00E5FF] text-xl font-bold">{expandedQuest === '5.3' ? '−' : '+'}</span>
+                      </button>
+                      {expandedQuest === '5.3' && (
+                        <div className="px-4 py-3 bg-[#0A1E47]/20 text-[#00E5FF]/90 text-sm space-y-2">
+                          <p><span className="font-bold text-[#00E5FF]">Tarefa:</span> Treinar pitch + ajustar timing (5 minutos)</p>
+                          <p><span className="font-bold text-[#00E5FF]">Entrega:</span> Pitch cronometrado</p>
+                          <p className="pt-2"><span className="font-bold text-[#00E5FF]">Critérios de Avaliação:</span></p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            <li>Pitch ensaiado e cronometrado</li>
+                            <li>Timing respeitado (5 minutos)</li>
+                            <li>Fluidez na apresentação</li>
+                            <li>Preparação visível da equipe</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* FASE 2: DESCOBERTA */}
-            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🔍 FASE 2: DESCOBERTA</h3>
-
-              {/* Quest 2.1 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 2.1: User Research</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 120</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Pesquisa com usuários reais (mínimo 5)</li>
-                    <li>Metodologia de pesquisa clara</li>
-                    <li>Análise de dados e insights</li>
-                    <li>Documentação de pain points identificados</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Quest 2.2 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 2.2: Market Analysis</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 130</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Análise competitiva detalhada</li>
-                    <li>Identificação de oportunidades de mercado</li>
-                    <li>Sizing de mercado (TAM, SAM, SOM)</li>
-                    <li>Diferenciação clara da solução</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Boss Battle 2.3 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF3D00]/50">
-                <h4 className="font-bold text-[#FF3D00] mb-2">⚔️ BOSS BATTLE 2.3: Problem Statement</h4>
-                <div className="text-[#FF3D00]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 200</p>
-                  <p><span className="font-bold text-[#FF3D00]">IMPORTANTE:</span> Boss Battles não usam multiplicador!</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Definição clara e precisa do problema</li>
-                    <li>Evidências baseadas em pesquisa</li>
-                    <li>Impacto quantificado do problema</li>
-                    <li>Validação com dados reais</li>
-                    <li>Apresentação profissional e convincente</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* FASE 3: CRIAÇÃO */}
-            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎨 FASE 3: CRIAÇÃO</h3>
-
-              {/* Quest 3.1 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 3.1: MVP Development</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 180</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>MVP funcional e testável</li>
-                    <li>Features core implementadas</li>
-                    <li>Qualidade de código e arquitetura</li>
-                    <li>UX/UI básico mas funcional</li>
-                    <li>Testes e validação de funcionalidades</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Quest 3.2 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 3.2: Design System</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 140</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Identidade visual consistente</li>
-                    <li>Componentes reutilizáveis documentados</li>
-                    <li>Guidelines de uso claros</li>
-                    <li>Acessibilidade considerada</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* FASE 4: ESTRATÉGIA */}
-            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎯 FASE 4: ESTRATÉGIA</h3>
-
-              {/* Quest 4.1 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 4.1: Go-to-Market Strategy</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 160</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Estratégia de lançamento clara</li>
-                    <li>Canais de aquisição identificados</li>
-                    <li>Timeline realista de execução</li>
-                    <li>Métricas de sucesso definidas</li>
-                    <li>Budget e recursos necessários</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Quest 4.2 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 4.2: Business Model</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 150</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Modelo de monetização claro</li>
-                    <li>Estrutura de custos detalhada</li>
-                    <li>Projeções financeiras realistas</li>
-                    <li>Unit economics demonstrados</li>
-                    <li>Plano de escalabilidade</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Boss Battle 4.3 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF3D00]/50">
-                <h4 className="font-bold text-[#FF3D00] mb-2">⚔️ BOSS BATTLE 4.3: Strategic Roadmap</h4>
-                <div className="text-[#FF3D00]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 220</p>
-                  <p><span className="font-bold text-[#FF3D00]">IMPORTANTE:</span> Boss Battles não usam multiplicador!</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Roadmap detalhado (6-12 meses)</li>
-                    <li>Milestones e KPIs definidos</li>
-                    <li>Recursos e investimentos necessários</li>
-                    <li>Riscos identificados e mitigação</li>
-                    <li>Apresentação executiva e convincente</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* FASE 5: REFINAMENTO */}
-            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">✨ FASE 5: REFINAMENTO</h3>
-
-              {/* Quest 5.1 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 5.1: Product Polish</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 170</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Refinamento de UX/UI</li>
-                    <li>Performance otimizada</li>
-                    <li>Bug fixes e estabilidade</li>
-                    <li>Feedback de usuários incorporado</li>
-                    <li>Documentação técnica completa</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Quest 5.2 */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 5.2: Metrics & Analytics</h4>
-                <div className="text-[#9C27B0]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 140</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Sistema de analytics implementado</li>
-                    <li>Métricas chave sendo coletadas</li>
-                    <li>Dashboards de acompanhamento</li>
-                    <li>Insights baseados em dados</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* FASE 6: PITCH FINAL */}
-            <div className="mb-6 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
-              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎤 FASE 6: PITCH FINAL</h3>
-
-              {/* Final Pitch */}
-              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FFD700]/50">
-                <h4 className="font-bold text-[#FFD700] mb-2">🏆 Quest 6.1: Final Pitch Presentation</h4>
-                <div className="text-[#FFD700]/80 text-sm space-y-2">
-                  <p><span className="font-bold">Pontos máximos:</span> 300</p>
-                  <p><span className="font-bold text-[#FFD700]">IMPORTANTE:</span> Pitch Final não usa multiplicador!</p>
-                  <p><span className="font-bold">Critérios:</span></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Apresentação clara e profissional (5-7 min)</li>
-                    <li>Problema e solução bem articulados</li>
-                    <li>Demo do produto funcionando</li>
-                    <li>Traction e resultados demonstrados</li>
-                    <li>Modelo de negócio explicado</li>
-                    <li>Visão de futuro e roadmap</li>
-                    <li>Capacidade de responder perguntas</li>
-                    <li>Impacto e escalabilidade da solução</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
-              <p className="text-[#9C27B0]/80 text-sm">
-                <span className="font-bold text-[#9C27B0]">💡 Dica de Avaliação:</span> Use estes critérios como guia, mas considere também criatividade, esforço e contexto da equipe. O multiplicador permite reconhecer trabalhos excepcionais (APENAS para quests regulares, NÃO para Boss Battles ou Pitch Final).
+            <div className="mt-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#00E5FF]/50">
+              <p className="text-[#00E5FF]/90 text-sm">
+                <span className="font-bold text-[#00E5FF]">💡 Dica de Avaliação:</span> Use estes critérios como guia, mas considere também criatividade, esforço e contexto da equipe. O multiplicador (1.0 a 2.0) permite reconhecer trabalhos excepcionais - APENAS para quests regulares. Boss Battles recebem pontuação fixa de 0 a 100 sem multiplicador.
               </p>
             </div>
           </Card>

@@ -254,16 +254,6 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
     }
   }
 
-      if (error) throw error
-      
-      // Atualizar lista
-      fetchRequests()
-    } catch (error) {
-      console.error('Erro ao cancelar solicitação:', error)
-      alert('Erro ao cancelar solicitação')
-    }
-  }
-
   const pendingRequests = requests.filter(r => r.status === 'pending')
   const activeRequests = requests.filter(r => r.status === 'accepted')
   const completedRequests = requests.filter(r => r.status === 'completed')

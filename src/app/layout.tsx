@@ -29,18 +29,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 🎵 Audio System Initializer - MUST be loaded globally */}
         <AudioInitializer />
-
-        {/* ✨ P3: Centralized Supabase Provider */
         <SupabaseProvider>
-          {/* ✅ REMOVED: EventEndCountdownWrapper was duplicated here and in live-dashboard/page.tsx
-              It should ONLY appear on /live-dashboard, not globally in layout.
-              Rendering it globally was causing:
-              - Double polling at different times
-              - Sync conflicts between instances
-              - Unexpected refresh propagation when other pages updated data
-          */}
           {children}
         </SupabaseProvider>
       </body>

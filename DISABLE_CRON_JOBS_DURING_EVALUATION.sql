@@ -15,34 +15,39 @@
 -- DESABILITAR jobs 3 e 8 durante período de avaliação
 -- ==========================================
 
--- Desabilitar auto-start-next-quest-job
-UPDATE cron.job
-SET active = false
-WHERE jobid = 3;
+-- Desabilitar auto-start-next-quest-job (jobid 3)
+SELECT cron.unschedule(3);
 
--- Desabilitar auto-advance-phase-job  
-UPDATE cron.job
-SET active = false
-WHERE jobid = 8;
+-- Desabilitar auto-advance-phase-job (jobid 8)
+SELECT cron.unschedule(8);
 
-SELECT '✅ Cron jobs 3 e 8 DESABILITADOS' as status;
+SELECT '✅ Cron jobs 3 e 8 REMOVIDOS' as status;
 
--- Verificar:
+-- Verificar (não deve mostrar jobs 3 e 8):
 SELECT 
   jobid,
   jobname,
   schedule,
-  active,
-  CASE WHEN active THEN '🟢 ATIVO' ELSE '🔴 DESABILITADO' END as status
+  active
 FROM cron.job
 WHERE jobid IN (3, 8);
 
 -- ==========================================
 -- IMPORTANTE:
 -- ==========================================
--- Após o evento terminar, você pode REABILITAR os jobs:
--- UPDATE cron.job SET active = true WHERE jobid IN (3, 8);
+-- Os jobs foram REMOVIDOS (unscheduled), não apenas desabilitados.
+-- 
+-- Se precisar recriá-los após o evento:
+-- 
+-- SELECT cron.schedule(
+--   'auto-start-next-quest-job',
+--   '* * * * *',  -- A cada minuto
+--   'SELECT auto_start_next_quest();'
+-- );
 --
--- Mas durante o período de avaliação (20 min), 
--- eles DEVEM estar desabilitados para não resetar o timer.
+-- SELECT cron.schedule(
+--   'auto-advance-phase-job',
+--   '* * * * *',  -- A cada minuto
+--   'SELECT auto_advance_phase();'
+-- );
 -- ==========================================

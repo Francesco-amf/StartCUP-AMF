@@ -18,13 +18,6 @@ interface SubmissionWrapperProps {
 export default function SubmissionWrapper({ quests, team, submissions, eventConfig }: SubmissionWrapperProps) {
   const [completedQuestId, setCompletedQuestId] = useState<string | null>(null)
 
-  console.log('🔍 [SubmissionWrapper] Props recebidas:', {
-    questsCount: quests.length,
-    teamId: team.id,
-    submissionsCount: submissions?.length,
-    submissions: submissions
-  })
-
   const handleSuccess = (questId: string) => {
     // ✅ Marca a quest como completa para esconder TODOS os forms de envio
     // Polling (500ms) + BroadcastChannel detectam mudanças automaticamente
@@ -148,12 +141,8 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   // Calcular propriedades de exibição apenas da lista (marcando apenas a atual como shouldShow)
   let autoAdvancedFromExpired: { fromName: string, toName: string } | null = null
   
-  console.log('🔍 [SubmissionWrapper] submittedQuestIds:', submittedQuestIds)
-  console.log('🔍 [SubmissionWrapper] sortedQuests:', sortedQuests.map(q => ({ id: q.id, name: q.name })))
-  
   const availableQuests = sortedQuests.map((quest, index) => {
     const alreadySubmitted = submittedQuestIds.includes(quest.id);
-    console.log(`🔍 [SubmissionWrapper] Quest ${quest.name}: alreadySubmitted=${alreadySubmitted}, quest.id=${quest.id}`)
     const isEvaluated = evaluatedQuestIds.includes(quest.id);
     
     // Detectar se é BOSS (quest de apresentação)
@@ -244,29 +233,8 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   
   // Quest atual para notificação de expiração
   const currentQuest = currentIndex >= 0 ? sortedQuests[currentIndex] : undefined
-
-  // 🔍 DEBUG: Log das quests que serão exibidas
-  console.log('🔍 [SubmissionWrapper] Estado atual:', {
-    currentIndex,
-    currentQuestName: currentQuest?.name,
-    notSubmittedIndexes,
-    submittedQuestIds
-  })
-  console.log('🔍 [SubmissionWrapper] Quests disponíveis:', availableQuests.map(q => ({
-    id: q.id,
-    name: q.name,
-    shouldShow: q.shouldShow,
-    alreadySubmitted: q.alreadySubmitted,
-    isExpired: q.isExpired,
-    isInLateWindow: q.isInLateWindow
-  })))
   
   const questsToShow = availableQuests.filter(q => q.shouldShow)
-  console.log('🔍 [SubmissionWrapper] Quests filtradas para exibir:', questsToShow.map(q => ({
-    id: q.id,
-    name: q.name,
-    alreadySubmitted: q.alreadySubmitted
-  })))
 
   // ✅ NOVO: Verificar se há quest submetida aguardando prazo expirar
   let waitingForDeadline: { questName: string; minutesRemaining: number } | null = null

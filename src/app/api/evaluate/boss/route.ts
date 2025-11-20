@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
-    const supabaseAdmin = createServiceRoleClient() // For bypassing RLS
     const body = await request.json()
 
     const { team_id, quest_id, points, comments, evaluator_id } = body
@@ -61,7 +60,7 @@ export async function POST(request: Request) {
       .select('id')
       .eq('team_id', team_id)
       .eq('quest_id', quest_id)
-      .maybeSingle() // Use maybeSingle() instead of single() to avoid error when not found
+      .maybeSingle()
 
     let submission_id: string
 
@@ -70,10 +69,10 @@ export async function POST(request: Request) {
       submission_id = existingSubmission.id
       console.log('📝 Using existing submission:', submission_id)
     } else {
-      // Criar submission automaticamente
+      // Criar submission automaticamente usando service role client (bypass RLS)
       console.log('🔨 Creating new submission for Boss...')
       
-      // Use admin client to bypass RLS for submission creation
+      const supabaseAdmin = createServiceRoleClient()
       const { data: newSubmission, error: submissionError } = await supabaseAdmin
         .from('submissions')
         .insert({
@@ -81,9 +80,8 @@ export async function POST(request: Request) {
           quest_id,
           file_url: null,
           text_content: 'Boss Battle - Apresentação Presencial',
-          status: 'evaluated',
+          status: 'pending',
           submitted_at: new Date().toISOString(),
-          final_points: points, // Boss não tem multiplicador, pontos diretos
         })
         .select('id')
         .single()
@@ -114,11 +112,10 @@ export async function POST(request: Request) {
       console.log('✅ Created submission:', submission_id)
     }
 
-    // Criar ou atualizar avaliação
+    // Criar ou atualizar avaliação usando cliente NORMAL (como na API /api/evaluate)
     console.log('💾 Saving evaluation...', { submission_id, evaluator_id, points })
     
-    // Use admin client to bypass RLS for evaluation creation/update
-    const { data: evaluation, error: evalError } = await supabaseAdmin
+    const { data: evaluation, error: evalError } = await supabase
       .from('evaluations')
       .upsert({
         submission_id,
@@ -151,11 +148,34 @@ export async function POST(request: Request) {
 
     console.log('✅ Evaluation saved:', evaluation)
 
-    // Atualizar submission com pontos finais (caso já existisse)
+    // Buscar todas as avaliações desta submission para calcular média
+    const { data: allEvaluations } = await supabase
+      .from('evaluations')
+      .select('points')
+      .eq('submission_id', submission_id)
+
+    console.log('📊 All evaluations for this submission:', allEvaluations)
+
+    let finalPoints = points
+
+    // Calcular pontos finais (média das avaliações)
+    if (allEvaluations && allEvaluations.length > 0) {
+      const totalPoints = allEvaluations.reduce((sum: number, e: { points: number | null }) => sum + (e.points || 0), 0)
+      finalPoints = Math.round(totalPoints / allEvaluations.length)
+
+      console.log('🔢 Calculating final points:', {
+        totalPoints,
+        evaluationsCount: allEvaluations.length,
+        finalPoints
+      })
+    }
+
+    // Atualizar submission com pontos finais usando service role (bypass RLS)
+    const supabaseAdmin = createServiceRoleClient()
     const { error: updateError } = await supabaseAdmin
       .from('submissions')
       .update({
-        final_points: points,
+        final_points: finalPoints,
         status: 'evaluated',
       })
       .eq('id', submission_id)
@@ -164,12 +184,14 @@ export async function POST(request: Request) {
       console.error('⚠️ Error updating submission final_points:', updateError)
     }
 
+    console.log('✅ Boss evaluation complete:', { submission_id, finalPoints })
+
     return NextResponse.json({
       success: true,
       message: 'Boss Battle avaliado com sucesso',
       submission_id,
       evaluation_id: evaluation.id,
-      points
+      points: finalPoints
     })
   } catch (error) {
     console.error('❌ Server error:', error)

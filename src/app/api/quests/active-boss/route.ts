@@ -47,14 +47,14 @@ export async function GET() {
       return NextResponse.json({ quest: activeBoss })
     }
 
-    // Se não há Boss ativo, verificar se há Boss fechado recentemente (últimas 2 horas)
+    // Se não há Boss ativo, verificar se há Boss fechado recentemente (última 1 hora)
     const recentBoss = quests.find(q => {
       if (!q.started_at) return false
       const startTime = new Date(q.started_at).getTime()
       const now = Date.now()
-      const twoHoursInMs = 2 * 60 * 60 * 1000
+      const oneHourInMs = 1 * 60 * 60 * 1000
       const timeSinceStart = now - startTime
-      return timeSinceStart <= twoHoursInMs
+      return timeSinceStart <= oneHourInMs
     })
 
     if (recentBoss) {

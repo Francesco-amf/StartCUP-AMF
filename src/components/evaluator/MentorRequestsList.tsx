@@ -15,6 +15,7 @@ interface MentorRequest {
   request_number: number
   status: string
   notes: string | null
+  mentor_response: string | null
   created_at: string
   accepted_at?: string | null
   completed_at?: string | null
@@ -34,6 +35,8 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
   const [loading, setLoading] = useState(true)
   const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [newRequestAnimation, setNewRequestAnimation] = useState(false)
+  const [responseModal, setResponseModal] = useState<{ requestId: string; action: 'accept' | 'complete' | 'cancel' } | null>(null)
+  const [responseText, setResponseText] = useState('')
   const supabase = createClient()
 
   // Reproduzir som de notificação
@@ -168,13 +171,14 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
     }
   }
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = async (requestId: string, mentorResponse?: string) => {
     try {
       const { error } = await supabase
         .from('mentor_requests')
         .update({ 
           status: 'accepted',
-          accepted_at: new Date().toISOString()
+          accepted_at: new Date().toISOString(),
+          mentor_response: mentorResponse || null
         })
         .eq('id', requestId)
 
@@ -182,19 +186,22 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
       
       // Atualizar lista
       fetchRequests()
+      setResponseModal(null)
+      setResponseText('')
     } catch (error) {
       console.error('Erro ao aceitar solicitação:', error)
       alert('Erro ao aceitar solicitação')
     }
   }
 
-  const handleComplete = async (requestId: string) => {
+  const handleComplete = async (requestId: string, mentorResponse?: string) => {
     try {
       const { error } = await supabase
         .from('mentor_requests')
         .update({ 
           status: 'completed',
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          mentor_response: mentorResponse || null
         })
         .eq('id', requestId)
 
@@ -202,21 +209,50 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
       
       // Atualizar lista
       fetchRequests()
+      setResponseModal(null)
+      setResponseText('')
     } catch (error) {
       console.error('Erro ao completar solicitação:', error)
       alert('Erro ao completar solicitação')
     }
   }
 
-  const handleCancel = async (requestId: string) => {
+  const handleCancel = async (requestId: string, mentorResponse?: string) => {
     try {
-      const { error } = await supabase
+      const { error} = await supabase
         .from('mentor_requests')
         .update({ 
           status: 'cancelled',
-          cancelled_at: new Date().toISOString()
+          cancelled_at: new Date().toISOString(),
+          mentor_response: mentorResponse || null
         })
         .eq('id', requestId)
+
+      if (error) throw error
+      
+      // Atualizar lista
+      fetchRequests()
+      setResponseModal(null)
+      setResponseText('')
+    } catch (error) {
+      console.error('Erro ao cancelar solicitação:', error)
+      alert('Erro ao cancelar solicitação')
+    }
+  }
+
+  const handleSubmitResponse = () => {
+    if (!responseModal) return
+
+    const { requestId, action } = responseModal
+    
+    if (action === 'accept') {
+      handleAccept(requestId, responseText)
+    } else if (action === 'complete') {
+      handleComplete(requestId, responseText)
+    } else if (action === 'cancel') {
+      handleCancel(requestId, responseText)
+    }
+  }
 
       if (error) throw error
       
@@ -324,13 +360,19 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
 
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => handleAccept(request.id)}
+                    onClick={() => {
+                      setResponseModal({ requestId: request.id, action: 'accept' })
+                      setResponseText('')
+                    }}
                     className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
                   >
                     ✓ Aceitar
                   </Button>
                   <Button
-                    onClick={() => handleCancel(request.id)}
+                    onClick={() => {
+                      setResponseModal({ requestId: request.id, action: 'cancel' })
+                      setResponseText('')
+                    }}
                     variant="outline"
                     className="bg-red-500/20 border-red-400/40 text-red-300 hover:bg-red-500/30"
                   >
@@ -383,7 +425,10 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
                 )}
 
                 <Button
-                  onClick={() => handleComplete(request.id)}
+                  onClick={() => {
+                    setResponseModal({ requestId: request.id, action: 'complete' })
+                    setResponseText('')
+                  }}
                   className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold"
                 >
                   ✓ Marcar como Concluída
@@ -423,6 +468,74 @@ export default function MentorRequestsList({ mentorId }: MentorRequestsListProps
             ))}
           </div>
         </Card>
+      )}
+
+      {/* Modal de Resposta */}
+      {responseModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg bg-gradient-to-br from-[#0A1E47] to-[#001A4D] border-2 border-[#00E5FF]/40 rounded-lg shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-6 border-b border-white/10">
+              <h3 className="text-2xl font-bold text-[#00E5FF] mb-2">
+                {responseModal.action === 'accept' && '✅ Aceitar Mentoria'}
+                {responseModal.action === 'complete' && '✓ Concluir Mentoria'}
+                {responseModal.action === 'cancel' && '✕ Recusar Mentoria'}
+              </h3>
+              <p className="text-sm text-white/70">
+                {responseModal.action === 'accept' && 'Envie uma mensagem para a equipe (opcional)'}
+                {responseModal.action === 'complete' && 'Deixe um feedback final para a equipe (opcional)'}
+                {responseModal.action === 'cancel' && 'Explique o motivo da recusa (opcional)'}
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <textarea
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+                placeholder={
+                  responseModal.action === 'accept' 
+                    ? 'Ex: Olá! Estou disponível agora para ajudá-los. Vou até a mesa de vocês...'
+                    : responseModal.action === 'complete'
+                    ? 'Ex: Foi ótimo ajudá-los! Lembrem-se de focar em...'
+                    : 'Ex: Infelizmente não posso atender agora, mas podem solicitar outro mentor...'
+                }
+                className="w-full h-32 bg-white/10 border-2 border-white/20 rounded-lg p-3 text-white placeholder:text-white/40 focus:border-[#00E5FF] focus:outline-none resize-none"
+              />
+              <p className="text-xs text-white/50 mt-2">
+                {responseText.length}/500 caracteres
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/10 flex gap-3">
+              <Button
+                onClick={() => {
+                  setResponseModal(null)
+                  setResponseText('')
+                }}
+                variant="outline"
+                className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmitResponse}
+                className={`flex-1 text-white font-bold ${
+                  responseModal.action === 'accept' 
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                    : responseModal.action === 'complete'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                    : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                }`}
+              >
+                {responseModal.action === 'accept' && '✓ Confirmar e Aceitar'}
+                {responseModal.action === 'complete' && '✓ Confirmar e Concluir'}
+                {responseModal.action === 'cancel' && '✕ Confirmar Recusa'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

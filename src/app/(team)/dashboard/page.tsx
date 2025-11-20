@@ -13,6 +13,7 @@ import FinalEvaluationGuide from '@/components/FinalEvaluationGuide'
 import TeamLogoUpload from '@/components/TeamLogoUpload'
 import PowerUpActivator from '@/components/PowerUpActivator'
 import MentorRequestButton from '@/components/MentorRequestButton'
+import TeamMentorHistory from '@/components/team/TeamMentorHistory'
 import { Accordion } from '@/components/ui/Accordion'
 import AMFCoinsHistory from '@/components/team/AMFCoinsHistory'
 import TeamDashboardClient from '@/components/TeamDashboardClient'
@@ -345,6 +346,7 @@ export default async function TeamDashboard() {
                       currentPhase={eventConfig?.current_phase || 0}
                       teamCoins={totalPoints}
                     />
+                    <TeamMentorHistory teamId={team.id} />
                     <PowerUpsGuide />
                   </div>
                 ),

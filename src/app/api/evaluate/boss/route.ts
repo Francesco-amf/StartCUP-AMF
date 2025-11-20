@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       .select('id')
       .eq('team_id', team_id)
       .eq('quest_id', quest_id)
-      .single()
+      .maybeSingle() // Use maybeSingle() instead of single() to avoid error when not found
 
     let submission_id: string
 
@@ -70,6 +70,8 @@ export async function POST(request: Request) {
       console.log('📝 Using existing submission:', submission_id)
     } else {
       // Criar submission automaticamente
+      console.log('🔨 Creating new submission for Boss...')
+      
       const { data: newSubmission, error: submissionError } = await supabase
         .from('submissions')
         .insert({
@@ -84,10 +86,24 @@ export async function POST(request: Request) {
         .select('id')
         .single()
 
-      if (submissionError || !newSubmission) {
+      if (submissionError) {
         console.error('❌ Error creating submission:', submissionError)
+        console.error('❌ Full error:', JSON.stringify(submissionError, null, 2))
         return NextResponse.json(
-          { error: 'Erro ao criar submission', details: submissionError?.message },
+          { 
+            error: 'Erro ao criar submission', 
+            details: submissionError?.message,
+            code: submissionError?.code,
+            hint: submissionError?.hint 
+          },
+          { status: 500 }
+        )
+      }
+
+      if (!newSubmission) {
+        console.error('❌ No submission returned after insert')
+        return NextResponse.json(
+          { error: 'Submission não foi criada (sem dados retornados)' },
           { status: 500 }
         )
       }
@@ -97,6 +113,8 @@ export async function POST(request: Request) {
     }
 
     // Criar ou atualizar avaliação
+    console.log('💾 Saving evaluation...', { submission_id, evaluator_id, points })
+    
     const { data: evaluation, error: evalError } = await supabase
       .from('evaluations')
       .upsert({
@@ -116,8 +134,14 @@ export async function POST(request: Request) {
 
     if (evalError) {
       console.error('❌ Error creating evaluation:', evalError)
+      console.error('❌ Full error:', JSON.stringify(evalError, null, 2))
       return NextResponse.json(
-        { error: 'Erro ao salvar avaliação', details: evalError.message },
+        { 
+          error: 'Erro ao salvar avaliação', 
+          details: evalError.message,
+          code: evalError.code,
+          hint: evalError.hint 
+        },
         { status: 500 }
       )
     }

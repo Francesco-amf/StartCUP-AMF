@@ -157,7 +157,7 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
     if (isInitialized && !suspenseMusicStarted.current && !allEvaluated) {
       const audioManager = getAudioManager()
       console.log('🎵 [EvaluationPeriodCountdown] Tocando suspense.mp3...')
-      audioManager.playSound('suspense')
+      audioManager.playFile('suspense')
       suspenseMusicStarted.current = true
     }
   }, [isInitialized, allEvaluated])

@@ -305,11 +305,13 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
       console.log(`⏰ Transicionando de Countdown para Game Over`)
       setCurrentPhase('gameOver')
 
-      // Para o som do countdown - aumenta volume e desabilita loop
-      // Usar variável global em vez de ref
-      if (globalCountdownAudio && !globalCountdownAudio.paused) {
-        globalCountdownAudio.volume = 0.7
+      // ✅ FIX: Parar completamente o som do countdown
+      if (globalCountdownAudio) {
+        globalCountdownAudio.pause()
+        globalCountdownAudio.currentTime = 0
         globalCountdownAudio.loop = false
+        globalCountdownAudio = null
+        console.log('🔇 Áudio de countdown parado completamente')
       }
 
       // Buscar o vencedor
@@ -448,6 +450,12 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
 
   useEffect(() => {
     if (!eventEndTime) return
+    
+    // ✅ FIX: Parar timer se não estiver na fase countdown
+    if (currentPhase !== 'countdown') {
+      console.log('⏹️ Timer parado - fase atual:', currentPhase)
+      return
+    }
 
     const calculateTimeLeft = () => {
       const now = Date.now()
@@ -483,7 +491,7 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
     const interval = setInterval(updateTimer, 1000)
 
     return () => clearInterval(interval)
-  }, [eventEndTime, onEventEnd])
+  }, [eventEndTime, onEventEnd, currentPhase])
 
   // FASE 1: Contagem regressiva final (10 segundos)
   if (currentPhase === 'countdown' && timeLeft !== null && timeLeft > 0) {

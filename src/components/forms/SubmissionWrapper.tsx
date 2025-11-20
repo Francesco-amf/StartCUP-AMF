@@ -234,6 +234,12 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   const currentQuest = currentIndex >= 0 ? sortedQuests[currentIndex] : undefined
 
   // 🔍 DEBUG: Log das quests que serão exibidas
+  console.log('🔍 [SubmissionWrapper] Estado atual:', {
+    currentIndex,
+    currentQuestName: currentQuest?.name,
+    notSubmittedIndexes,
+    submittedQuestIds
+  })
   console.log('🔍 [SubmissionWrapper] Quests disponíveis:', availableQuests.map(q => ({
     id: q.id,
     name: q.name,

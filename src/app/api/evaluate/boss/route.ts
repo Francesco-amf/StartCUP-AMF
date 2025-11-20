@@ -5,11 +5,29 @@ export async function POST(request: Request) {
   try {
     console.log('🔥 [BOSS API] Starting request...')
     
-    const supabase = await createServerSupabaseClient()
-    console.log('✅ [BOSS API] Supabase client created')
+    let supabase
+    try {
+      supabase = await createServerSupabaseClient()
+      console.log('✅ [BOSS API] Supabase client created')
+    } catch (err) {
+      console.error('❌ [BOSS API] Failed to create Supabase client:', err)
+      return NextResponse.json(
+        { error: 'Failed to create Supabase client', details: String(err) },
+        { status: 500 }
+      )
+    }
     
-    const body = await request.json()
-    console.log('✅ [BOSS API] Body parsed:', body)
+    let body
+    try {
+      body = await request.json()
+      console.log('✅ [BOSS API] Body parsed:', body)
+    } catch (err) {
+      console.error('❌ [BOSS API] Failed to parse body:', err)
+      return NextResponse.json(
+        { error: 'Failed to parse request body', details: String(err) },
+        { status: 400 }
+      )
+    }
 
     const { team_id, quest_id, points, comments, evaluator_id } = body
 
@@ -81,8 +99,17 @@ export async function POST(request: Request) {
       console.log('🔨 [BOSS API] Creating new submission for Boss...')
       console.log('🔨 [BOSS API] Submission data:', { team_id, quest_id })
       
-      const supabaseAdmin = createServiceRoleClient()
-      console.log('✅ [BOSS API] Service role client created')
+      let supabaseAdmin
+      try {
+        supabaseAdmin = createServiceRoleClient()
+        console.log('✅ [BOSS API] Service role client created')
+      } catch (err) {
+        console.error('❌ [BOSS API] Failed to create service role client:', err)
+        return NextResponse.json(
+          { error: 'Failed to create admin client', details: String(err) },
+          { status: 500 }
+        )
+      }
       
       const { data: newSubmission, error: submissionError } = await supabaseAdmin
         .from('submissions')
@@ -216,10 +243,16 @@ export async function POST(request: Request) {
       evaluation_id: evaluation.id,
       points: finalPoints
     })
-  } catch (error) {
-    console.error('❌ Server error:', error)
+  } catch (error: any) {
+    console.error('❌ [BOSS API] Server error:', error)
+    console.error('❌ [BOSS API] Error stack:', error?.stack)
+    console.error('❌ [BOSS API] Error message:', error?.message)
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: 'Erro interno do servidor',
+        message: error?.message || String(error),
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }

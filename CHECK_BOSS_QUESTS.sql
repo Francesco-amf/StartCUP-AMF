@@ -46,7 +46,7 @@ SELECT
 FROM quests q
 JOIN phases p ON q.phase_id = p.id
 WHERE q.status = 'scheduled'
-  AND p.id = (SELECT current_phase_id FROM event_config WHERE id = 1)
+  AND p.order_index = (SELECT current_phase FROM event_config WHERE id = 1)
 ORDER BY q.order_index
 LIMIT 1;
 
@@ -54,9 +54,8 @@ LIMIT 1;
 SELECT 
   '⚙️ EVENTO CONFIG' as tipo,
   event_started,
-  current_phase_id,
-  (SELECT order_index FROM phases WHERE id = current_phase_id) as phase_number,
-  (SELECT name FROM phases WHERE id = current_phase_id) as phase_name
+  current_phase,
+  (SELECT name FROM phases WHERE order_index = current_phase) as phase_name
 FROM event_config
 WHERE id = 1;
 
@@ -67,5 +66,6 @@ SELECT
   COUNT(*) as quantidade,
   STRING_AGG(q.name, ', ') as quests
 FROM quests q
-WHERE q.phase_id = (SELECT current_phase_id FROM event_config WHERE id = 1)
+JOIN phases p ON q.phase_id = p.id
+WHERE p.order_index = (SELECT current_phase FROM event_config WHERE id = 1)
 GROUP BY q.status;

@@ -184,7 +184,11 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
     let previewOnly = false
     let isExpired = false
 
-    if (!alreadySubmitted && index === currentIndex) {
+    // ✅ FIX: NUNCA mostrar formulário se já foi submetida
+    if (alreadySubmitted) {
+      shouldShow = false
+      isExpired = false
+    } else if (index === currentIndex) {
       if (lateWindowExpired) {
         // Mostra a atual com aviso de prazo expirado, mas sem formulário
         shouldShow = true

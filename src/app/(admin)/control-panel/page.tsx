@@ -38,12 +38,12 @@ export default async function AdminControlPanel() {
     .select('*')
 
   // Buscar estatísticas do evento
-  const { data: submissions } = await supabase
+  const { data: submissions, error: submissionsError } = await supabase
     .from('submissions')
     .select('*')
 
   // Buscar submissões pendentes de avaliação (submetidas mas sem avaliação)
-  const { data: pendingSubmissions } = await supabase
+  const { data: pendingSubmissions, error: pendingError } = await supabase
     .from('submissions')
     .select('id, evaluations!left(id)')
 
@@ -52,7 +52,7 @@ export default async function AdminControlPanel() {
     (sub: any) => !sub.evaluations || sub.evaluations.length === 0
   ).length || 0
 
-  const { data: evaluations } = await supabase
+  const { data: evaluations, error: evaluationsError } = await supabase
     .from('evaluations')
     .select('*')
 
@@ -65,9 +65,14 @@ export default async function AdminControlPanel() {
   // Debug visual para verificar dados
   const debugInfo = {
     submissionsRaw: submissions?.length || 0,
+    submissionsError: submissionsError?.message || null,
     pendingRaw: pendingSubmissions?.length || 0,
+    pendingError: pendingError?.message || null,
     pendingCount: pendingCount,
-    evaluationsRaw: evaluations?.length || 0
+    evaluationsRaw: evaluations?.length || 0,
+    evaluationsError: evaluationsError?.message || null,
+    userId: user.id,
+    userRole: userRole
   }
 
   return (

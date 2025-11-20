@@ -156,9 +156,16 @@ export default function EvaluationPeriodCountdown({ onEvaluationsComplete }: Eva
   useEffect(() => {
     if (isInitialized && !suspenseMusicStarted.current && !allEvaluated) {
       const audioManager = getAudioManager()
-      console.log('🎵 [EvaluationPeriodCountdown] Tocando suspense.mp3...')
-      audioManager.playFile('suspense')
-      suspenseMusicStarted.current = true
+      
+      // Tentar autorizar áudio se ainda não foi
+      audioManager.enableAutoplay()
+      
+      // Aguardar um momento para garantir que autoplay foi configurado
+      setTimeout(() => {
+        console.log('🎵 [EvaluationPeriodCountdown] Tocando suspense.mp3...')
+        audioManager.playFile('suspense')
+        suspenseMusicStarted.current = true
+      }, 500) // Delay de 500ms para garantir autorização
     }
   }, [isInitialized, allEvaluated])
 

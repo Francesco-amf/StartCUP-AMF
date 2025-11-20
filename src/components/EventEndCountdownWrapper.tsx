@@ -152,19 +152,6 @@ export default function EventEndCountdownWrapper() {
     )
   }
 
-  // ✅ Parar todos os áudios quando GAME OVER é exibido
-  useEffect(() => {
-    if (eventEnded) {
-      // Parar todos os áudios globais que possam estar tocando
-      const allAudios = document.querySelectorAll('audio')
-      allAudios.forEach(audio => {
-        audio.pause()
-        audio.currentTime = 0
-      })
-      console.log('🔇 [EventEndCountdownWrapper] Todos os áudios parados (GAME OVER)')
-    }
-  }, [eventEnded])
-
   // FASE 3: GAME OVER (evento oficialmente terminado)
   if (eventEnded) {
     console.log('🏁 [EventEndCountdownWrapper] Renderizando FASE 3: GAME OVER')

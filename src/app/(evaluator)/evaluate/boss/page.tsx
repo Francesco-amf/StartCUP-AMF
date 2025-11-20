@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import Header from '@/components/Header'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 
 interface Team {
   id: string
@@ -45,7 +45,7 @@ export default function BossEvaluationPage() {
 
   const loadData = async () => {
     try {
-      const supabase = createClientComponentClient()
+      const supabase = createClient()
       
       // Buscar usuário e avaliador via Supabase
       const { data: { user: authUser } } = await supabase.auth.getUser()

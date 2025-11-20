@@ -209,7 +209,21 @@ export default async function SubmitPage() {
 
         {/* Quests Ativas */}
         {eventConfig?.event_started && sortedQuests.length > 0 ? (
-          <SubmissionWrapper quests={sortedQuests} team={team} submissions={submissions || []} eventConfig={eventConfig} />
+          <>
+            {/* 🔍 DEBUG TEMPORÁRIO */}
+            <Card className="p-4 mb-4 bg-red-900/20 border border-red-500">
+              <h3 className="text-red-400 font-bold mb-2">🔍 DEBUG - Submissions Query</h3>
+              <pre className="text-xs text-white overflow-auto">
+                {JSON.stringify({
+                  teamId: team.id,
+                  submissionsCount: submissions?.length || 0,
+                  submissions: submissions,
+                  error: submissionsError
+                }, null, 2)}
+              </pre>
+            </Card>
+            <SubmissionWrapper quests={sortedQuests} team={team} submissions={submissions || []} eventConfig={eventConfig} />
+          </>
         ) : eventConfig?.event_started ? (
           <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/80 to-[#001A4D]/80 border border-[#00E5FF]/40">
             <p className="text-[#00E5FF]">

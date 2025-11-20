@@ -10,6 +10,7 @@ import EvaluatorCardsDisplay from '@/components/EvaluatorCardsDisplay'
 import LivePowerUpStatus from '@/components/dashboard/LivePowerUpStatus'
 import LivePenaltiesStatus from '@/components/dashboard/LivePenaltiesStatus'
 import AudioAuthorizationBanner from '@/components/dashboard/AudioAuthorizationBanner'
+import AudioInitializer from '@/components/AudioInitializer'
 import EventEndCountdownWrapper from '@/components/EventEndCountdownWrapper'
 import DebugSoundTester from '@/components/DebugSoundTester'
 
@@ -36,6 +37,7 @@ export default function LiveDashboard() {
 
   return (
     <>
+      <AudioInitializer />
       <EventEndCountdownWrapper />
       {/* 🤖 Background quest auto-advance logic (renders nothing) */}
       <QuestAutoAdvancer />

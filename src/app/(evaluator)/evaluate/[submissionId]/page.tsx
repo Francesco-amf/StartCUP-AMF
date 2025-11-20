@@ -309,19 +309,17 @@ export default async function EvaluateSubmissionPage({
                       title="PDF Viewer"
                     />
                   </div>
-                  <div className="mt-4">
-                    <a
-                      href={submission.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block w-full"
-                    >
-                      <Button className="w-full bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold">
-                        Abrir em Nova Aba
-                      </Button>
-                    </a>
-                  </div>
-                  <div className="mt-2 p-2 bg-[#0A1E47]/40 rounded text-xs font-mono break-all border border-[#00E5FF]/20 text-[#00E5FF]/70">
+                  <a
+                    href={submission.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mt-4"
+                  >
+                    <Button className="w-full bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 border-2 border-[#00E5FF]/60 text-[#00E5FF] font-semibold">
+                      📤 Abrir em Nova Aba
+                    </Button>
+                  </a>
+                  <div className="mt-3 p-3 bg-[#0A1E47]/40 rounded text-xs font-mono break-all border border-[#00E5FF]/20 text-[#00E5FF]/70">
                     <strong>URL:</strong> {submission.file_url}
                   </div>
                 </>

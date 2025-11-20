@@ -117,7 +117,7 @@ export async function POST(request: Request) {
           team_id,
           quest_id,
           file_url: null,
-          text_content: 'Boss Battle - Apresentação Presencial',
+          content: 'Boss Battle - Apresentação Presencial',
           status: 'pending',
           submitted_at: new Date().toISOString(),
         })

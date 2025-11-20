@@ -3,12 +3,17 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
+    console.log('🔥 [BOSS API] Starting request...')
+    
     const supabase = await createServerSupabaseClient()
+    console.log('✅ [BOSS API] Supabase client created')
+    
     const body = await request.json()
+    console.log('✅ [BOSS API] Body parsed:', body)
 
     const { team_id, quest_id, points, comments, evaluator_id } = body
 
-    console.log('🔥 Boss evaluation request:', { team_id, quest_id, points, comments, evaluator_id })
+    console.log('🔥 [BOSS API] Boss evaluation request:', { team_id, quest_id, points, comments, evaluator_id })
 
     // Validação básica
     if (!team_id || !quest_id || !evaluator_id || points === undefined || points === null) {
@@ -55,6 +60,7 @@ export async function POST(request: Request) {
     console.log('✅ Quest verified as Boss:', quest)
 
     // Verificar se já existe submission desta equipe para esta quest
+    console.log('🔍 [BOSS API] Checking for existing submission...', { team_id, quest_id })
     const { data: existingSubmission, error: checkError } = await supabase
       .from('submissions')
       .select('id')
@@ -62,17 +68,22 @@ export async function POST(request: Request) {
       .eq('quest_id', quest_id)
       .maybeSingle()
 
+    console.log('🔍 [BOSS API] Existing submission check:', { existingSubmission, checkError })
+
     let submission_id: string
 
     if (existingSubmission) {
       // Submission já existe, usar ela
       submission_id = existingSubmission.id
-      console.log('📝 Using existing submission:', submission_id)
+      console.log('📝 [BOSS API] Using existing submission:', submission_id)
     } else {
       // Criar submission automaticamente usando service role client (bypass RLS)
-      console.log('🔨 Creating new submission for Boss...')
+      console.log('🔨 [BOSS API] Creating new submission for Boss...')
+      console.log('🔨 [BOSS API] Submission data:', { team_id, quest_id })
       
       const supabaseAdmin = createServiceRoleClient()
+      console.log('✅ [BOSS API] Service role client created')
+      
       const { data: newSubmission, error: submissionError } = await supabaseAdmin
         .from('submissions')
         .insert({
@@ -85,6 +96,8 @@ export async function POST(request: Request) {
         })
         .select('id')
         .single()
+
+      console.log('🔨 [BOSS API] Submission creation result:', { newSubmission, submissionError })
 
       if (submissionError) {
         console.error('❌ Error creating submission:', submissionError)
@@ -109,11 +122,19 @@ export async function POST(request: Request) {
       }
 
       submission_id = newSubmission.id
-      console.log('✅ Created submission:', submission_id)
+      console.log('✅ [BOSS API] Created submission:', submission_id)
     }
 
     // Criar ou atualizar avaliação usando cliente NORMAL (como na API /api/evaluate)
-    console.log('💾 Saving evaluation...', { submission_id, evaluator_id, points })
+    console.log('💾 [BOSS API] Saving evaluation...', { submission_id, evaluator_id, points })
+    console.log('💾 [BOSS API] Evaluation data:', {
+      submission_id,
+      evaluator_id,
+      points,
+      base_points: points,
+      multiplier: 1.0,
+      comments: comments || null
+    })
     
     const { data: evaluation, error: evalError } = await supabase
       .from('evaluations')
@@ -131,6 +152,8 @@ export async function POST(request: Request) {
       })
       .select()
       .single()
+
+    console.log('💾 [BOSS API] Evaluation save result:', { evaluation, evalError })
 
     if (evalError) {
       console.error('❌ Error creating evaluation:', evalError)

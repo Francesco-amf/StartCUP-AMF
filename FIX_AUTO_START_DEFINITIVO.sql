@@ -135,8 +135,18 @@ SELECT 'Função auto_start_next_quest() corrigida!' as status;
 SELECT 'Agora ativa próxima quest APENAS quando prazo expira (não quando equipes submetem)' as info;
 
 -- ==================================================
--- REABILITAR o cron job
+-- REABILITAR o cron job (criar se não existir)
 -- ==================================================
+
+-- Verificar se job existe e deletar se existir
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'auto-start-next-quest-job') THEN
+    PERFORM cron.unschedule('auto-start-next-quest-job');
+  END IF;
+END $$;
+
+-- Criar job com lógica corrigida
 SELECT cron.schedule(
   'auto-start-next-quest-job',
   '* * * * *',

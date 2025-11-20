@@ -1,9 +1,10 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
+    const supabaseAdmin = createServiceRoleClient() // For bypassing RLS
     const body = await request.json()
 
     const { team_id, quest_id, points, comments, evaluator_id } = body
@@ -72,7 +73,8 @@ export async function POST(request: Request) {
       // Criar submission automaticamente
       console.log('🔨 Creating new submission for Boss...')
       
-      const { data: newSubmission, error: submissionError } = await supabase
+      // Use admin client to bypass RLS for submission creation
+      const { data: newSubmission, error: submissionError } = await supabaseAdmin
         .from('submissions')
         .insert({
           team_id,
@@ -115,7 +117,8 @@ export async function POST(request: Request) {
     // Criar ou atualizar avaliação
     console.log('💾 Saving evaluation...', { submission_id, evaluator_id, points })
     
-    const { data: evaluation, error: evalError } = await supabase
+    // Use admin client to bypass RLS for evaluation creation/update
+    const { data: evaluation, error: evalError } = await supabaseAdmin
       .from('evaluations')
       .upsert({
         submission_id,
@@ -149,7 +152,7 @@ export async function POST(request: Request) {
     console.log('✅ Evaluation saved:', evaluation)
 
     // Atualizar submission com pontos finais (caso já existisse)
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('submissions')
       .update({
         final_points: points,

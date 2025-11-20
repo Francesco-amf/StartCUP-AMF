@@ -334,44 +334,29 @@ export function useRealtimePenalties() {
     playRef.current = play
   }, [play])
 
-  // Helper: Enrich penalties with teams and evaluators
+  // Helper: Enrich penalties with teams (evaluator info removed for anonymity)
   const enrichPenalties = async (penaltiesData: any[]) => {
     if (!penaltiesData || penaltiesData.length === 0) {
       return []
     }
     try {
-      // Extract unique IDs
+      // Extract unique team IDs
       const teamIds = [...new Set(penaltiesData.map((p: any) => p.team_id))]
-      const evaluatorIds = [
-        ...new Set(
-          penaltiesData
-            .filter((p: any) => p.assigned_by_evaluator_id)
-            .map((p: any) => p.assigned_by_evaluator_id)
-        )
-      ]
 
-      // Fetch teams and evaluators in parallel
-      const [teamsResult, evaluatorsResult] = await Promise.all([
-        teamIds.length > 0
-          ? supabase.from('teams').select('id, name, email').in('id', teamIds)
-          : Promise.resolve({ data: [], error: null }),
-        evaluatorIds.length > 0
-          ? supabase.from('evaluators').select('id, name').in('id', evaluatorIds)
-          : Promise.resolve({ data: [], error: null })
-      ])
+      // Fetch teams only
+      const teamsResult = teamIds.length > 0
+        ? await supabase.from('teams').select('id, name, email').in('id', teamIds)
+        : { data: [], error: null }
 
-      // Build maps
+      // Build team map (excluding test emails)
       const testEmails = ['admin@test.com', 'avaliador1@test.com', 'avaliador2@test.com', 'avaliador3@test.com']
       const teamMap = new Map(
         (teamsResult.data || [])
           .filter((t: any) => !testEmails.includes(t.email))
           .map((t: any) => [t.id, t.name])
       )
-      const evaluatorMap = new Map(
-        (evaluatorsResult.data || []).map((e: any) => [e.id, e.name])
-      )
 
-      // Format with enrichment
+      // Format with team enrichment only (no evaluator info for anonymity)
       const enriched = penaltiesData.map((p: any) => ({
         id: p.id,
         team_id: p.team_id,
@@ -380,7 +365,7 @@ export function useRealtimePenalties() {
         points_deduction: p.points_deduction !== null && p.points_deduction !== undefined ? p.points_deduction : 0,
         reason: p.reason || null,
         assigned_by_admin: p.assigned_by_admin || false,
-        evaluator_name: p.assigned_by_evaluator_id ? evaluatorMap.get(p.assigned_by_evaluator_id) : null,
+        evaluator_name: null, // Always null for anonymity
         created_at: p.created_at
       }))
 

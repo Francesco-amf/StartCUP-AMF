@@ -90,14 +90,6 @@ export default function LivePenaltiesStatus() {
                     {penalty.reason}
                   </p>
                 )}
-
-                <div className="flex items-center gap-2 mt-2 text-xs text-purple-300">
-                  {penalty.assigned_by_admin ? (
-                    <span>👤 Admin</span>
-                  ) : penalty.evaluator_name ? (
-                    <span>👨‍🏫 {penalty.evaluator_name}</span>
-                  ) : null}
-                </div>
               </div>
             </div>
           ))}

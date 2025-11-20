@@ -18,6 +18,13 @@ interface SubmissionWrapperProps {
 export default function SubmissionWrapper({ quests, team, submissions, eventConfig }: SubmissionWrapperProps) {
   const [completedQuestId, setCompletedQuestId] = useState<string | null>(null)
 
+  console.log('🔍 [SubmissionWrapper] Props recebidas:', {
+    questsCount: quests.length,
+    teamId: team.id,
+    submissionsCount: submissions?.length,
+    submissions: submissions
+  })
+
   const handleSuccess = (questId: string) => {
     // ✅ Marca a quest como completa para esconder TODOS os forms de envio
     // Polling (500ms) + BroadcastChannel detectam mudanças automaticamente

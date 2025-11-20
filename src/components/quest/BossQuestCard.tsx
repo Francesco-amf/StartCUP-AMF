@@ -27,13 +27,15 @@ export default function BossQuestCard({
   }>({ minutes: 0, seconds: 0 })
   const { play } = useSoundSystem()
   const previousActiveRef = useRef(false)
+  const soundPlayedRef = useRef(false) // ✅ NOVO: Garantir que som toca apenas 1x
 
   useEffect(() => {
     if (!isActive || !startedAt) return
 
-    // Detectar ativação do boss e tocar som
-    if (isActive && !previousActiveRef.current) {
+    // Detectar ativação do boss e tocar som APENAS UMA VEZ
+    if (isActive && !previousActiveRef.current && !soundPlayedRef.current) {
       play('boss-spawn')
+      soundPlayedRef.current = true // Marcar como já tocado
     }
     previousActiveRef.current = isActive
 

@@ -234,8 +234,7 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     }
 
     // Existing phase-level auto-advance logic (fallback if no active quest or all quests in phase are done)
-    // phaseStartTimeISO já foi validado no início do useEffect
-    const phaseStartTimeISO = eventConfig[phaseStartTimeKey];
+    // phaseStartTimeISO já foi validado no início do useEffect, podemos usar diretamente
 
     // IMPORTANTE: Adicionar 'Z' se não tiver timezone info para garantir UTC
     const phaseStartTimeStr = phaseStartTimeISO.includes('+') || phaseStartTimeISO.includes('Z')

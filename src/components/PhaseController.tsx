@@ -133,6 +133,16 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     if (!eventConfig || !eventConfig.event_started || activePhase === 0) {
       return; // Not started, or a preparation phase
     }
+    
+    // ✅ PROTEÇÃO CONTRA RESET: Se evento foi resetado, não auto-avançar
+    // Quando reseta: phase_X_start_time volta a null mas event_started pode ainda estar true por cache
+    const phaseStartTimeKey = `phase_${activePhase}_start_time` as keyof EventConfig;
+    const phaseStartTimeISO = eventConfig[phaseStartTimeKey];
+    
+    if (!phaseStartTimeISO || typeof phaseStartTimeISO !== 'string') {
+      console.log(`⏸️ [PhaseController] Fase ${activePhase} não tem start_time definido, ignorando auto-advance`);
+      return;
+    }
 
     // Nota: Fase 5 agora é suportada para auto-advance (permite game over automático)
 
@@ -224,15 +234,9 @@ export default function PhaseController({ currentPhase, eventStarted }: PhaseCon
     }
 
     // Existing phase-level auto-advance logic (fallback if no active quest or all quests in phase are done)
-    const phaseStartTimeKey = `phase_${activePhase}_start_time` as keyof EventConfig;
+    // phaseStartTimeISO já foi validado no início do useEffect
     const phaseStartTimeISO = eventConfig[phaseStartTimeKey];
 
-    // CORREÇÃO: Verifique se é UMA STRING antes de usar
-    if (typeof phaseStartTimeISO !== 'string' || !phaseStartTimeISO) {
-      return;
-    }
-
-    // Agora é 100% seguro, 'phaseStartTimeISO' é uma string válida
     // IMPORTANTE: Adicionar 'Z' se não tiver timezone info para garantir UTC
     const phaseStartTimeStr = phaseStartTimeISO.includes('+') || phaseStartTimeISO.includes('Z')
       ? phaseStartTimeISO

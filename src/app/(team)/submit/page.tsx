@@ -127,7 +127,7 @@ export default async function SubmitPage() {
   // Buscar submissions já feitas pela equipe
   const { data: submissions, error: submissionsError } = await supabase
     .from('submissions')
-    .select('quest_id, status, final_points, created_at')
+    .select('quest_id, status, final_points, submitted_at')
     .eq('team_id', team.id)
 
   console.log('📦 Team submissions:', {

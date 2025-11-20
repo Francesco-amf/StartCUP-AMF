@@ -25,6 +25,7 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
   const { penalties } = useRealtimePenalties()
   const previousRankingRef = useRef<Record<string, { position: number; points: number }>>({})
   const processingRef = useRef(false) // Evitar duplicação
+  const isFirstRenderRef = useRef(true) // Detectar primeira renderização
 
   // Helper function to get penalty for a team
   const getPenalty = useCallback((teamId: string): number => {
@@ -42,6 +43,19 @@ export default function RankingBoard({ ranking }: RankingBoardProps) {
     processingRef.current = true
 
     try {
+      // Se é a primeira renderização, apenas popular previousRankingRef sem tocar sons
+      if (isFirstRenderRef.current) {
+        console.log('🆕 [RankingBoard] Primeira renderização - populando dados iniciais sem sons')
+        ranking.forEach((team: any, currentPosition: number) => {
+          previousRankingRef.current[team.team_id] = {
+            position: currentPosition,
+            points: team.total_points
+          }
+        })
+        isFirstRenderRef.current = false
+        return
+      }
+
       console.log('🔄 [RankingBoard] Processando ranking, equipes:', ranking.length)
       let hasRankingChange = false  // Controlar se houve qualquer mudança de posição
       let soundsTriggered = 0

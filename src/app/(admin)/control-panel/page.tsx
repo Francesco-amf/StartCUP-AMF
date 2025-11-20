@@ -38,12 +38,12 @@ export default async function AdminControlPanel() {
     .select('*')
 
   // Buscar estatísticas do evento
-  const { data: submissions, error: submissionsError } = await supabase
+  const { data: submissions } = await supabase
     .from('submissions')
     .select('*')
 
   // Buscar submissões pendentes de avaliação (submetidas mas sem avaliação)
-  const { data: pendingSubmissions, error: pendingError } = await supabase
+  const { data: pendingSubmissions } = await supabase
     .from('submissions')
     .select('id, evaluations!left(id)')
 
@@ -52,28 +52,9 @@ export default async function AdminControlPanel() {
     (sub: any) => !sub.evaluations || sub.evaluations.length === 0
   ).length || 0
 
-  const { data: evaluations, error: evaluationsError } = await supabase
+  const { data: evaluations } = await supabase
     .from('evaluations')
     .select('*')
-
-  console.log('📊 [Admin Panel] Estatísticas:', {
-    totalSubmissions: submissions?.length || 0,
-    pendingSubmissions: pendingCount,
-    totalEvaluations: evaluations?.length || 0
-  })
-
-  // Debug visual para verificar dados
-  const debugInfo = {
-    submissionsRaw: submissions?.length || 0,
-    submissionsError: submissionsError?.message || null,
-    pendingRaw: pendingSubmissions?.length || 0,
-    pendingError: pendingError?.message || null,
-    pendingCount: pendingCount,
-    evaluationsRaw: evaluations?.length || 0,
-    evaluationsError: evaluationsError?.message || null,
-    userId: user.id,
-    userRole: userRole
-  }
 
   return (
     <div className="min-h-screen gradient-startcup">
@@ -83,15 +64,6 @@ export default async function AdminControlPanel() {
         backHref="/"
         showLogout={true}
       />
-
-      {/* DEBUG: Mostrar dados brutos */}
-      <div className="container mx-auto p-2">
-        <details className="bg-red-900/20 border border-red-500 rounded p-2 text-xs text-white">
-          <summary className="cursor-pointer font-bold">🐛 DEBUG: Dados brutos da query</summary>
-          <pre className="mt-2">{JSON.stringify(debugInfo, null, 2)}</pre>
-          <pre className="mt-2">pendingSubmissions sample: {JSON.stringify(pendingSubmissions?.slice(0, 2), null, 2)}</pre>
-        </details>
-      </div>
 
       <div className="container mx-auto p-6">
         {/* Status do Evento */}

@@ -65,15 +65,15 @@ WHERE p.order_index = 2
 -- 4. Ver logs recentes da função auto_start_next_quest
 -- (verificar se ela foi executada recentemente)
 SELECT 
-  jobid,
-  jobname,
-  last_run_started_at,
-  last_run_finished_at,
-  last_run_status
-FROM cron.job_run_details
-WHERE jobname = 'auto-start-next-quest-job'
-ORDER BY run_start DESC
-LIMIT 10;
+  j.jobid,
+  j.jobname,
+  j.schedule,
+  j.active,
+  j.command
+FROM cron.job j
+WHERE j.jobname = 'auto-start-next-quest-job'
+ORDER BY j.jobid DESC
+LIMIT 5;
 
 -- 5. Verificar se Boss (Quest 2.4) foi ativado
 SELECT 

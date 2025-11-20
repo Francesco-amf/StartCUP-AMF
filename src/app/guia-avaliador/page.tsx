@@ -170,6 +170,258 @@ export default function GuiaAvaliadorPage() {
             </div>
           </Card>
 
+          {/* Seção: Detalhes das Quests por Fase */}
+          <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#9C27B0]/40">
+            <h2 className="text-2xl font-bold mb-6 text-[#9C27B0]">🎯 Critérios de Avaliação por Quest</h2>
+            <p className="text-[#9C27B0]/80 mb-6">
+              Use estes critérios como guia ao avaliar as submissões. Cada quest tem características específicas que devem ser consideradas.
+            </p>
+
+            {/* FASE 1: PREPARAÇÃO */}
+            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🚀 FASE 1: PREPARAÇÃO</h3>
+
+              {/* Quest 1.1 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 1.1: Configuração de Ambiente</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 100</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Repositório Git configurado corretamente</li>
+                    <li>README com instruções claras de setup</li>
+                    <li>Dependências documentadas</li>
+                    <li>Ambiente de desenvolvimento funcional</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Quest 1.2 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 1.2: Primeiro Prototype</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 150</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Protótipo funcional (mesmo que básico)</li>
+                    <li>Código organizado e comentado</li>
+                    <li>Demonstração de funcionalidade core</li>
+                    <li>Documentação de decisões técnicas</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* FASE 2: DESCOBERTA */}
+            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🔍 FASE 2: DESCOBERTA</h3>
+
+              {/* Quest 2.1 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 2.1: User Research</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 120</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Pesquisa com usuários reais (mínimo 5)</li>
+                    <li>Metodologia de pesquisa clara</li>
+                    <li>Análise de dados e insights</li>
+                    <li>Documentação de pain points identificados</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Quest 2.2 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 2.2: Market Analysis</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 130</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Análise competitiva detalhada</li>
+                    <li>Identificação de oportunidades de mercado</li>
+                    <li>Sizing de mercado (TAM, SAM, SOM)</li>
+                    <li>Diferenciação clara da solução</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Boss Battle 2.3 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF3D00]/50">
+                <h4 className="font-bold text-[#FF3D00] mb-2">⚔️ BOSS BATTLE 2.3: Problem Statement</h4>
+                <div className="text-[#FF3D00]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 200</p>
+                  <p><span className="font-bold text-[#FF3D00]">IMPORTANTE:</span> Boss Battles não usam multiplicador!</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Definição clara e precisa do problema</li>
+                    <li>Evidências baseadas em pesquisa</li>
+                    <li>Impacto quantificado do problema</li>
+                    <li>Validação com dados reais</li>
+                    <li>Apresentação profissional e convincente</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* FASE 3: CRIAÇÃO */}
+            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎨 FASE 3: CRIAÇÃO</h3>
+
+              {/* Quest 3.1 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 3.1: MVP Development</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 180</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>MVP funcional e testável</li>
+                    <li>Features core implementadas</li>
+                    <li>Qualidade de código e arquitetura</li>
+                    <li>UX/UI básico mas funcional</li>
+                    <li>Testes e validação de funcionalidades</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Quest 3.2 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 3.2: Design System</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 140</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Identidade visual consistente</li>
+                    <li>Componentes reutilizáveis documentados</li>
+                    <li>Guidelines de uso claros</li>
+                    <li>Acessibilidade considerada</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* FASE 4: ESTRATÉGIA */}
+            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎯 FASE 4: ESTRATÉGIA</h3>
+
+              {/* Quest 4.1 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 4.1: Go-to-Market Strategy</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 160</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Estratégia de lançamento clara</li>
+                    <li>Canais de aquisição identificados</li>
+                    <li>Timeline realista de execução</li>
+                    <li>Métricas de sucesso definidas</li>
+                    <li>Budget e recursos necessários</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Quest 4.2 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 4.2: Business Model</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 150</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Modelo de monetização claro</li>
+                    <li>Estrutura de custos detalhada</li>
+                    <li>Projeções financeiras realistas</li>
+                    <li>Unit economics demonstrados</li>
+                    <li>Plano de escalabilidade</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Boss Battle 4.3 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF3D00]/50">
+                <h4 className="font-bold text-[#FF3D00] mb-2">⚔️ BOSS BATTLE 4.3: Strategic Roadmap</h4>
+                <div className="text-[#FF3D00]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 220</p>
+                  <p><span className="font-bold text-[#FF3D00]">IMPORTANTE:</span> Boss Battles não usam multiplicador!</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Roadmap detalhado (6-12 meses)</li>
+                    <li>Milestones e KPIs definidos</li>
+                    <li>Recursos e investimentos necessários</li>
+                    <li>Riscos identificados e mitigação</li>
+                    <li>Apresentação executiva e convincente</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* FASE 5: REFINAMENTO */}
+            <div className="mb-8 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">✨ FASE 5: REFINAMENTO</h3>
+
+              {/* Quest 5.1 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 5.1: Product Polish</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 170</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Refinamento de UX/UI</li>
+                    <li>Performance otimizada</li>
+                    <li>Bug fixes e estabilidade</li>
+                    <li>Feedback de usuários incorporado</li>
+                    <li>Documentação técnica completa</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Quest 5.2 */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+                <h4 className="font-bold text-[#9C27B0] mb-2">Quest 5.2: Metrics & Analytics</h4>
+                <div className="text-[#9C27B0]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 140</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Sistema de analytics implementado</li>
+                    <li>Métricas chave sendo coletadas</li>
+                    <li>Dashboards de acompanhamento</li>
+                    <li>Insights baseados em dados</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* FASE 6: PITCH FINAL */}
+            <div className="mb-6 bg-[#0A1E47]/40 p-6 rounded-lg border border-[#9C27B0]/30">
+              <h3 className="text-xl font-bold text-[#9C27B0] mb-4">🎤 FASE 6: PITCH FINAL</h3>
+
+              {/* Final Pitch */}
+              <div className="mb-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FFD700]/50">
+                <h4 className="font-bold text-[#FFD700] mb-2">🏆 Quest 6.1: Final Pitch Presentation</h4>
+                <div className="text-[#FFD700]/80 text-sm space-y-2">
+                  <p><span className="font-bold">Pontos máximos:</span> 300</p>
+                  <p><span className="font-bold text-[#FFD700]">IMPORTANTE:</span> Pitch Final não usa multiplicador!</p>
+                  <p><span className="font-bold">Critérios:</span></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Apresentação clara e profissional (5-7 min)</li>
+                    <li>Problema e solução bem articulados</li>
+                    <li>Demo do produto funcionando</li>
+                    <li>Traction e resultados demonstrados</li>
+                    <li>Modelo de negócio explicado</li>
+                    <li>Visão de futuro e roadmap</li>
+                    <li>Capacidade de responder perguntas</li>
+                    <li>Impacto e escalabilidade da solução</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#9C27B0]/50">
+              <p className="text-[#9C27B0]/80 text-sm">
+                <span className="font-bold text-[#9C27B0]">💡 Dica de Avaliação:</span> Use estes critérios como guia, mas considere também criatividade, esforço e contexto da equipe. O multiplicador permite reconhecer trabalhos excepcionais (APENAS para quests regulares, NÃO para Boss Battles ou Pitch Final).
+              </p>
+            </div>
+          </Card>
+
           {/* Seção: Sistema de Pontuação */}
           <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
             <h2 className="text-2xl font-bold mb-6 text-[#FF9800]">📊 Sistema de Pontuação</h2>

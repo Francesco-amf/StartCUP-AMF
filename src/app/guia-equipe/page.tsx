@@ -244,44 +244,6 @@ export default function GuiaEquipePage() {
             </p>
           </Card>
 
-          {/* Seção: As 6 Fases */}
-          <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#FF9800]/40">
-            <h2 className="text-2xl font-bold mb-6 text-[#FF9800]">🎯 As 6 Fases do StartCup</h2>
-
-            <div className="space-y-3">
-              {phases.map((phase, idx) => (
-                <div key={idx} className="border-2 border-[#FF9800]/50 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setExpandedPhase(expandedPhase === idx ? null : idx)}
-                    className="w-full px-4 py-4 bg-[#0A1E47]/60 hover:bg-[#0A1E47]/80 transition-colors text-left flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{phase.icon}</span>
-                      <div>
-                        <p className="font-bold text-[#FF9800]">{phase.name}</p>
-                        <p className="text-[#FF9800]/70 text-xs">{phase.description}</p>
-                      </div>
-                    </div>
-                    <span className="text-[#FF9800] text-xl font-bold">{expandedPhase === idx ? '−' : '+'}</span>
-                  </button>
-                  {expandedPhase === idx && (
-                    <div className="px-4 py-4 bg-[#0A1E47]/30 border-t-2 border-[#FF9800]/40">
-                      <h4 className="font-bold text-[#FF9800] mb-3">✅ Checklist:</h4>
-                      <ul className="space-y-2">
-                        {phase.tips.map((tip, tipIdx) => (
-                          <li key={tipIdx} className="text-[#FF9800]/80 text-sm flex items-center gap-2">
-                            <span className="text-[#FF9800]">▪</span>
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-
           {/* Seção: Como Submeter */}
           <Card className="p-8 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E676]/40">
             <h2 className="text-2xl font-bold mb-6 text-[#00E676]">📤 Como Submeter uma Quest</h2>
@@ -292,11 +254,12 @@ export default function GuiaEquipePage() {
                 <div className="space-y-3">
                   {[
                     { num: 1, text: 'Acesse seu Dashboard' },
-                    { num: 2, text: 'Clique em "Submeter" ou vá à aba Submissões' },
-                    { num: 3, text: 'Escolha a quest que deseja submeter' },
-                    { num: 4, text: 'Upload do arquivo OU escreva texto' },
-                    { num: 5, text: 'Adicione descrição (opcional)' },
-                    { num: 6, text: 'Clique em "Enviar Solução"' }
+                    { num: 2, text: 'Vá para a seção "Ações Rápidas"' },
+                    { num: 3, text: 'Clique em "Submeter Quest"' },
+                    { num: 4, text: 'Escolha a quest que deseja submeter' },
+                    { num: 5, text: 'Cole o link da sua solução' },
+                    { num: 6, text: 'Adicione descrição (opcional)' },
+                    { num: 7, text: 'Clique em "Enviar Solução"' }
                   ].map((step) => (
                     <div key={step.num} className="flex gap-3">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#00E676]/20 flex items-center justify-center border-2 border-[#00E676]/50 font-bold text-[#00E676] text-sm">
@@ -312,7 +275,7 @@ export default function GuiaEquipePage() {
                 <h3 className="text-lg font-bold text-[#00E676]">✅ Antes de Submeter</h3>
                 <div className="bg-[#0A1E47]/40 p-4 rounded-lg border border-[#00E676]/30 space-y-2">
                   <p className="text-[#00E676]/70 text-sm">• Revise seu trabalho cuidadosamente</p>
-                  <p className="text-[#00E676]/70 text-sm">• Certifique-se de que o arquivo abre corretamente</p>
+                  <p className="text-[#00E676]/70 text-sm">• Certifique-se de que o link funciona corretamente</p>
                   <p className="text-[#00E676]/70 text-sm">• Verifique se atende aos critérios da quest</p>
                   <p className="text-[#00E676]/70 text-sm">• Tenha backup do seu trabalho</p>
                   <p className="text-[#00E676]/70 text-sm">• Respeite prazos (não entregue atrasado!)</p>
@@ -376,8 +339,6 @@ export default function GuiaEquipePage() {
                 <ul className="text-[#FFEB3B]/80 text-sm space-y-2">
                   <li>✅ Completar quests: valor variável por quest (definido na configuração da quest)</li>
                   <li>✅ Avaliação: o avaliador atribui os AMF Coins base e pode aplicar um multiplicador (até 2x) após avaliação</li>
-                  <li>✅ Bônus de fase/participação: aplicados conforme regras do evento e somente após avaliação</li>
-                  <li>✅ Participação especial: +coins (quando aplicável)</li>
                 </ul>
               </div>
 
@@ -426,13 +387,6 @@ export default function GuiaEquipePage() {
                   <li>⚠️ Atraso: -10 pontos</li>
                 </ul>
               </div>
-            </div>
-
-            <div className="bg-[#0A1E47]/60 p-4 rounded-lg border-2 border-[#FF3D00]/50">
-              <h3 className="font-bold text-[#FF3D00] mb-2">📈 Acompanhe em Tempo Real</h3>
-              <p className="text-[#FF3D00]/70 text-sm mb-3">
-                Acesse o <span className="font-bold text-[#FF3D00]">Live Dashboard</span> para ver seu ranking atualizado a cada segundo. Competição é saudável! 🚀
-              </p>
             </div>
           </Card>
 

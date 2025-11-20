@@ -1023,7 +1023,7 @@ export default function CurrentQuestTimer({
             <div className="pt-2">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs md:text-sm font-semibold">Tempo desta Quest</span>
-                <span className="text-xs md:text-sm font-mono">
+                <span className="text-lg md:text-2xl font-mono font-bold">
                   {questHasStarted 
                     ? `${Math.floor(questTimeRemaining / 60)}:${formatNumber(Math.floor(questTimeRemaining % 60))}`
                     : currentQuest.status === 'scheduled'
@@ -1086,13 +1086,13 @@ export default function CurrentQuestTimer({
                 <div
                   className="flex items-center justify-center gap-0 font-bold font-mono leading-none"
                   style={{
-                    fontSize: 'clamp(1.5rem, 8vw, 2.5rem)',
+                    fontSize: 'clamp(2.25rem, 12vw, 3.75rem)',
                   }}
                 >
                   {/* Horas */}
                   <div className="flex flex-col items-center min-w-max">
                     <span className="leading-tight">{formatNumber(timeLeft.hours)}</span>
-                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>h</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(1.125rem, 3vw, 1.5rem)' }}>h</span>
                   </div>
 
                   {/* Separador */}
@@ -1101,7 +1101,7 @@ export default function CurrentQuestTimer({
                   {/* Minutos */}
                   <div className="flex flex-col items-center min-w-max">
                     <span className="leading-tight">{formatNumber(timeLeft.minutes)}</span>
-                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>m</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(1.125rem, 3vw, 1.5rem)' }}>m</span>
                   </div>
 
                   {/* Separador */}
@@ -1110,7 +1110,7 @@ export default function CurrentQuestTimer({
                   {/* Segundos */}
                   <div className="flex flex-col items-center min-w-max">
                     <span className="leading-tight">{formatNumber(timeLeft.seconds)}</span>
-                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}>s</span>
+                    <span className="font-normal mt-0.5" style={{ fontSize: 'clamp(1.125rem, 3vw, 1.5rem)' }}>s</span>
                   </div>
                 </div>
               </div>

@@ -60,6 +60,15 @@ export default function SubmissionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // ✅ NOVA VALIDAÇÃO: Verificar envio duplo (arquivo + link/texto)
+    const hasFile = deliverableType === 'file' && file
+    const hasContent = (deliverableType === 'text' || deliverableType === 'url') && content.trim()
+    
+    if (hasFile && hasContent) {
+      setError('⚠️ Você só pode enviar UM tipo de entrega por vez. Escolha entre enviar um arquivo OU um link/texto, mas não ambos.')
+      return
+    }
+
     // Confirmação antes de enviar
     const confirmSubmit = window.confirm(
       '⚠️ ATENÇÃO: Esta submissão é DEFINITIVA e não poderá ser alterada.\n\n' +
@@ -117,7 +126,17 @@ export default function SubmissionForm({
         return
       }
 
-      const data = await response.json()
+      // ✅ NOVO: Tratamento de erro JSON
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        console.error('Erro ao parsear JSON da resposta:', jsonError)
+        setError('❌ Erro ao processar resposta do servidor. Verifique se você enviou apenas UM tipo de entrega (arquivo OU link/texto, não ambos).')
+        setLoading(false)
+        setUploadingFile(false)
+        return
+      }
 
       if (!response.ok) {
         // Tratamento de erros específicos

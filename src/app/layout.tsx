@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SupabaseProvider } from "@/lib/supabase/context";
 import { AudioInitializer } from "@/components/AudioInitializer";
-import { AudioDebugPanel } from "@/components/AudioDebugPanel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,10 +32,7 @@ export default function RootLayout({
         {/* 🎵 Audio System Initializer - MUST be loaded globally */}
         <AudioInitializer />
 
-        {/* 🎵 Audio Debug Panel - Shows audio state and allows testing */}
-        <AudioDebugPanel />
-
-        {/* ✨ P3: Centralized Supabase Provider */}
+        {/* ✨ P3: Centralized Supabase Provider */
         <SupabaseProvider>
           {/* ✅ REMOVED: EventEndCountdownWrapper was duplicated here and in live-dashboard/page.tsx
               It should ONLY appear on /live-dashboard, not globally in layout.

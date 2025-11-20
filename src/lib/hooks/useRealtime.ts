@@ -47,11 +47,15 @@ export function useRealtimeRanking() {
 
       if (!error && data) {
         setRanking(data)
+        setLoading(false)
         return true
       }
+      DEBUG.error('useRealtimeRanking', 'Error fetching ranking:', error)
+      setLoading(false)
       return false
     } catch (err) {
       DEBUG.error('useRealtimeRanking', 'Error fetching ranking:', err)
+      setLoading(false)
       return false
     }
   }

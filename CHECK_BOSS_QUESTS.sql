@@ -45,8 +45,9 @@ SELECT
   p.name as phase_name
 FROM quests q
 JOIN phases p ON q.phase_id = p.id
+JOIN event_config ec ON p.order_index = ec.current_phase
 WHERE q.status = 'scheduled'
-  AND p.order_index = (SELECT current_phase FROM event_config WHERE id = 1)
+  AND ec.id = '00000000-0000-0000-0000-000000000001'::uuid
 ORDER BY q.order_index
 LIMIT 1;
 
@@ -57,7 +58,7 @@ SELECT
   current_phase,
   (SELECT name FROM phases WHERE order_index = current_phase) as phase_name
 FROM event_config
-WHERE id = 1;
+WHERE id = '00000000-0000-0000-0000-000000000001'::uuid;
 
 -- 5. Contar quantas quests estão em cada status na fase atual
 SELECT 
@@ -67,5 +68,6 @@ SELECT
   STRING_AGG(q.name, ', ') as quests
 FROM quests q
 JOIN phases p ON q.phase_id = p.id
-WHERE p.order_index = (SELECT current_phase FROM event_config WHERE id = 1)
+JOIN event_config ec ON p.order_index = ec.current_phase
+WHERE ec.id = '00000000-0000-0000-0000-000000000001'::uuid
 GROUP BY q.status;

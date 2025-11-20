@@ -140,8 +140,13 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
 
   // Calcular propriedades de exibição apenas da lista (marcando apenas a atual como shouldShow)
   let autoAdvancedFromExpired: { fromName: string, toName: string } | null = null
+  
+  console.log('🔍 [SubmissionWrapper] submittedQuestIds:', submittedQuestIds)
+  console.log('🔍 [SubmissionWrapper] sortedQuests:', sortedQuests.map(q => ({ id: q.id, name: q.name })))
+  
   const availableQuests = sortedQuests.map((quest, index) => {
     const alreadySubmitted = submittedQuestIds.includes(quest.id);
+    console.log(`🔍 [SubmissionWrapper] Quest ${quest.name}: alreadySubmitted=${alreadySubmitted}, quest.id=${quest.id}`)
     const isEvaluated = evaluatedQuestIds.includes(quest.id);
     
     // Detectar se é BOSS (quest de apresentação)

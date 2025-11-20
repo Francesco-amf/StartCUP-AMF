@@ -67,6 +67,8 @@ export default function TeamMentorHistory({ teamId }: TeamMentorHistoryProps) {
 
   const fetchRequests = async () => {
     try {
+      console.log('🔍 [TeamMentorHistory] Buscando mentorias para team_id:', teamId)
+      
       const { data, error } = await supabase
         .from('mentor_requests')
         .select(`
@@ -78,6 +80,8 @@ export default function TeamMentorHistory({ teamId }: TeamMentorHistoryProps) {
         `)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
+
+      console.log('📦 [TeamMentorHistory] Resultado:', { data, error, count: data?.length })
 
       if (error) throw error
       setRequests(data || [])

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import Header from '@/components/Header'
 import { useRouter } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface Team {
   id: string
@@ -44,10 +45,15 @@ export default function BossEvaluationPage() {
 
   const loadData = async () => {
     try {
-      // Buscar usuário e avaliador
-      const userRes = await fetch('/api/auth/user')
-      const userData = await userRes.json()
-      setUser(userData.user)
+      const supabase = createClientComponentClient()
+      
+      // Buscar usuário e avaliador via Supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        console.error('❌ [BossEvaluation] Usuário não autenticado')
+        return
+      }
+      setUser(authUser)
 
       const evalRes = await fetch('/api/evaluator/me')
       const evalData = await evalRes.json()

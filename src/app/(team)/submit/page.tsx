@@ -170,7 +170,7 @@ export default async function SubmitPage() {
       eventStarted: eventConfig?.event_started,
       eventEnded: eventConfig?.event_ended,
       submissionsCount: submissions?.length || 0,
-      lastSubmissionTime: submissions?.[0]?.created_at
+      lastSubmissionTime: submissions?.[0]?.submitted_at
     }))
     .digest('hex')
 

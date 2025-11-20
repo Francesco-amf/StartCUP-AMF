@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
 
-    // Buscar Boss ativo (quest com deliverable_type='presentation' e status='active')
+    // Buscar Boss ativo (quest com order_index=4 e status='active')
     const { data: quest, error } = await supabase
       .from('quests')
       .select(`
@@ -21,27 +21,25 @@ export async function GET() {
         )
       `)
       .eq('status', 'active')
-      .or('deliverable_type.cs.{"presentation"},order_index.eq.4')
-      .single()
+      .eq('order_index', 4)
+      .maybeSingle()
 
-    if (error || !quest) {
+    console.log('[active-boss] Query result:', { quest, error })
+
+    if (error) {
+      console.error('[active-boss] Error:', error)
       return NextResponse.json({ quest: null })
     }
 
-    // Verificar se realmente é Boss
-    const isBoss = 
-      (Array.isArray(quest.deliverable_type) 
-        ? quest.deliverable_type.includes('presentation')
-        : quest.deliverable_type === 'presentation'
-      ) || quest.order_index === 4
-
-    if (!isBoss) {
+    if (!quest) {
+      console.log('[active-boss] No active boss found')
       return NextResponse.json({ quest: null })
     }
 
+    console.log('[active-boss] Found active boss:', quest.name)
     return NextResponse.json({ quest })
   } catch (error) {
-    console.error('Error fetching active boss:', error)
+    console.error('[active-boss] Exception:', error)
     return NextResponse.json({ quest: null })
   }
 }

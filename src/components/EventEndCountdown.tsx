@@ -50,6 +50,65 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   const gameOverTimerRef = useRef<NodeJS.Timeout | null>(null)
   const manuallyAdvancedRef = useRef(false)
 
+  // ✅ Cleanup de todos os áudios globais ao montar/desmontar componente
+  useEffect(() => {
+    console.log('🎵 [EventEndCountdown] Componente montado - limpando áudios globais')
+    
+    // Limpar todos os áudios globais ao montar
+    if (globalCountdownAudio) {
+      globalCountdownAudio.pause()
+      globalCountdownAudio.currentTime = 0
+      globalCountdownAudio = null
+    }
+    if (globalSuspenseAudio) {
+      globalSuspenseAudio.pause()
+      globalSuspenseAudio.currentTime = 0
+      globalSuspenseAudio = null
+    }
+    if (globalWinnerMusicAudio) {
+      globalWinnerMusicAudio.pause()
+      globalWinnerMusicAudio.currentTime = 0
+      globalWinnerMusicAudio = null
+    }
+    if (globalWinSoundAudio) {
+      globalWinSoundAudio.pause()
+      globalWinSoundAudio.currentTime = 0
+      globalWinSoundAudio = null
+    }
+
+    // Resetar flags
+    audioStartedRef.current = false
+    suspenseStartedRef.current = false
+    winnerMusicStartedRef.current = false
+    winSoundPlayedRef.current = false
+
+    // Cleanup ao desmontar
+    return () => {
+      console.log('🎵 [EventEndCountdown] Componente desmontado - parando todos os áudios')
+      
+      if (globalCountdownAudio) {
+        globalCountdownAudio.pause()
+        globalCountdownAudio.currentTime = 0
+        globalCountdownAudio = null
+      }
+      if (globalSuspenseAudio) {
+        globalSuspenseAudio.pause()
+        globalSuspenseAudio.currentTime = 0
+        globalSuspenseAudio = null
+      }
+      if (globalWinnerMusicAudio) {
+        globalWinnerMusicAudio.pause()
+        globalWinnerMusicAudio.currentTime = 0
+        globalWinnerMusicAudio = null
+      }
+      if (globalWinSoundAudio) {
+        globalWinSoundAudio.pause()
+        globalWinSoundAudio.currentTime = 0
+        globalWinSoundAudio = null
+      }
+    }
+  }, [])
+
   // Tocar som de countdown (usa game-over.mp3 como beep do countdown)
   // IMPORTANTE: Usa variável global para garantir apenas UMA instância
   const playCountdownSound = useCallback((second: number) => {

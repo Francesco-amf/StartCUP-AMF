@@ -233,6 +233,23 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   // Quest atual para notificação de expiração
   const currentQuest = currentIndex >= 0 ? sortedQuests[currentIndex] : undefined
 
+  // 🔍 DEBUG: Log das quests que serão exibidas
+  console.log('🔍 [SubmissionWrapper] Quests disponíveis:', availableQuests.map(q => ({
+    id: q.id,
+    name: q.name,
+    shouldShow: q.shouldShow,
+    alreadySubmitted: q.alreadySubmitted,
+    isExpired: q.isExpired,
+    isInLateWindow: q.isInLateWindow
+  })))
+  
+  const questsToShow = availableQuests.filter(q => q.shouldShow)
+  console.log('🔍 [SubmissionWrapper] Quests filtradas para exibir:', questsToShow.map(q => ({
+    id: q.id,
+    name: q.name,
+    alreadySubmitted: q.alreadySubmitted
+  })))
+
   // ✅ NOVO: Verificar se há quest submetida aguardando prazo expirar
   let waitingForDeadline: { questName: string; minutesRemaining: number } | null = null
   if (currentIndex === -1 && notSubmittedIndexes.length > 0) {

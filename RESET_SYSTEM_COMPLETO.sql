@@ -90,15 +90,17 @@ BEGIN
   END;
 
   -- ========================================
-  -- 8. ✨ NOVO: RESETAR QUESTS
+  -- 8. ✨ RESETAR QUESTS (limpa started_at, ended_at, started_by)
   -- ========================================
-  -- Limpar started_at e resetar status de todas as quests
+  -- Limpar todos os timestamps e resetar status de todas as quests
   UPDATE quests
   SET started_at = NULL,
+      ended_at = NULL,
+      started_by = NULL,
       status = 'scheduled'
-  WHERE started_at IS NOT NULL;
+  WHERE started_at IS NOT NULL OR ended_at IS NOT NULL OR status != 'scheduled';
   GET DIAGNOSTICS quest_reset_count = ROW_COUNT;
-  RAISE NOTICE '✅ Quests resetadas: %', quest_reset_count;
+  RAISE NOTICE '✅ Quests resetadas (started_at, ended_at, started_by limpos): %', quest_reset_count;
 
   -- ========================================
   -- 9. RESETAR EVENT_CONFIG
@@ -184,9 +186,11 @@ SELECT
   phase_2_start_time
 FROM event_config;
 
--- Quests (todas devem estar sem started_at)
+-- Quests (todas devem estar sem started_at, ended_at, started_by)
 SELECT 
   COUNT(*) as total_quests,
   COUNT(*) FILTER (WHERE started_at IS NOT NULL) as quests_com_started_at,
+  COUNT(*) FILTER (WHERE ended_at IS NOT NULL) as quests_com_ended_at,
+  COUNT(*) FILTER (WHERE started_by IS NOT NULL) as quests_com_started_by,
   COUNT(*) FILTER (WHERE status = 'scheduled') as quests_scheduled
 FROM quests;

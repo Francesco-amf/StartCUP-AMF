@@ -77,6 +77,18 @@ BEGIN
     NULL;
   END;
 
+  -- Resetar quests (limpar started_at, ended_at, started_by)
+  BEGIN
+    UPDATE quests
+    SET started_at = NULL,
+        ended_at = NULL,
+        started_by = NULL,
+        status = 'scheduled'
+    WHERE started_at IS NOT NULL OR ended_at IS NOT NULL OR status != 'scheduled';
+  EXCEPTION WHEN undefined_table THEN
+    NULL;
+  END;
+
   -- Construir resultado
   result := json_build_object(
     'success', true,

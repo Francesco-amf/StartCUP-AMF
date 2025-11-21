@@ -187,13 +187,15 @@ export async function POST(request: Request) {
       results.event_reset = true
     }
 
-    // 9. Resetar quests (CRÍTICO - limpa started_at para evitar quests expiradas)
+    // 9. Resetar quests (CRÍTICO - limpa started_at e ended_at para evitar quests expiradas e dados fantasmas)
     console.log('🔄 Resetando quests...')
     const { error: questError, count: questCount } = await supabaseAdmin
       .from('quests')
       .update({
         status: 'scheduled',
-        started_at: null
+        started_at: null,
+        ended_at: null,
+        started_by: null
       })
       .neq('id', '00000000-0000-0000-0000-000000000000')
 

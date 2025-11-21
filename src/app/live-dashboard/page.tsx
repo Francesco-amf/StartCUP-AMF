@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 
 export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
-  const { phase } = useRealtimePhase()
+  const { phase, loading: phaseLoading } = useRealtimePhase()
   const [showAudioTester, setShowAudioTester] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isUnlocked, setIsUnlocked] = useState(false)
@@ -197,7 +197,12 @@ export default function LiveDashboard() {
         )}
 
         {/* Timer da Fase e Quest Atual - Topo em destaque */}
-        {phase?.event_status === 'running' && phase?.phase_started_at && (
+        {phaseLoading ? (
+          <div className="mb-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 backdrop-blur-sm border-2 border-[#00E5FF]/40 rounded-lg p-8 text-center">
+            <div className="text-4xl mb-3">⏳</div>
+            <p className="text-[#00E5FF] text-lg font-semibold">Carregando informações da fase...</p>
+          </div>
+        ) : phase?.event_status === 'running' && phase?.phase_started_at ? (
           <div className="mb-6">
             <CurrentQuestTimer
               phase={phase.current_phase}
@@ -205,7 +210,7 @@ export default function LiveDashboard() {
               phaseDurationMinutes={phase.phases?.duration_minutes || 60}
             />
           </div>
-        )}
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 

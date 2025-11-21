@@ -372,7 +372,7 @@ const PHASES_DETAILED = {
       {
         questNumber: 1,
         name: 'A História Épica',
-        description: 'Estruturar narrativa do pitch (Pitch de 5 minutos)',
+        description: 'Estruturar narrativa do pitch + storytelling da solução (Pitch de 5 minutos)',
         maxPoints: 75,
         deliveryType: ['file'],
         requirements: [
@@ -399,7 +399,7 @@ const PHASES_DETAILED = {
       {
         questNumber: 2,
         name: 'Slides de Impacto',
-        description: 'Criar apresentação visual',
+        description: 'Criar apresentação visual, sequência de slides: Capa → Dor/Necessidade → Solução → Mercado → Faturamento → Livre',
         maxPoints: 50,
         deliveryType: ['file', 'url'],
         requirements: [
@@ -426,7 +426,7 @@ const PHASES_DETAILED = {
       {
         questNumber: 3,
         name: 'Ensaio Geral',
-        description: 'Treinar pitch e ajustar timing',
+        description: 'Treinar pitch + ajustar timing (5 minutos)',
         maxPoints: 25,
         deliveryType: ['file'],
         requirements: [

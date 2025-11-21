@@ -18,6 +18,16 @@ export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
   const { phase } = useRealtimePhase()
   const [showAudioTester, setShowAudioTester] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // ✅ NOVO: Atualizar relógio a cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
 
   // ✅ REMOVED: Penalty listener moved to useRealtimePenalties hook
   // Having multiple subscriptions to 'public:penalties' channel was causing
@@ -67,6 +77,12 @@ export default function LiveDashboard() {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
+              {/* Relógio ao vivo */}
+              <div className="hidden md:flex items-center gap-2 bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] px-4 py-2 rounded-lg font-mono text-lg">
+                <span>🕐</span>
+                <span>{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </div>
+
               {/* Badge ao vivo */}
               <div className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-full font-bold">
                 <span className="w-3 h-3 bg-white rounded-full animate-pulse" />

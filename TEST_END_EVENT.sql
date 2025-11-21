@@ -2,14 +2,27 @@
 -- Define event_end_time para 2 minutos no futuro
 -- Define evaluation_period_end_time para NOW (já passou, para testar a tela dos 20 minutos)
 
--- OPÇÃO 1: Testar tela de Evaluation Period (20 minutos) - tempo JÁ PASSOU
+-- OPÇÃO 1: Testar tela de Evaluation Period - 1 MINUTO RESTANTE ⏰
+-- Perfeito para testar a transição completa: 1min → 10s countdown → Game Over
 UPDATE event_config
 SET 
   event_ended = false,
   event_end_time = NOW() + INTERVAL '2 minutes',           -- Evento termina em 2 minutos
+  evaluation_period_end_time = NOW() + INTERVAL '1 minute', -- 1 minuto restante (60 segundos)
+  all_submissions_evaluated = false
+WHERE id = '00000000-0000-0000-0000-000000000001';
+
+-- OPÇÃO 1B: Testar tela de Evaluation Period - tempo JÁ PASSOU
+-- Mostra a tela dos 20 minutos com 00:00 e aviso de tempo esgotado
+/*
+UPDATE event_config
+SET 
+  event_ended = false,
+  event_end_time = NOW() + INTERVAL '2 minutes',
   evaluation_period_end_time = NOW() - INTERVAL '30 seconds', -- Período já passou 30s atrás
   all_submissions_evaluated = false
 WHERE id = '00000000-0000-0000-0000-000000000001';
+*/
 
 -- OPÇÃO 2: Testar tela de Evaluation Period (20 minutos) - com tempo ATIVO (10 segundos restantes)
 -- Descomenta as linhas abaixo e comenta as de cima se quiser ver o countdown ativo

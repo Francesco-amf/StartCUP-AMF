@@ -12,6 +12,7 @@ interface WinnerTeam {
 
 interface EventEndCountdownProps {
   eventEndTime: string | null
+  startPhase?: EventPhase // ✅ NOVO: Fase inicial (default 'countdown', pode ser 'gameOver')
   onEventEnd?: () => void
 }
 
@@ -25,9 +26,9 @@ let globalSuspenseAudio: HTMLAudioElement | null = null
 let globalWinnerMusicAudio: HTMLAudioElement | null = null
 let globalWinSoundAudio: HTMLAudioElement | null = null
 
-export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEndCountdownProps) {
+export default function EventEndCountdown({ eventEndTime, startPhase = 'countdown', onEventEnd }: EventEndCountdownProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
-  const [currentPhase, setCurrentPhase] = useState<EventPhase>('countdown')
+  const [currentPhase, setCurrentPhase] = useState<EventPhase>(startPhase) // ✅ Usar startPhase como inicial
   const [winner, setWinner] = useState<WinnerTeam | null>(null)
   const [loadingWinner, setLoadingWinner] = useState(false)
   const [lastPlayedSecond, setLastPlayedSecond] = useState<number | null>(null)
@@ -347,6 +348,14 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
     }
   }, [currentPhase, timeLeft, fetchWinner])
 
+  // ✅ NOVO: Se começar direto em gameOver, buscar vencedor imediatamente
+  useEffect(() => {
+    if (currentPhase === 'gameOver' && !winner && !loadingWinner) {
+      console.log('🏆 [EventEndCountdown] Iniciando em gameOver - buscando vencedor imediatamente')
+      fetchWinner()
+    }
+  }, [currentPhase, winner, loadingWinner, fetchWinner])
+
   // Função para avançar manualmente para Suspense (SEM timer automático)
   const advanceToSuspense = useCallback(() => {
     console.log(`🎭 Avançando manualmente para Suspense`)
@@ -476,7 +485,12 @@ export default function EventEndCountdown({ eventEndTime, onEventEnd }: EventEnd
   }, [winnerRevealStage, playWinSound])
 
   useEffect(() => {
-    if (!eventEndTime) return
+    // ✅ FIX: Se eventEndTime é null, não iniciar timer de countdown
+    // Isso acontece quando começamos direto em 'gameOver'
+    if (!eventEndTime) {
+      console.log('⏭️ [EventEndCountdown] Sem eventEndTime, pulando timer de countdown')
+      return
+    }
 
     const calculateTimeLeft = () => {
       const now = Date.now()

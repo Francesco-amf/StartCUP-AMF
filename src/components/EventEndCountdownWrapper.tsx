@@ -111,10 +111,13 @@ export default function EventEndCountdownWrapper() {
     }
   }, [supabase, isInitialized])
 
-  // Handler para quando avaliações terminarem
+  // Handler per quando avaliações terminarem
   const handleEvaluationsComplete = () => {
-    console.log('🎯 [EventEndCountdownWrapper] Avaliações completadas, iniciando countdown final')
+    console.log('🎯 [EventEndCountdownWrapper] Avaliações completadas, pulando direto para GAME OVER')
+    // ✅ FIX: Ir direto para GAME OVER (não countdown final)
+    // O countdown de 10s já aconteceu em EvaluationPeriodCountdown
     setShowFinalCountdown(true)
+    setAllSubmissionsEvaluated(true)
   }
 
   // Debug: Log de estado
@@ -147,17 +150,18 @@ export default function EventEndCountdownWrapper() {
     )
   }
 
-  // FASE 2: Countdown Final (após avaliações)
-  // Mostra se avaliações completaram OU tempo expirou
-  // ✅ FIX: Usar event_end_time para o countdown final de 60 segundos
-  // event_end_time é setado quando evaluation_period_end_time expira
+  // FASE 2: GAME OVER + Suspense + Winner
+  // Mostra quando avaliações completaram
+  // ✅ FIX: EventEndCountdown agora começa direto na fase 'gameOver'
+  // porque o countdown de 10s já aconteceu em EvaluationPeriodCountdown
   if (showFinalCountdown || allSubmissionsEvaluated) {
-    console.log('🟠 [EventEndCountdownWrapper] Renderizando FASE 2: Final Countdown')
+    console.log('🟠 [EventEndCountdownWrapper] Renderizando FASE 2: Game Over → Suspense → Winner')
     return (
       <EventEndCountdown
-        eventEndTime={eventEndTime || evaluationPeriodEndTime}
+        eventEndTime={null} // ✅ Não precisa de countdown inicial
+        startPhase="gameOver" // ✅ Começar direto em GAME OVER
         onEventEnd={() => {
-          console.log('⏹️ [EventEndCountdownWrapper] Countdown terminou, setando eventEnded = true')
+          console.log('⏹️ [EventEndCountdownWrapper] Evento completamente terminado')
           setEventEnded(true)
         }}
       />

@@ -134,13 +134,11 @@ export default function EventEndCountdownWrapper() {
     return null
   }
 
-  // ✅ FIX: Validar que evaluation_period_end_time é um timestamp futuro válido
-  const isValidFutureEvaluationTime = evaluationPeriodEndTime && new Date(evaluationPeriodEndTime).getTime() > Date.now()
-
-  // FASE 1: Período de Avaliação
-  // Mostra se evaluation_period_end_time está definido E ainda não completou
-  // ✅ FIX: Só renderizar após delay de sincronização (canRenderChild) E se tempo for válido
-  if (evaluationPeriodEndTime && !allSubmissionsEvaluated && !showFinalCountdown && canRenderChild && isValidFutureEvaluationTime) {
+  // FASE 1: Período de Avaliação (20 minutos)
+  // Mostra SEMPRE quando evaluation_period_end_time está definido
+  // Não importa se o tempo já passou - deixa EvaluationPeriodCountdown lidar com isso
+  // Só pula para countdown final quando allSubmissionsEvaluated=true OU usuário avança manualmente
+  if (evaluationPeriodEndTime && !allSubmissionsEvaluated && !showFinalCountdown && canRenderChild) {
     console.log('🔵 [EventEndCountdownWrapper] Renderizando FASE 1: Evaluation Period')
     return (
       <EvaluationPeriodCountdown

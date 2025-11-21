@@ -17,14 +17,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const usuariosParaAdicionar = [
   { 
-    nome: 'Michael Silva', 
-    email: 'michael.silva@startcup-amf.com', 
-    senha: 'MSEvaluator@2025!' 
-  },
-  { 
-    nome: 'Bruna Leao', 
-    email: 'bruna.leao@startcup-amf.com', 
-    senha: 'BLEvaluator@2025!' 
+    nome: 'Jessica Baratto', 
+    email: 'jessica.baratto@startcup-amf.com', 
+    senha: 'JBEvaluator@2025!' 
   }
 ];
 
@@ -40,7 +35,12 @@ async function adicionarUsuarios() {
       email_confirm: true,
       user_metadata: { 
         full_name: usuario.nome,
-        role: 'avaliador'
+        role: 'evaluator'
+      },
+      app_metadata: {
+        provider: 'email',
+        providers: ['email'],
+        role: 'evaluator'
       }
     });
 
@@ -48,6 +48,24 @@ async function adicionarUsuarios() {
       console.error(`❌ Erro: ${error.message}`);
     } else {
       console.log(`✅ Sucesso! ID: ${data.user.id}`);
+      
+      // Adicionar na tabela evaluators
+      const { error: evalError } = await supabase
+        .from('evaluators')
+        .insert({
+          id: data.user.id,
+          name: usuario.nome,
+          email: usuario.email,
+          specialty: 'Avaliadora',
+          is_online: false,
+          role: 'evaluator'
+        });
+      
+      if (evalError) {
+        console.error(`❌ Erro ao adicionar na tabela evaluators: ${evalError.message}`);
+      } else {
+        console.log(`✅ Adicionada na tabela evaluators!`);
+      }
     }
   }
 }

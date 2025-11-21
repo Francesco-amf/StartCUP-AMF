@@ -13,12 +13,53 @@ import AudioAuthorizationBanner from '@/components/dashboard/AudioAuthorizationB
 import { AudioInitializer } from '@/components/AudioInitializer'
 import EventEndCountdownWrapper from '@/components/EventEndCountdownWrapper'
 import DebugSoundTester from '@/components/DebugSoundTester'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function LiveDashboard() {
   const { ranking, loading: rankingLoading } = useRealtimeRanking()
   const { phase } = useRealtimePhase()
   const [showAudioTester, setShowAudioTester] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(false)
+
+  // Token secreto para acesso via URL
+  const ACCESS_TOKEN = 'live2025startcup'
+  const PASSWORD = 'St@rtC@p2025!'
+
+  // Verificar token na URL ou localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URL(window.location.href).searchParams
+      const urlToken = params.get('token')
+      
+      // Se tem token válido na URL, desbloqueia e salva
+      if (urlToken === ACCESS_TOKEN) {
+        setIsUnlocked(true)
+        localStorage.setItem('live_dashboard_unlocked', 'true')
+      } else {
+        // Senão, verifica localStorage
+        const unlocked = localStorage.getItem('live_dashboard_unlocked')
+        if (unlocked === 'true') {
+          setIsUnlocked(true)
+        }
+      }
+    }
+  }, [])
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === PASSWORD) {
+      setIsUnlocked(true)
+      setError(false)
+      localStorage.setItem('live_dashboard_unlocked', 'true')
+    } else {
+      setError(true)
+      setPassword('')
+    }
+  }
 
   // ✅ NOVO: Atualizar relógio a cada segundo
   useEffect(() => {
@@ -44,6 +85,59 @@ export default function LiveDashboard() {
       // ignore
     }
   }, [])
+
+  // Tela de bloqueio
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen gradient-startcup flex items-center justify-center p-4">
+        <Card className="p-8 max-w-md w-full bg-gradient-to-br from-[#0A1E47]/90 to-[#001A4D]/90 border-2 border-[#00E5FF]/40">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-4">📺</div>
+            <h1 className="text-3xl font-bold gradient-text-startcup mb-2">Live Dashboard</h1>
+            <p className="text-[#00E5FF]/70 text-sm">Acesso restrito</p>
+          </div>
+
+          <form onSubmit={handleUnlock} className="space-y-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[#00E5FF] mb-2">
+                Senha de Acesso
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError(false)
+                }}
+                placeholder="Digite a senha"
+                className={`w-full px-4 py-3 bg-[#0A1E47]/60 border-2 rounded-lg text-white placeholder-[#00E5FF]/30 focus:outline-none focus:border-[#00E5FF] transition-colors ${
+                  error ? 'border-red-500' : 'border-[#00E5FF]/40'
+                }`}
+                autoFocus
+              />
+              {error && (
+                <p className="text-red-400 text-sm mt-2">❌ Senha incorreta. Tente novamente.</p>
+              )}
+            </div>
+
+            <Button 
+              type="submit"
+              className="w-full bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-bold py-3 text-lg"
+            >
+              🔓 Acessar Live Dashboard
+            </Button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-[#00E5FF]/20">
+            <p className="text-[#00E5FF]/50 text-xs text-center">
+              Entre em contato com a organização para obter acesso.
+            </p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <>

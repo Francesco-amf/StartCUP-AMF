@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface FAQItem {
   question: string
@@ -14,6 +14,90 @@ export default function GuiaAvaliadorPage() {
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null)
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
   const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(false)
+
+  // Senha fixa para acesso (compartilhada apenas com avaliadores)
+  const GUIDE_PASSWORD = 'St@rtC@p2025!'
+
+  // Verificar se já está desbloqueado no localStorage
+  useEffect(() => {
+    const unlocked = localStorage.getItem('guia_avaliador_unlocked')
+    if (unlocked === 'true') {
+      setIsUnlocked(true)
+    }
+  }, [])
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === GUIDE_PASSWORD) {
+      setIsUnlocked(true)
+      setError(false)
+      localStorage.setItem('guia_avaliador_unlocked', 'true')
+    } else {
+      setError(true)
+      setPassword('')
+    }
+  }
+
+  // Tela de bloqueio
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen gradient-startcup flex items-center justify-center p-4">
+        <Card className="p-8 max-w-md w-full bg-gradient-to-br from-[#0A1E47]/90 to-[#001A4D]/90 border-2 border-[#00E5FF]/40">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-4">🔒</div>
+            <h1 className="text-3xl font-bold gradient-text-startcup mb-2">Guia do Avaliador</h1>
+            <p className="text-[#00E5FF]/70 text-sm">Acesso restrito apenas para avaliadores</p>
+          </div>
+
+          <form onSubmit={handleUnlock} className="space-y-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[#00E5FF] mb-2">
+                Senha de Acesso
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError(false)
+                }}
+                placeholder="Digite a senha"
+                className={`w-full px-4 py-3 bg-[#0A1E47]/60 border-2 rounded-lg text-white placeholder-[#00E5FF]/30 focus:outline-none focus:border-[#00E5FF] transition-colors ${
+                  error ? 'border-red-500' : 'border-[#00E5FF]/40'
+                }`}
+                autoFocus
+              />
+              {error && (
+                <p className="text-red-400 text-sm mt-2">❌ Senha incorreta. Tente novamente.</p>
+              )}
+            </div>
+
+            <Button 
+              type="submit"
+              className="w-full bg-[#00E5FF] hover:bg-[#00D9FF] text-[#0A1E47] font-bold py-3 text-lg"
+            >
+              🔓 Desbloquear Guia
+            </Button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-[#00E5FF]/20">
+            <p className="text-[#00E5FF]/50 text-xs text-center">
+              Se você é avaliador e não possui a senha, entre em contato com a organização.
+            </p>
+            <Link href="/login" className="block mt-3">
+              <Button variant="outline" className="w-full border-[#00E5FF]/40 text-[#00E5FF] hover:bg-[#00E5FF]/10">
+                ← Voltar ao Login
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   const faqItems: FAQItem[] = [
     {
@@ -82,6 +166,17 @@ export default function GuiaAvaliadorPage() {
                 ← Voltar
               </Button>
             </Link>
+            <Button 
+              onClick={() => {
+                localStorage.removeItem('guia_avaliador_unlocked')
+                setIsUnlocked(false)
+                setPassword('')
+              }}
+              variant="outline"
+              className="border-red-400/40 text-red-400 hover:bg-red-400/10 text-sm"
+            >
+              🔒 Bloquear Guia
+            </Button>
           </div>
           <h1 className="text-4xl font-bold gradient-text-startcup">Guia do Avaliador 📖</h1>
           <p className="text-[#00E5FF] mt-2">Aprenda como avaliar submissions, gerenciar penalidades e usar o sistema</p>

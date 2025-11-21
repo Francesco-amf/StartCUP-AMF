@@ -32,7 +32,7 @@ export default function LiveDashboard() {
 
   // Delay mínimo para evitar flash de dados inválidos
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 300)
+    const timer = setTimeout(() => setShowContent(true), 500)
     return () => clearTimeout(timer)
   }, [])
 
@@ -209,7 +209,7 @@ export default function LiveDashboard() {
             <div className="text-4xl mb-3">⏳</div>
             <p className="text-[#00E5FF] text-lg font-semibold">Carregando informações da fase...</p>
           </div>
-        ) : phase?.event_status === 'running' && phase?.phase_started_at ? (
+        ) : phase?.event_status === 'running' && phase?.phase_started_at && phase?.current_phase > 0 ? (
           <div className="mb-6">
             <CurrentQuestTimer
               phase={phase.current_phase}

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 
 // Configurar limite de request para 100MB (padrão Vercel é 5MB)
 export const config = {
-  maxDuration: 30,
+  maxDuration: 120,
   api: {
     bodyParser: {
       sizeLimit: '100mb',

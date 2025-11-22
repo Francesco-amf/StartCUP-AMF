@@ -201,7 +201,8 @@ export default function ManualQuestControl() {
         .from('quests')
         .update({ 
           status: 'active',
-          started_at: newStartedAt.toISOString()
+          started_at: newStartedAt.toISOString(),
+          planned_deadline_minutes: durationMinutes
         })
         .eq('id', questId)
 
@@ -226,14 +227,21 @@ export default function ManualQuestControl() {
       const currentStart = new Date(activeQuest.started_at!)
       currentStart.setMinutes(currentStart.getMinutes() - minutes) // Subtrair para adicionar tempo no final
 
+      // Atualizar started_at, duration_minutes e planned_deadline_minutes
+      const newDuration = activeQuest.duration_minutes + minutes
+      
       const { error } = await supabase
         .from('quests')
-        .update({ started_at: currentStart.toISOString() })
+        .update({ 
+          started_at: currentStart.toISOString(),
+          duration_minutes: newDuration,
+          planned_deadline_minutes: newDuration
+        })
         .eq('id', activeQuest.id)
 
       if (error) throw error
 
-      setMessage({ text: `${minutes > 0 ? '+' : ''}${minutes} minutos adicionados!`, type: 'success' })
+      setMessage({ text: `${minutes > 0 ? '+' : ''}${minutes} minutos ${minutes > 0 ? 'adicionados' : 'removidos'}!`, type: 'success' })
       await loadData()
     } catch (error: any) {
       setMessage({ text: error.message, type: 'error' })
@@ -249,36 +257,16 @@ export default function ManualQuestControl() {
     try {
       const nextPhase = currentPhase + 1
       
-      // Fechar todas quests da fase atual
-      const currentPhaseData = phases.find(p => p.order_index === currentPhase)
-      if (currentPhaseData) {
-        await supabase
-          .from('quests')
-          .update({ status: 'closed' })
-          .eq('phase_id', currentPhaseData.id)
-      }
+      // Usar endpoint do PhaseController para garantir configuração correta
+      const response = await fetch('/api/admin/start-phase-with-quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase: nextPhase }),
+      })
 
-      // Avançar fase
-      await supabase
-        .from('event_config')
-        .update({
-          current_phase: nextPhase,
-          [`phase_${nextPhase}_start_time`]: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', process.env.NEXT_PUBLIC_EVENT_CONFIG_ID || '00000000-0000-0000-0000-000000000001')
-
-      // Ativar Quest X.1 da próxima fase
-      const nextPhaseData = phases.find(p => p.order_index === nextPhase)
-      if (nextPhaseData) {
-        await supabase
-          .from('quests')
-          .update({
-            started_at: new Date().toISOString(),
-            status: 'active'
-          })
-          .eq('phase_id', nextPhaseData.id)
-          .eq('order_index', 1)
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Erro ao avançar fase')
       }
 
       setMessage({ text: `Avançado para Fase ${nextPhase}!`, type: 'success' })

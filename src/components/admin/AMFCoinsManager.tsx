@@ -71,11 +71,6 @@ export default function AMFCoinsManager() {
       return
     }
 
-    if (!reason.trim()) {
-      setMessage({ text: 'Digite um motivo para o ajuste', type: 'error' })
-      return
-    }
-
     setLoading(true)
     setMessage(null)
 
@@ -89,7 +84,7 @@ export default function AMFCoinsManager() {
         .insert({
           team_id: selectedTeam,
           amount: amount,
-          reason: reason
+          reason: reason.trim() || 'Ajuste manual'
         })
 
       if (error) throw error
@@ -147,9 +142,9 @@ export default function AMFCoinsManager() {
             onChange={(e) => setSelectedTeam(e.target.value)}
             className="w-full px-3 py-2 bg-[#0A1E47]/60 border border-[#00E5FF]/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50"
           >
-            <option value="">Selecione uma equipe...</option>
+            <option value="" className="bg-[#0A1E47] text-gray-400">Selecione uma equipe...</option>
             {teams.map(team => (
-              <option key={team.id} value={team.id}>
+              <option key={team.id} value={team.id} className="bg-[#0A1E47] text-white">
                 {team.name} - {team.course} ({teamPoints[team.id] || 0} coins)
               </option>
             ))}
@@ -173,13 +168,13 @@ export default function AMFCoinsManager() {
         {/* Motivo */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Motivo
+            Motivo (opcional)
           </label>
           <Input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Ex: Ajuste manual, bônus especial..."
+            placeholder="Ex: Ajuste manual, bônus especial... (padrão: 'Ajuste manual')"
             className="bg-[#0A1E47]/60 border-[#00E5FF]/30 text-white"
           />
         </div>
@@ -187,7 +182,7 @@ export default function AMFCoinsManager() {
         {/* Botão */}
         <Button
           onClick={addCoins}
-          disabled={loading || !selectedTeam || !coinsAmount || !reason}
+          disabled={loading || !selectedTeam || !coinsAmount}
           className="w-full bg-gradient-to-r from-[#00E5FF] to-[#0091EA] hover:from-[#00B8D4] hover:to-[#00838F] text-[#0A0F1E] font-bold"
         >
           {loading ? '⏳ Processando...' : '💰 Aplicar Ajuste'}

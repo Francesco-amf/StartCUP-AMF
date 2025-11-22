@@ -84,17 +84,61 @@ export default function SubmissionForm({
     setSuccess(false)
 
     try {
+      // ✅ VALIDAÇÕES PRELIMINARES (antes de qualquer envio)
+      
       // Validação de entrada
       if (deliverableType === 'file' && !file) {
-        setError('Por favor, selecione um arquivo.')
+        setError('📄 Por favor, selecione um arquivo para enviar.')
         setLoading(false)
         return
       }
 
       if ((deliverableType === 'text' || deliverableType === 'url') && !content.trim()) {
-        setError('Por favor, preencha o conteúdo.')
+        setError(`📝 Por favor, preencha o ${deliverableType === 'url' ? 'link' : 'conteúdo'}.`)
         setLoading(false)
         return
+      }
+
+      // Validação de tamanho de arquivo (redundante mas importante)
+      if (deliverableType === 'file' && file) {
+        if (file.size > MAX_FILE_SIZE) {
+          setError(`📦 Arquivo muito grande!\n\nSeu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB\nMáximo permitido: 5MB\n\nDica: Comprima o arquivo ou envie um link de compartilhamento em vez disso.`)
+          setFile(null)
+          setLoading(false)
+          return
+        }
+        
+        // Validar tipo MIME
+        const allowedMimes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'image/jpeg',
+          'image/png',
+          'application/zip',
+          'application/x-rar-compressed',
+          'application/x-7z-compressed',
+        ]
+        
+        if (!allowedMimes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|ppt|pptx|jpg|jpeg|png|zip|rar|7z)$/i)) {
+          setError(`📄 Tipo de arquivo não permitido: ${file.type || 'desconhecido'}\n\nTipos aceitos: PDF, DOC, DOCX, PPT, PPTX, JPG, PNG, ZIP, RAR, 7Z`)
+          setFile(null)
+          setLoading(false)
+          return
+        }
+      }
+
+      // Validação de URL
+      if (deliverableType === 'url') {
+        try {
+          new URL(content.trim())
+        } catch {
+          setError('🔗 URL inválida!\n\nCertifique-se de que começa com https:// ou http://')
+          setLoading(false)
+          return
+        }
       }
 
       // Preparar FormData para envio
@@ -130,7 +174,7 @@ export default function SubmissionForm({
         return
       }
 
-      // ✅ NOVO: Tratamento de erro JSON
+      // ✅ MELHORADO: Tratamento de erro JSON com diagnostico
       let data
       try {
         data = await response.json()
@@ -138,29 +182,81 @@ export default function SubmissionForm({
         console.error('Erro ao parsear JSON da resposta:', jsonError)
         console.error('Status da resposta:', response.status)
         console.error('Tipo de entrega enviado:', deliverableType)
-        setError('❌ Erro ao processar resposta do servidor. Tente novamente ou contate o suporte.')
+        
+        // Tratar erros específicos por status HTTP
+        let errorMessage = '❌ Erro ao processar resposta do servidor.'
+        if (response.status === 413) {
+          errorMessage = '📦 Arquivo muito grande! Máximo permitido: 5MB'
+        } else if (response.status === 500) {
+          errorMessage = '⚠️ Erro interno do servidor. Tente novamente em alguns momentos.'
+        } else if (response.status === 408 || response.status === 504) {
+          errorMessage = '⏱️ Timeout! Upload demorou muito. Verifique sua conexão e tente novamente.'
+        } else if (response.statusText === 'Bad Gateway' || response.statusText === 'Service Unavailable') {
+          errorMessage = '🔌 Serviço temporariamente indisponível. Tente novamente em poucos segundos.'
+        }
+        
+        setError(errorMessage)
         setLoading(false)
         setUploadingFile(false)
         return
       }
 
       if (!response.ok) {
-        // Tratamento de erros específicos
-        if (data.details?.reason) {
-          // Erro de validação com detalhes
-          let errorMessage = data.error
+        // Tratamento de erros específicos com diagnóstico melhorado
+        let errorMessage = data.error || 'Erro ao enviar entrega. Tente novamente.'
+        let errorDetails = ''
 
+        // Erros de tamanho de arquivo
+        if (response.status === 413 || errorMessage.includes('Arquivo muito grande')) {
+          errorMessage = '📦 Arquivo muito grande!'
+          errorDetails = 'Máximo permitido: 5MB. Comprima o arquivo ou envie um link em vez disso.'
+        }
+        // Erros de autenticação/autorização
+        else if (response.status === 401) {
+          errorMessage = '🔐 Sessão expirada'
+          errorDetails = 'Redirecionando para login...'
+        } else if (response.status === 403) {
+          errorMessage = '🚫 Acesso negado'
+          errorDetails = 'Você não tem permissão para enviar esta entrega.'
+        }
+        // Erros de deadline
+        else if (data.details?.reason === 'PAST_DEADLINE') {
+          errorMessage = '⏰ Prazo expirado'
+          errorDetails = 'Você não pode mais enviar uma entrega para esta quest.'
+        } else if (data.details?.reason === 'NOT_STARTED') {
+          errorMessage = '⏳ Quest não iniciada'
+          errorDetails = 'Aguarde o início da quest para enviar uma entrega.'
+        }
+        // Erros de validação com detalhes
+        else if (data.details?.reason) {
+          errorMessage = data.error
           if (data.details.lateMinutes > 0) {
-            errorMessage += ` (${data.details.lateMinutes} minutos atrasado)`
+            errorDetails = `⚠️ Você está ${data.details.lateMinutes} minuto(s) atrasado`
             if (data.details.penalty > 0) {
-              errorMessage += `. Penalidade: -${data.details.penalty} AMF Coins`
+              errorDetails += `. Penalidade: -${data.details.penalty} AMF Coins`
             }
           }
-
-          setError(errorMessage)
-        } else {
-          setError(data.error || 'Erro ao enviar entrega. Tente novamente.')
         }
+        // Erro de submissão duplicada
+        else if (errorMessage.includes('já foi submetida') || errorMessage.includes('duplicate')) {
+          errorMessage = '✅ Esta quest já foi submetida'
+          errorDetails = 'Você já enviou uma entrega para esta quest. Cada quest permite apenas uma submissão.'
+        }
+        // Erro de tipo de arquivo inválido
+        else if (errorMessage.includes('tipo de arquivo') || errorMessage.includes('arquivo inválido')) {
+          errorMessage = '📄 Tipo de arquivo não permitido'
+          errorDetails = 'Tipos aceitos: PDF, DOC, DOCX, PPT, PPTX, JPG, PNG, ZIP, RAR, 7Z'
+        }
+        // Erro de servidor
+        else if (response.status >= 500) {
+          errorMessage = '⚠️ Erro do servidor'
+          errorDetails = 'Tente novamente em alguns momentos. Se o problema persistir, contate o suporte.'
+        }
+
+        // Montar mensagem final
+        const fullError = errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage
+        setError(fullError)
+        
         setLoading(false)
         setUploadingFile(false)
         return
@@ -198,7 +294,19 @@ export default function SubmissionForm({
 
     } catch (err) {
       console.error('Erro ao enviar entrega:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao enviar entrega. Tente novamente.')
+      
+      // Tratamento de erros de rede
+      if (err instanceof TypeError) {
+        if (err.message.includes('Failed to fetch')) {
+          setError('🌐 Erro de conexão. Verifique sua internet e tente novamente.')
+        } else if (err.message.includes('payload')) {
+          setError('📦 Arquivo muito grande para envio. Máximo: 5MB')
+        } else {
+          setError('🌐 Erro de conexão. Tente novamente.')
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Erro ao enviar entrega. Tente novamente.')
+      }
     } finally {
       setLoading(false)
       setUploadingFile(false)
@@ -380,14 +488,22 @@ export default function SubmissionForm({
 
         {/* Mensagens */}
         {error && (
-          <div className="bg-red-500/15 border border-red-500/60 text-red-300 px-4 py-3 rounded-lg text-sm">
-            ❌ {error}
+          <div className="bg-red-500/15 border border-red-500/60 text-red-300 px-4 py-3 rounded-lg text-sm space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-lg flex-shrink-0">❌</span>
+              <div className="whitespace-pre-wrap break-words leading-relaxed">
+                {error}
+              </div>
+            </div>
           </div>
         )}
 
         {success && (
           <div className="bg-green-500/15 border border-green-500/60 text-green-300 px-4 py-3 rounded-lg text-sm">
-            ✅ Entrega enviada com sucesso! Aguarde a avaliação.
+            <div className="flex items-center gap-2">
+              <span className="text-lg">✅</span>
+              <span>Entrega enviada com sucesso! Aguarde a avaliação.</span>
+            </div>
           </div>
         )}
 

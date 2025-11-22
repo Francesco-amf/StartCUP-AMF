@@ -197,7 +197,6 @@ export default async function TeamDashboard() {
       {/* ✅ Componente cliente para monitorar mudanças de quest e recarregar */}
       <CurrentQuestPoller
         teamId={team?.id || ''}
-        initialQuestId={currentQuest?.id}
       />
 
       <div className="w-screen px-2 py-2">

@@ -43,6 +43,9 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- PASSO 2: Atualizar função validate_submission_allowed()
+-- ⚠️ IMPORTANTE: Dropar antes de recriar para evitar conflito de tipos
+DROP FUNCTION IF EXISTS validate_submission_allowed(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION validate_submission_allowed(
   team_id_param UUID,
   quest_id_param UUID,
@@ -187,10 +190,7 @@ FOR EACH ROW
 EXECUTE FUNCTION update_late_submission_fields();
 
 -- PASSO 5: Testar a função com vários cenários
-\echo ''
-\echo '=== TESTES DA FUNÇÃO calculate_late_penalty() ==='
-\echo '(Agora recebe SEGUNDOS em vez de MINUTOS)'
-\echo ''
+-- (Agora recebe SEGUNDOS em vez de MINUTOS)
 
 SELECT
   'TESTE: 10 segundos' as teste,
@@ -207,10 +207,7 @@ SELECT '360 segundos (6 min)', calculate_late_penalty(360), '10'
 UNION ALL
 SELECT '660 segundos (11 min)', calculate_late_penalty(660), '15'
 UNION ALL
-SELECT '1000 segundos (16+ min)', calculate_late_penalty(1000), 'NULL'
-\echo ''
-\echo '✅ Se todos os testes acima passaram, a correção funcionou!'
-\echo ''
+SELECT '1000 segundos (16+ min)', calculate_late_penalty(1000), 'NULL';
 
 -- PASSO 6: (OPCIONAL) Recalcular submissões existentes que foram bloqueadas
 -- Descomente se quiser corrigir dados históricos

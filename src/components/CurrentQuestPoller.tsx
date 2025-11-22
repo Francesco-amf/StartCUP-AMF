@@ -15,18 +15,17 @@ export default function CurrentQuestPoller({
   const supabase = createClient()
 
   useEffect(() => {
-    console.log(`🔄 [CurrentQuestPoller] Subscribing to quest changes for team ${teamId}`)
+    console.log(`🔄 [CurrentQuestPoller] Subscribing to quest changes`)
 
-    // Subscribe to changes in quests table for this team
+    // Subscribe to changes in quests table (all quests, no team filter since quests don't have team_id)
     const questsSubscription = supabase
-      .channel(`quests-${teamId}`)
+      .channel(`quests-global`)
       .on(
         'postgres_changes',
         {
-          event: '*', // All events (INSERT, UPDATE, DELETE)
+          event: 'UPDATE', // Only listen to updates (status, started_at, etc.)
           schema: 'public',
           table: 'quests',
-          filter: `team_id=eq.${teamId}`,
         },
         (payload: any) => {
           console.log(`🔄 [CurrentQuestPoller] Quest changed:`, payload)

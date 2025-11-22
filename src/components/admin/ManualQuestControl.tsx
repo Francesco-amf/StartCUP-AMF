@@ -92,6 +92,12 @@ export default function ManualQuestControl() {
       const phase = phases.find(p => p.order_index === phaseOrderIndex)
       if (!phase) throw new Error('Fase não encontrada')
 
+      // Buscar quest para pegar duration_minutes
+      const questToActivate = quests.find(q => 
+        q.phase_id === phase.id && q.order_index === questOrderIndex
+      )
+      if (!questToActivate) throw new Error('Quest não encontrada')
+
       // Fechar quest anterior
       if (questOrderIndex > 1) {
         await supabase
@@ -101,12 +107,13 @@ export default function ManualQuestControl() {
           .eq('order_index', questOrderIndex - 1)
       }
 
-      // Ativar quest
+      // Ativar quest com planned_deadline_minutes igual a duration_minutes
       const { error } = await supabase
         .from('quests')
         .update({
           started_at: new Date().toISOString(),
-          status: 'active'
+          status: 'active',
+          planned_deadline_minutes: questToActivate.duration_minutes
         })
         .eq('phase_id', phase.id)
         .eq('order_index', questOrderIndex)

@@ -227,14 +227,18 @@ export async function POST(request: Request) {
     // ========================================
     // PASSO 6: Verificar submissão duplicada
     // ========================================
-    const { data: existingSubmission, error: checkError } = await supabase
+    const { data: existingSubmissions, error: checkError } = await supabase
       .from('submissions')
       .select('id')
       .eq('team_id', teamId)
       .eq('quest_id', questId)
-      .single()
 
-    if (existingSubmission) {
+    if (checkError) {
+      console.error('Erro ao verificar submissão duplicada:', checkError)
+      // Não bloquear se der erro - deixar prosseguir com validação do banco
+    }
+
+    if (existingSubmissions && existingSubmissions.length > 0) {
       return NextResponse.json(
         { error: 'Você já enviou uma entrega para esta quest' },
         { status: 400 }

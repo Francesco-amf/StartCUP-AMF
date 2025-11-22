@@ -162,6 +162,34 @@ export async function POST(request: Request) {
     }
 
     if (nextQuest && nextQuest.id) {
+      // ✅ PROTEÇÃO BOSS: Verificar se próxima quest é BOSS (apresentação ao vivo)
+      if (nextQuest.order_index === 4) {
+        // Buscar deliverable_type para confirmar se é BOSS
+        const { data: bossCheckData, error: bossCheckError } = await supabaseAdmin
+          .from('quests')
+          .select('deliverable_type')
+          .eq('id', nextQuest.id)
+          .single()
+
+        if (!bossCheckError && bossCheckData?.deliverable_type) {
+          const deliverableType = bossCheckData.deliverable_type
+          const isBoss = Array.isArray(deliverableType) 
+            ? deliverableType.includes('presentation')
+            : typeof deliverableType === 'string' && deliverableType.includes('presentation')
+
+          if (isBoss) {
+            console.log(`🚫 [BOSS PROTECTION] Quest ${nextQuest.id} é BOSS (apresentação ao vivo) - NÃO ativar automaticamente`)
+            return NextResponse.json({
+              success: false,
+              message: `Quest ${closedQuestData.order_index} fechada. A próxima quest é BOSS (apresentação ao vivo) - NÃO foi ativada automaticamente.`,
+              isBossQuest: true,
+              questSkipped: true,
+              timestamp: Date.now()
+            }, { status: 200 })
+          }
+        }
+      }
+
       // Ativar a próxima quest na mesma fase
       const updateTime = getUTCTimestamp()
       console.log(`📝 Tentando ativar quest ${nextQuest.id} com timestamp: ${updateTime}`)

@@ -100,14 +100,11 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
         const prevWasSubmitted = submittedQuestIds.includes(prevQuest.id)
         const prevHasExpired = isFullyExpired(prevQuest)
         
-        // Se a quest anterior foi submetida mas ainda está no prazo, aguardar
-        if (prevWasSubmitted && !isRegularDeadlineExpired(prevQuest)) {
-          canShowThisQuest = false
-          break
-        }
-        
-        // Se a quest anterior NÃO foi submetida E NÃO expirou, não pode mostrar esta
-        if (!prevWasSubmitted && !prevHasExpired) {
+        // ✅ LÓGICA CORRIGIDA: Mostrar próxima quest se:
+        // 1. Quest anterior foi submetida (independente do prazo), OU
+        // 2. Quest anterior expirou completamente
+        const prevComplete = prevWasSubmitted || prevHasExpired
+        if (!prevComplete) {
           canShowThisQuest = false
           break
         }
@@ -240,23 +237,8 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   let waitingForDeadline: { questName: string; minutesRemaining: number } | null = null
   if (currentIndex === -1 && notSubmittedIndexes.length > 0) {
     // Tem quests não-submetidas, mas currentIndex = -1 (nenhuma selecionada)
-    // Verificar se é porque estamos aguardando prazo de quest submetida
-    const firstNotSubmitted = sortedQuests[notSubmittedIndexes[0]]
-    if (firstNotSubmitted && notSubmittedIndexes[0] > 0) {
-      const prevQuest = sortedQuests[notSubmittedIndexes[0] - 1]
-      if (submittedQuestIds.includes(prevQuest.id) && !isRegularDeadlineExpired(prevQuest)) {
-        const start = getDate(prevQuest.started_at)
-        const planned = typeof prevQuest.planned_deadline_minutes === 'number' ? prevQuest.planned_deadline_minutes : null
-        if (start && planned !== null) {
-          const regularEndMs = start.getTime() + planned * 60_000
-          const remaining = Math.max(0, Math.ceil((regularEndMs - Date.now()) / 60_000))
-          waitingForDeadline = {
-            questName: prevQuest.name,
-            minutesRemaining: remaining
-          }
-        }
-      }
-    }
+    // ✅ REMOVIDO: Não precisa mais aguardar prazo de quest submetida
+    // Após submissão, a próxima quest já mostra (ver lógica simplificada acima)
   }
 
   return (

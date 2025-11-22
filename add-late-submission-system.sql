@@ -65,23 +65,27 @@ $$ LANGUAGE plpgsql STABLE;
 -- PASSO 4: Criar função para calcular penalidade por atraso
 -- ==========================================
 CREATE OR REPLACE FUNCTION calculate_late_penalty(
-  late_minutes_param INTEGER
+  late_seconds_param INTEGER
 )
 RETURNS INTEGER AS $$
 DECLARE
+  v_minutes INTEGER;
   v_penalty INTEGER;
 BEGIN
+  -- Converter segundos para minutos (arredonda para cima)
+  v_minutes := CEIL(late_seconds_param::DECIMAL / 60)::INTEGER;
+
   -- Penalidades progressivas:
   -- 0-5 minutos: 5 pontos
   -- 5-10 minutos: 10 pontos
   -- 10-15 minutos: 15 pontos
-  IF late_minutes_param IS NULL OR late_minutes_param <= 0 THEN
+  IF late_seconds_param IS NULL OR late_seconds_param <= 0 THEN
     RETURN 0;
-  ELSIF late_minutes_param <= 5 THEN
+  ELSIF v_minutes <= 5 THEN
     RETURN 5;
-  ELSIF late_minutes_param <= 10 THEN
+  ELSIF v_minutes <= 10 THEN
     RETURN 10;
-  ELSIF late_minutes_param <= 15 THEN
+  ELSIF v_minutes <= 15 THEN
     RETURN 15;
   ELSE
     -- Mais de 15 minutos: rejeitar (null indica não permitido)
@@ -164,8 +168,10 @@ BEGIN
 
   -- Calcular minutos de atraso
   IF v_now > v_deadline THEN
-    v_minutes_late := EXTRACT(EPOCH FROM (v_now - v_deadline))::INTEGER / 60;
-    v_penalty := calculate_late_penalty(v_minutes_late);
+    -- ✅ CRITICAL FIX: Passar SEGUNDOS (não minutos) para evitar truncamento
+    -- Se diferença < 60s, dividir por 60 vira 0 (inteiros), bloqueando submissão válida
+    v_minutes_late := CEIL(EXTRACT(EPOCH FROM (v_now - v_deadline))::DECIMAL / 60)::INTEGER;
+    v_penalty := calculate_late_penalty(EXTRACT(EPOCH FROM (v_now - v_deadline))::INTEGER);
 
     -- Se a penalidade é NULL, significa que passou de 15 minutos
     IF v_penalty IS NULL THEN
@@ -203,9 +209,11 @@ BEGIN
   -- Se deadline foi calculado e está no passado, marcar como atrasada
   IF v_deadline IS NOT NULL AND NEW.submitted_at > v_deadline THEN
     NEW.is_late := TRUE;
-    v_minutes_late := EXTRACT(EPOCH FROM (NEW.submitted_at - v_deadline))::INTEGER / 60;
+    -- ✅ CRITICAL FIX: Passar SEGUNDOS (não minutos) para evitar truncamento
+    v_minutes_late := CEIL(EXTRACT(EPOCH FROM (NEW.submitted_at - v_deadline))::DECIMAL / 60)::INTEGER;
     NEW.late_minutes := v_minutes_late;
-    NEW.late_penalty_applied := calculate_late_penalty(v_minutes_late);
+    -- Passar SEGUNDOS para a função de penalty
+    NEW.late_penalty_applied := calculate_late_penalty(EXTRACT(EPOCH FROM (NEW.submitted_at - v_deadline))::INTEGER);
   ELSE
     NEW.is_late := FALSE;
     NEW.late_minutes := 0;

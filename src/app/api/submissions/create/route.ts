@@ -4,6 +4,16 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 // ✅ REMOVIDO: revalidatePath - polling detecta mudanças automaticamente
 
+// Configurar limite de request para 100MB (padrão Vercel é 5MB)
+export const config = {
+  maxDuration: 30,
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
@@ -167,11 +177,11 @@ export async function POST(request: Request) {
     // PASSO 5: Fazer upload do arquivo (se aplicável)
     // ========================================
     if (deliverableType === 'file' && file) {
-      // Validar tamanho do arquivo (50MB max)
-      const maxFileSize = 50 * 1024 * 1024 // 50MB
+      // Validar tamanho do arquivo (100MB max)
+      const maxFileSize = 100 * 1024 * 1024 // 100MB
       if (file.size > maxFileSize) {
         return NextResponse.json(
-          { error: `Arquivo muito grande. Máximo: 50MB, você enviou: ${(file.size / 1024 / 1024).toFixed(2)}MB` },
+          { error: `Arquivo muito grande. Máximo: 100MB, você enviou: ${(file.size / 1024 / 1024).toFixed(2)}MB` },
           { status: 400 }
         )
       }

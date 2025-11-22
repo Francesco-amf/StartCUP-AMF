@@ -1,0 +1,17 @@
+-- ============================================================================
+-- AUDIT RESULT: auto_advance_phase() - JÁ ESTÁ CORRIGIDA ✅
+-- ============================================================================
+-- RESULTADO DA AUDITORIA:
+-- A função no banco DE PRODUÇÃO já está usando a lógica corrigida!
+-- v_all_expired := v_expired_quests >= v_total_quests;
+--
+-- ✅ NÃO usa OR com submissões
+-- ✅ APENAS conta expiradas para decidir avanço
+-- ✅ Submissões são apenas para auditoria (logging)
+--
+-- CONCLUSÃO:
+-- ✅ auto_advance_phase() está SEGURA
+-- ❌ O problema estava em auto_start_next_quest() (JÁ FIXADO)
+-- ❌ NÃO precisa desabilitar CRON
+--
+-- ============================================================================

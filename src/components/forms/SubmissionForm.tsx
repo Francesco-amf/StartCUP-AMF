@@ -41,7 +41,7 @@ export default function SubmissionForm({
   const supabase = createClient()
   const { play } = useSoundSystem()
 
-  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+  const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null
@@ -49,7 +49,7 @@ export default function SubmissionForm({
 
     if (selectedFile) {
       if (selectedFile.size > MAX_FILE_SIZE) {
-        setFileError(`Arquivo muito grande. Máximo: 50MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`)
+        setFileError(`Arquivo muito grande. Máximo: 100MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`)
         setFile(null)
         return
       }

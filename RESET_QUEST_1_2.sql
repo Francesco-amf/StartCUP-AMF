@@ -22,13 +22,6 @@ SET
 WHERE order_index = 2
 AND phase_id = (SELECT id FROM phases WHERE order_index = 1 LIMIT 1);
 
--- PASSO 3: Deletar TODAS as submissões de Quest 1.2
-DELETE FROM submissions
-WHERE quest_id IN (
-  SELECT id FROM quests
-  WHERE order_index = 2
-  AND phase_id = (SELECT id FROM phases WHERE order_index = 1 LIMIT 1)
-);
 
 -- PASSO 4: Verificar resultado
 SELECT 

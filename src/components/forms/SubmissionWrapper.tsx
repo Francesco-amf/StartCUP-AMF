@@ -233,14 +233,6 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
   
   const questsToShow = availableQuests.filter(q => q.shouldShow)
 
-  // ✅ NOVO: Verificar se há quest submetida aguardando prazo expirar
-  let waitingForDeadline: { questName: string; minutesRemaining: number } | null = null
-  if (currentIndex === -1 && notSubmittedIndexes.length > 0) {
-    // Tem quests não-submetidas, mas currentIndex = -1 (nenhuma selecionada)
-    // ✅ REMOVIDO: Não precisa mais aguardar prazo de quest submetida
-    // Após submissão, a próxima quest já mostra (ver lógica simplificada acima)
-  }
-
   return (
     <div className="space-y-6">
       <QuestExpirationNotifier currentQuest={currentQuest} />
@@ -248,24 +240,6 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
       {autoAdvancedFromExpired && (
         <div className="bg-[#0A3A5A]/60 border border-[#FF6B6B]/60 text-[#FFB3B3] px-4 py-3 rounded-lg">
           🚦 Prazo finalizado em "{advFrom}". Agora você está na próxima quest: <span className="font-bold text-white">{advTo}</span>.
-        </div>
-      )}
-      
-      {waitingForDeadline && (
-        <div className="bg-gradient-to-br from-[#0A3A5A]/90 to-[#001A4D]/90 border-2 border-[#00E5FF]/60 text-[#00E5FF] px-6 py-4 rounded-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">⏳</span>
-            <h3 className="text-xl font-bold">Quest Submetida com Sucesso!</h3>
-          </div>
-          <p className="text-[#00E5FF]/90 mb-2">
-            Você completou <span className="font-bold text-white">"{waitingForDeadline.questName}"</span> dentro do prazo. Parabéns!
-          </p>
-          <p className="text-[#00E5FF]/80 text-sm">
-            🕐 A próxima quest será liberada em aproximadamente <span className="font-bold text-[#FFD700]">{waitingForDeadline.minutesRemaining} minuto(s)</span>, quando o prazo atual expirar.
-          </p>
-          <p className="text-[#00E5FF]/60 text-xs mt-2">
-            💡 Use esse tempo para se preparar para o próximo desafio!
-          </p>
         </div>
       )}
       

@@ -6,6 +6,7 @@ import PhaseController from '@/components/PhaseController'
 import QuickActions from '@/components/QuickActions'
 import PenaltyAssigner from '@/components/admin/PenaltyAssigner'
 import ManualQuestControl from '@/components/admin/ManualQuestControl'
+import AMFCoinsManager from '@/components/admin/AMFCoinsManager'
 import Header from '@/components/Header'
 
 export default async function AdminControlPanel() {
@@ -142,6 +143,9 @@ export default async function AdminControlPanel() {
 
         {/* Controle Manual de Quests */}
         <ManualQuestControl />
+
+        {/* Gerenciador de AMF Coins */}
+        <AMFCoinsManager />
 
         {/* Controle de Fases */}
         <Card className="p-6 mb-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/30">

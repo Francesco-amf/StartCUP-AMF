@@ -219,31 +219,6 @@ const PHASES_DETAILED = {
       },
       {
         questNumber: 2,
-        name: 'Aliados Estratégicos',
-        description: 'Definir 2 parceiros-chave',
-        maxPoints: 50,
-        deliveryType: ['file', 'text'],
-        requirements: [
-          '2 parceiros-chave identificados',
-          'Proposta de valor para cada parceiro',
-          'Estrutura de relacionamento',
-          'Benefício mútuo definido'
-        ],
-        acceptedFormats: ['PDF', 'DOCX', 'PPTX'],
-        tips: [
-          'Escolha parceiros que complementam',
-          'Explique por que cada parceria',
-          'Defina o que cada parte ganha',
-          'Seja realista sobre viabilidade'
-        ],
-        evaluationCriteria: [
-          'Relevância dos parceiros',
-          'Clareza do benefício mútuo',
-          'Viabilidade da parceria'
-        ]
-      },
-      {
-        questNumber: 3,
         name: 'Show Me The Money',
         description: 'Estrutura de custos e receitas + Indicadores financeiros',
         maxPoints: 100,

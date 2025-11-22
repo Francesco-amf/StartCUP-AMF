@@ -102,7 +102,11 @@ export default function SubmissionForm({
       formData.append('questId', questId)
       formData.append('teamId', teamId)
       formData.append('deliverableType', deliverableType)
-      formData.append('content', content)
+
+      // ✅ APENAS adicionar content se for text/url (NÃO para file)
+      if (deliverableType !== 'file') {
+        formData.append('content', content)
+      }
 
       if (deliverableType === 'file' && file) {
         formData.append('file', file)
@@ -132,7 +136,9 @@ export default function SubmissionForm({
         data = await response.json()
       } catch (jsonError) {
         console.error('Erro ao parsear JSON da resposta:', jsonError)
-        setError('❌ Erro ao processar resposta do servidor. Verifique se você enviou apenas UM tipo de entrega (arquivo OU link/texto, não ambos).')
+        console.error('Status da resposta:', response.status)
+        console.error('Tipo de entrega enviado:', deliverableType)
+        setError('❌ Erro ao processar resposta do servidor. Tente novamente ou contate o suporte.')
         setLoading(false)
         setUploadingFile(false)
         return

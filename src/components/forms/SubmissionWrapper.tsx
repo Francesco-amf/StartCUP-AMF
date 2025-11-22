@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import SubmissionForm from '@/components/forms/SubmissionForm'
 import BossQuestCard from '@/components/quest/BossQuestCard'
 import SubmissionDeadlineStatus from '@/components/quest/SubmissionDeadlineStatus'
 import QuestExpirationNotifier from '@/components/quest/QuestExpirationNotifier'
 import AutoAdvanceCountdown from '@/components/quest/AutoAdvanceCountdown'
 import { type Quest, type Team, type Submission, type EventConfig } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
 
 interface SubmissionWrapperProps {
   quests: Quest[]
@@ -17,27 +19,68 @@ interface SubmissionWrapperProps {
 
 export default function SubmissionWrapper({ quests, team, submissions, eventConfig }: SubmissionWrapperProps) {
   const [completedQuestId, setCompletedQuestId] = useState<string | null>(null)
+  const [localSubmissions, setLocalSubmissions] = useState<Submission[]>(submissions || [])
+  const supabase = createClient()
+  const router = useRouter()
 
   const handleSuccess = (questId: string) => {
     // ✅ Marca a quest como completa para esconder TODOS os forms de envio
     // Polling (500ms) + BroadcastChannel detectam mudanças automaticamente
     console.log('✅ Submissão realizada para quest:', questId)
     setCompletedQuestId(questId)
+    
+    // ✅ Força refresh imediato de submissions (não espera polling)
+    // Isso garante que Quest 1.2 apareça imediatamente após 1.1 ser submetida
+    pollSubmissionsNow()
   }
 
-  // ✅ REMOVIDO: Auto-refresh a cada 30 segundos
-  // Razão: Dados já vêm via polling em tempo real + hooks useRealtimePhase/useRealtimeRanking
-  // Isso evita múltiplos refreshes que causam piscar (flashing) em abas simultâneas
-  // useEffect(...) // ← Removido intencionalmente
+  // ✅ NOVO: Polling de submissions a cada 1.5 segundos após submissão
+  // Isso garante que a próxima quest apareça rapidamente
+  const pollSubmissionsNow = async () => {
+    try {
+      const { data: newSubmissions, error } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('team_id', team.id)
+        .order('submitted_at', { ascending: false })
 
-  // ✅ FIX: Incluir completedQuestId para evitar bug de Quest 1.1 travada após submit atrasado
+      if (!error && newSubmissions) {
+        console.log('🔄 [SubmissionWrapper] Submissions atualizadas via polling:', newSubmissions.map(s => ({ quest_id: s.quest_id, status: s.status })))
+        setLocalSubmissions(newSubmissions)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao fazer polling de submissions:', err)
+    }
+  }
+
+  // ✅ NOVO: Polling automático enquanto há uma quest completada
+  // Repete a cada 1.5s até que todas as submissões sejam processadas
+  useEffect(() => {
+    if (!completedQuestId || !team?.id) return
+
+    const pollInterval = setInterval(() => {
+      console.log('⏳ [SubmissionWrapper] Polling submissions...')
+      pollSubmissionsNow()
+    }, 1500)
+
+    return () => clearInterval(pollInterval)
+  }, [completedQuestId, team?.id])
+
+  // ✅ ADICIONAL: Se submissions prop mudar externamente, sincronizar
+  useEffect(() => {
+    if (submissions && submissions !== localSubmissions) {
+      setLocalSubmissions(submissions)
+    }
+  }, [submissions])
+
+  // FIX: Incluir completedQuestId para evitar bug de Quest 1.1 travada após submit atrasado
   // Quando submete Quest 1.1 atrasada (mas Quest 1.2 já ativa), o polling demora para atualizar
   // Então incluímos o ID da quest recém-completada para liberar a próxima imediatamente
-  const baseSubmittedIds = submissions?.map(s => s.quest_id) || []
+  const baseSubmittedIds = localSubmissions?.map(s => s.quest_id) || []
   const submittedQuestIds = completedQuestId && !baseSubmittedIds.includes(completedQuestId)
     ? [...baseSubmittedIds, completedQuestId]
     : baseSubmittedIds
-  const evaluatedQuestIds = submissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []
+  const evaluatedQuestIds = localSubmissions?.filter(s => s.status === 'evaluated').map(s => s.quest_id) || []
 
   const hasNotice = (n: any): n is { fromName: string; toName: string } => {
     return !!n && typeof n.fromName === 'string' && typeof n.toName === 'string'

@@ -105,16 +105,18 @@ export default function ManualQuestControl() {
       )
       
       if (activeOrPausedQuests.length > 0) {
-        // Ajustar started_at para o passado → força expiração visual em TODAS
+        // Ajustar started_at E planned_deadline_minutes para forçar expiração
+        // Lógica: NOW > (started_at + planned_deadline + late_window)
         const expiredStart = new Date()
-        expiredStart.setMinutes(expiredStart.getMinutes() - 60)
+        expiredStart.setMinutes(expiredStart.getMinutes() - 100) // 100 min no passado
         
         for (const quest of activeOrPausedQuests) {
           await supabase
             .from('quests')
             .update({ 
               status: 'closed',
-              started_at: expiredStart.toISOString()
+              started_at: expiredStart.toISOString(),
+              planned_deadline_minutes: 1 // Força expiração: started_at + 1 min < NOW
             })
             .eq('id', quest.id)
         }

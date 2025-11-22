@@ -143,6 +143,98 @@ export default function ManualQuestControl() {
     }
   }
 
+  async function pauseQuest() {
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      if (!activeQuest) throw new Error('Nenhuma quest ativa para pausar')
+
+      // Calcular quanto tempo já passou
+      const startedAt = new Date(activeQuest.started_at!)
+      const now = new Date()
+      const elapsedMinutes = Math.floor((now.getTime() - startedAt.getTime()) / 1000 / 60)
+
+      // Armazenar tempo decorrido em um campo customizado
+      const { error } = await supabase
+        .from('quests')
+        .update({ 
+          status: 'paused',
+          // Podemos usar um campo JSON para armazenar estado de pausa
+        })
+        .eq('id', activeQuest.id)
+
+      if (error) throw error
+
+      setMessage({ text: `Quest pausada! Tempo decorrido: ${elapsedMinutes}min`, type: 'success' })
+      await loadData()
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resumeQuest(questId: string, originalStartedAt: string, durationMinutes: number) {
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      // Calcular quanto tempo já passou quando foi pausada
+      const originalStart = new Date(originalStartedAt)
+      const now = new Date()
+      const elapsedMinutes = Math.floor((now.getTime() - originalStart.getTime()) / 1000 / 60)
+      const remainingMinutes = durationMinutes - elapsedMinutes
+
+      // Ajustar started_at para refletir tempo restante
+      const newStartedAt = new Date()
+      newStartedAt.setMinutes(newStartedAt.getMinutes() - elapsedMinutes)
+
+      const { error } = await supabase
+        .from('quests')
+        .update({ 
+          status: 'active',
+          started_at: newStartedAt.toISOString()
+        })
+        .eq('id', questId)
+
+      if (error) throw error
+
+      setMessage({ text: `Quest retomada! Tempo restante: ${Math.max(0, remainingMinutes)}min`, type: 'success' })
+      await loadData()
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function addTime(minutes: number) {
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      if (!activeQuest) throw new Error('Nenhuma quest ativa')
+
+      const currentStart = new Date(activeQuest.started_at!)
+      currentStart.setMinutes(currentStart.getMinutes() - minutes) // Subtrair para adicionar tempo no final
+
+      const { error } = await supabase
+        .from('quests')
+        .update({ started_at: currentStart.toISOString() })
+        .eq('id', activeQuest.id)
+
+      if (error) throw error
+
+      setMessage({ text: `${minutes > 0 ? '+' : ''}${minutes} minutos adicionados!`, type: 'success' })
+      await loadData()
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function advancePhase() {
     setLoading(true)
     setMessage(null)
@@ -197,6 +289,7 @@ export default function ManualQuestControl() {
   })
 
   const activeQuest = currentPhaseQuests.find(q => q.status === 'active')
+  const pausedQuest = currentPhaseQuests.find(q => q.status === 'paused')
 
   return (
     <Card className="p-6 bg-gradient-to-br from-[#0A1E47]/60 to-[#001A4D]/60 border-2 border-[#00E5FF]/30">
@@ -216,7 +309,7 @@ export default function ManualQuestControl() {
       {/* Quest Ativa */}
       {activeQuest && (
         <div className="mb-6 p-4 bg-green-500/10 border-2 border-green-500/30 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold text-green-400">
               ▶️ Quest Ativa: {activeQuest.name}
             </h3>
@@ -226,13 +319,73 @@ export default function ManualQuestControl() {
                 : 'Calculando...'}
             </span>
           </div>
-          <Button
-            onClick={closeCurrentQuest}
-            disabled={loading}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold"
-          >
-            ⏹️ FECHAR QUEST ATIVA
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => pauseQuest()}
+              disabled={loading}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold"
+            >
+              ⏸️ PAUSAR
+            </Button>
+            <Button
+              onClick={() => addTime(10)}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              +10 min
+            </Button>
+            <Button
+              onClick={() => addTime(30)}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              +30 min
+            </Button>
+            <Button
+              onClick={() => addTime(-10)}
+              disabled={loading}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold"
+            >
+              -10 min
+            </Button>
+            <Button
+              onClick={closeCurrentQuest}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
+              ⏹️ FECHAR
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Quest Pausada */}
+      {pausedQuest && (
+        <div className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/30 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-yellow-400">
+              ⏸️ Quest Pausada: {pausedQuest.name}
+            </h3>
+            <span className="text-sm text-yellow-400">
+              Pausada em: {pausedQuest.started_at ? new Date(pausedQuest.started_at).toLocaleTimeString('pt-BR') : '-'}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => resumeQuest(pausedQuest.id, pausedQuest.started_at!, pausedQuest.duration_minutes)}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+            >
+              ▶️ RETOMAR
+            </Button>
+            <Button
+              onClick={closeCurrentQuest}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
+              ⏹️ FECHAR
+            </Button>
+          </div>
         </div>
       )}
 
@@ -264,7 +417,7 @@ export default function ManualQuestControl() {
               {quest.status === 'scheduled' && (
                 <Button
                   onClick={() => activateQuest(currentPhase, quest.order_index)}
-                  disabled={loading || !!activeQuest}
+                  disabled={loading || !!activeQuest || !!pausedQuest}
                   className="w-full bg-[#00E5FF] hover:bg-[#00D4FF] text-[#0A1E47] font-bold"
                 >
                   ▶️ ATIVAR QUEST {quest.order_index}
@@ -272,6 +425,9 @@ export default function ManualQuestControl() {
               )}
               {quest.status === 'active' && (
                 <span className="text-green-400 font-semibold">✅ ATIVA</span>
+              )}
+              {quest.status === 'paused' && (
+                <span className="text-yellow-400 font-semibold">⏸️ PAUSADA</span>
               )}
               {quest.status === 'closed' && (
                 <span className="text-gray-400">🔒 Fechada</span>

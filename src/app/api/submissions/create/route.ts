@@ -1,5 +1,3 @@
-'use server'
-
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 // ✅ REMOVIDO: revalidatePath - polling detecta mudanças automaticamente

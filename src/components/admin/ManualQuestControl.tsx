@@ -98,13 +98,26 @@ export default function ManualQuestControl() {
       )
       if (!questToActivate) throw new Error('Quest não encontrada')
 
-      // Fechar quest anterior
-      if (questOrderIndex > 1) {
-        await supabase
-          .from('quests')
-          .update({ status: 'closed' })
-          .eq('phase_id', phase.id)
-          .eq('order_index', questOrderIndex - 1)
+      // ✅ CORREÇÃO DEFINITIVA: Fechar TODAS as quests ativas/pausadas e forçar expiração
+      // Isso resolve o problema de "closed mas não expirado" que se repete
+      const activeOrPausedQuests = quests.filter(q => 
+        q.status === 'active' || q.status === 'paused'
+      )
+      
+      if (activeOrPausedQuests.length > 0) {
+        // Ajustar started_at para o passado → força expiração visual em TODAS
+        const expiredStart = new Date()
+        expiredStart.setMinutes(expiredStart.getMinutes() - 60)
+        
+        for (const quest of activeOrPausedQuests) {
+          await supabase
+            .from('quests')
+            .update({ 
+              status: 'closed',
+              started_at: expiredStart.toISOString()
+            })
+            .eq('id', quest.id)
+        }
       }
 
       // Ativar quest com planned_deadline_minutes igual a duration_minutes

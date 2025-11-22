@@ -483,12 +483,15 @@ const headerGradients = {
 
 export default function PhaseDetailsCard({ currentQuest, currentPhaseNumber }: PhaseDetailsCardProps) {
   const phase = PHASES_DETAILED[currentPhaseNumber as keyof typeof PHASES_DETAILED] || PHASES_DETAILED[0]
-  const quest = phase.quests.find(q => q.questNumber === currentQuest?.order_index) || phase.quests[0];
   const bgColor = colorClasses[phase.color as keyof typeof colorClasses]
   const textColor = textColorClasses[phase.color as keyof typeof textColorClasses]
   const gradient = headerGradients[phase.color as keyof typeof headerGradients]
 
-  if (!quest) {
+  // ✅ FIX: Use dados REAIS da quest do banco de dados em vez de dados hardcoded
+  // Buscar quest hardcoded apenas como fallback para campos que não existem no DB
+  const questFallback = phase.quests.find(q => q.questNumber === currentQuest?.order_index) || phase.quests[0];
+
+  if (!currentQuest) {
     return (
       <div className={`p-3 md:p-4 rounded-lg border-2 ${bgColor}`}>
         <div className="flex flex-col items-start justify-between gap-3">
@@ -507,6 +510,21 @@ export default function PhaseDetailsCard({ currentQuest, currentPhaseNumber }: P
         </p>
       </div>
     )
+  }
+
+  // ✅ DADOS REAIS DO BANCO (currentQuest vem do page.tsx)
+  const questData = {
+    questNumber: currentQuest.order_index,
+    name: currentQuest.name,
+    description: currentQuest.description,
+    maxPoints: currentQuest.max_points,
+    deliveryType: Array.isArray(currentQuest.deliverable_type) 
+      ? currentQuest.deliverable_type 
+      : [currentQuest.deliverable_type || 'file'],
+    requirements: questFallback?.requirements || ['Seguir as instruções fornecidas'],
+    acceptedFormats: questFallback?.acceptedFormats || [],
+    tips: questFallback?.tips || ['Faça o seu melhor!'],
+    evaluationCriteria: questFallback?.evaluationCriteria || ['Qualidade da entrega']
   }
 
   return (
@@ -530,10 +548,10 @@ export default function PhaseDetailsCard({ currentQuest, currentPhaseNumber }: P
         </div>
       </div>
 
-      {/* Quest Atual */}
+      {/* Quest Atual - USANDO DADOS REAIS DO BANCO */}
       <div className="space-y-3 md:space-y-4">
         <h3 className={`text-base md:text-lg font-bold ${textColor}`}>📋 Quest Atual</h3>
-        <QuestCard {...quest} />
+        <QuestCard {...questData} />
       </div>
 
       {/* Dicas Gerais */}

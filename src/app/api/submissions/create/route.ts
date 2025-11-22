@@ -207,7 +207,9 @@ export async function POST(request: Request) {
 
       // Fazer upload para Supabase Storage
       const timestamp = Date.now()
-      const fileName = `${teamId}/${questId}/${timestamp}-${file.name}`
+      // Sanitizar nome do arquivo - remover caracteres especiais e espaços
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const fileName = `${teamId}/${questId}/${timestamp}-${sanitizedFileName}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('submissions')

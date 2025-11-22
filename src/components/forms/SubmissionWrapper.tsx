@@ -45,7 +45,7 @@ export default function SubmissionWrapper({ quests, team, submissions, eventConf
         .order('submitted_at', { ascending: false })
 
       if (!error && newSubmissions) {
-        console.log('🔄 [SubmissionWrapper] Submissions atualizadas via polling:', newSubmissions.map(s => ({ quest_id: s.quest_id, status: s.status })))
+        console.log('🔄 [SubmissionWrapper] Submissions atualizadas via polling:', newSubmissions.map((s: any) => ({ quest_id: s.quest_id, status: s.status })))
         setLocalSubmissions(newSubmissions)
       }
     } catch (err) {

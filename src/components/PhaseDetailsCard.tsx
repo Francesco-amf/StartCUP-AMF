@@ -308,56 +308,30 @@ const PHASES_DETAILED = {
       },
       {
         questNumber: 2,
-        name: 'Validação de Mercado',
-        description: 'Pesquisa rápida com 5+ pessoas',
-        maxPoints: 50,
-        deliveryType: ['file'],
+        name: 'BOSS 4 - Pitch de Refinamento',
+        description: 'Apresentação final do projeto refinado',
+        maxPoints: 100,
+        deliveryType: ['presentation'],
         requirements: [
-          'Contatos com 5+ pessoas validados',
-          'Feedback coletado e documentado',
-          'Insights de mercado',
-          'Ajustes baseados em validação',
-          'Relatório de validação'
+          'Apresentação presencial ao vivo',
+          'Duração: 3-5 minutos',
+          'Demonstração do produto/serviço refinado',
+          'Projeções financeiras atualizadas',
+          'Próximos passos claros'
         ],
-        acceptedFormats: ['PDF Relatório', 'Pesquisa Documentada', 'PPTX'],
+        acceptedFormats: ['Apresentação ao vivo'],
         tips: [
-          'Fale com pessoas além do seu círculo',
-          'Faça perguntas abertas',
-          'Ouça mais do que fale',
-          'Documente exatamente o que ouviu',
-          'Identifique padrões nos feedbacks'
+          'Pratique o pitch várias vezes',
+          'Mostre evolução desde o início',
+          'Apresente números e validações',
+          'Seja claro sobre próximos passos',
+          'Transmita confiança e paixão'
         ],
         evaluationCriteria: [
-          'Quantidade de validações',
-          'Qualidade dos insights',
-          'Aplicação do feedback'
-        ]
-      },
-      {
-        questNumber: 3,
-        name: 'Números que Convencem',
-        description: 'Refinar projeções financeiras',
-        maxPoints: 50,
-        deliveryType: ['file'],
-        requirements: [
-          'Projeções financeiras refinadas',
-          'Cenários (pessimista, realista, otimista)',
-          'Planilha de viabilidade',
-          'Break-even definido',
-          'Plano de captação de recursos'
-        ],
-        acceptedFormats: ['Excel/Sheets', 'PDF', 'Dashboard'],
-        tips: [
-          'Atualize com dados de validação',
-          'Crie 3 cenários diferentes',
-          'Calcule when do break-even',
-          'Defina quanto capital é necessário',
-          'Mostre ROI esperado'
-        ],
-        evaluationCriteria: [
-          'Realismo das projeções',
-          'Qualidade da análise',
-          'Viabilidade comprovada'
+          'Qualidade da apresentação',
+          'Clareza da proposta refinada',
+          'Evolução demonstrada',
+          'Viabilidade do plano'
         ]
       }
     ]

@@ -17,6 +17,7 @@ import TeamMentorHistory from '@/components/team/TeamMentorHistory'
 import { Accordion } from '@/components/ui/Accordion'
 import AMFCoinsHistory from '@/components/team/AMFCoinsHistory'
 import TeamDashboardClient from '@/components/TeamDashboardClient'
+import CurrentQuestPoller from '@/components/CurrentQuestPoller'
 import crypto from 'crypto'
 
 // ✅ Server-rendered dynamically on every request
@@ -191,6 +192,12 @@ export default async function TeamDashboard() {
         teamId={team?.id || ''}
         initialSubmissionsCount={submissions?.length || 0}
         initialEvaluatedCount={submissions?.filter(s => s.status === 'evaluated').length || 0}
+      />
+
+      {/* ✅ Componente cliente para monitorar mudanças de quest e recarregar */}
+      <CurrentQuestPoller
+        teamId={team?.id || ''}
+        initialQuestId={currentQuest?.id}
       />
 
       <div className="w-screen px-2 py-2">

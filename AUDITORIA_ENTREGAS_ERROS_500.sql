@@ -41,7 +41,6 @@ FROM submissions s
 JOIN teams t ON s.team_id = t.id
 JOIN quests q ON s.quest_id = q.id
 WHERE s.submitted_at > NOW() - INTERVAL '72 hours'
-  AND (s.status IN ('rejected', 'error', 'pending') OR s.is_late OR s.late_penalty_applied > 0)
 ORDER BY s.submitted_at DESC;
 
 -- PASSO 2: VALIDAÇÃO DE PRAZOS - Comparar com_started_at + deadline
@@ -144,11 +143,11 @@ WITH error_analysis AS (
   COUNT(*) as total_submissoes,
   COUNT(CASE WHEN status IN ('error', 'rejected') THEN 1 END) as com_erro,
   ROUND(
-    (COUNT(CASE WHEN status IN ('error', 'rejected') THEN 1 END)::FLOAT / COUNT(*)) * 100, 2
+    (((COUNT(CASE WHEN status IN ('error', 'rejected') THEN 1 END)::FLOAT / COUNT(*)) * 100)::NUMERIC), 2
   ) as percentual_erro,
   MIN(minutos_apos_deadline) as min_minutos_apos_deadline,
   MAX(minutos_apos_deadline) as max_minutos_apos_deadline,
-  ROUND(AVG(minutos_apos_deadline), 2) as media_minutos_apos_deadline
+  ROUND((AVG(minutos_apos_deadline)::NUMERIC), 2) as media_minutos_apos_deadline
 FROM error_analysis
 GROUP BY tipo_prazo
 ORDER BY CASE tipo_prazo WHEN 'PRAZO_NORMAL' THEN 1 WHEN 'PRAZO_ATRASO' THEN 2 ELSE 3 END;
@@ -224,13 +223,9 @@ WITH stats AS (
   total_submissoes::TEXT as valor
 FROM stats
 UNION ALL
-SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Taxa de sucesso', ROUND((sucesso::FLOAT / total_submissoes) * 100, 2)::TEXT || '%' FROM stats
+SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Total com penalidade', com_penalidade::TEXT FROM stats
 UNION ALL
-SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Taxa de falha', ROUND((falha::FLOAT / total_submissoes) * 100, 2)::TEXT || '%' FROM stats
+SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Total atrasadas', atrasadas::TEXT FROM stats
 UNION ALL
-SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Submissões atrasadas', atrasadas::TEXT FROM stats
-UNION ALL
-SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Com penalidade aplicada', com_penalidade::TEXT FROM stats
-UNION ALL
-SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Além do prazo de expiração', apos_expiracao::TEXT FROM stats;
+SELECT '7. RESUMO EXECUTIVO (72 horas)', 'Além da expiração', apos_expiracao::TEXT FROM stats;
 

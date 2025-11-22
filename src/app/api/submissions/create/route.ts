@@ -177,11 +177,11 @@ export async function POST(request: Request) {
     // PASSO 5: Fazer upload do arquivo (se aplicável)
     // ========================================
     if (deliverableType === 'file' && file) {
-      // Validar tamanho do arquivo (100MB max)
-      const maxFileSize = 100 * 1024 * 1024 // 100MB
+      // Validar tamanho do arquivo (5MB max - limite Vercel)
+      const maxFileSize = 5 * 1024 * 1024 // 5MB
       if (file.size > maxFileSize) {
         return NextResponse.json(
-          { error: `Arquivo muito grande. Máximo: 100MB, você enviou: ${(file.size / 1024 / 1024).toFixed(2)}MB` },
+          { error: `Arquivo muito grande. Máximo: 5MB, você enviou: ${(file.size / 1024 / 1024).toFixed(2)}MB` },
           { status: 400 }
         )
       }

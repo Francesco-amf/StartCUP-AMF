@@ -308,6 +308,33 @@ const PHASES_DETAILED = {
       },
       {
         questNumber: 2,
+        name: 'Números que Convencem',
+        description: 'Refinar projeções financeiras',
+        maxPoints: 50,
+        deliveryType: ['file'],
+        requirements: [
+          'Projeções financeiras refinadas',
+          'Cenários (pessimista, realista, otimista)',
+          'Planilha de viabilidade',
+          'Break-even definido',
+          'Plano de captação de recursos'
+        ],
+        acceptedFormats: ['Excel/Sheets', 'PDF', 'Dashboard'],
+        tips: [
+          'Atualize com dados de validação',
+          'Crie 3 cenários diferentes',
+          'Calcule when do break-even',
+          'Defina quanto capital é necessário',
+          'Mostre ROI esperado'
+        ],
+        evaluationCriteria: [
+          'Realismo das projeções',
+          'Qualidade da análise',
+          'Viabilidade comprovada'
+        ]
+      },
+      {
+        questNumber: 3,
         name: 'BOSS 4 - Pitch de Refinamento',
         description: 'Apresentação final do projeto refinado',
         maxPoints: 100,
